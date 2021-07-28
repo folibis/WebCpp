@@ -3,6 +3,7 @@
 #include <algorithm>
 
 
+
 std::vector<std::string> split(const std::string &str, const char delimiter)
 {
     std::vector<std::string> strings;
@@ -46,18 +47,132 @@ bool string2int(const std::string &str, int &value)
     }
 }
 
-std::vector<byte_array> split(const byte_array &str, const char delimiter)
+std::vector<ByteArray> split(const ByteArray &str, const char delimiter)
 {
-    std::vector<byte_array> retval;
+    std::vector<ByteArray> retval;
 
     auto it = str.begin();
-    byte_array::const_iterator i;
+    ByteArray::const_iterator i;
 
     while((i = std::find(it, str.end(), delimiter)) != str.end())
     {
-        retval.push_back(byte_array(it, i));
-        it = i;
+        retval.push_back(ByteArray(it, i));
+        it = i + 1;
     }
 
     return retval;
 }
+
+std::vector<ByteArray> split(const ByteArray &str, const ByteArray delimiter, size_t max)
+{
+    std::vector<ByteArray> retval;
+    size_t pos = 0;
+    size_t start = 0;
+
+    while(look_for(str, delimiter, pos, start))
+    {
+        retval.push_back(ByteArray(str.begin() + start, str.begin() + pos));
+        start = pos + delimiter.size();
+        if(start >= max)
+        {
+            break;
+        }
+    }
+
+    return retval;
+}
+
+ByteArray trim(ByteArray &str, const ByteArray &chars)
+{
+    if(str.empty())
+    {
+        return str;
+    }
+
+    ByteArray::const_iterator b;
+    ByteArray::const_iterator e;
+
+    for(b = str.begin(); b != str.end(); b ++)
+    {
+        if(contains(chars, *b))
+        {
+            continue;
+        }
+        break;
+    }
+
+    for(e = str.end() - 1; e != b; e --)
+    {
+        if(contains(chars, *e))
+        {
+            continue;
+        }
+        break;
+    }
+
+    e += 1;
+
+    if(b != str.begin() || e != str.end())
+    {
+        str = ByteArray(b, e);
+    }
+    return str;
+}
+
+bool contains(const ByteArray &str, char ch)
+{
+    for(auto &c: str)
+    {
+        if(c == ch)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool look_for(const ByteArray &str, const ByteArray &search, size_t &position, size_t start)
+{
+    auto ptr1 = str.data();
+    auto ptr2 = search.data();
+
+    auto size1 = str.size();
+    auto size2 = search.size();
+
+    for(size_t pos1 = start; pos1 < (size1 - size2); pos1 ++)
+    {        
+        for(size_t pos2 = 0; pos2 < size2; pos2 ++)
+        {
+            if(ptr1[pos1 + pos2] != ptr2[pos2])
+            {
+                break;
+            }
+
+            if(pos2 == (size2 - 1))
+            {
+                position = pos1;
+                return true;
+            }
+        }        
+    }
+
+    return false;
+}
+
+void toLower(std::string &str)
+{
+    std::transform(str.begin(), str.end(), str.begin(),[](unsigned char c)
+    {
+        return std::tolower(c);
+    });
+}
+
+void toUpper(std::string &str)
+{
+    std::transform(str.begin(), str.end(), str.begin(),[](unsigned char c)
+    {
+        return std::toupper(c);
+    });
+}
+

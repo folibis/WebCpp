@@ -26,7 +26,7 @@ public:
     bool WaitFor();
 
     bool SetNewConnectionCallback(const std::function<void(int)> &callback);
-    bool SetDataReadyCallback(const std::function<void(int, const std::vector<char> &data)> &callback);
+    bool SetDataReadyCallback(const std::function<void(int, std::vector<char> &data)> &callback);
     bool SetCloseConnectionCallback(const std::function<void(int)> &callback);
 
 protected:
@@ -40,7 +40,7 @@ private:
     pthread_t m_readThread;
     pthread_mutex_t m_writeMutex = PTHREAD_MUTEX_INITIALIZER;
     std::function<void(int)> m_newConnectionCallback = nullptr;
-    std::function<void(int, const std::vector<char> &data)> m_dataReadyCallback = nullptr;
+    std::function<void(int, std::vector<char> &data)> m_dataReadyCallback = nullptr;
     std::function<void(int)> m_closeConnectionCallback = nullptr;
     char m_readBuffer[READ_BUFFER_SIZE];
 

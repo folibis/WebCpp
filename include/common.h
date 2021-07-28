@@ -4,6 +4,11 @@
 #include <string>
 #include <vector>
 
+#define CR '\r'
+#define LF '\n'
+#define CRLF '\r','\n'
+#define CRLFCRLF '\r','\n','\r','\n'
+
 
 constexpr uint64_t mix(char m, uint64_t s)
 {
@@ -23,13 +28,17 @@ constexpr uint64_t operator "" _(const char* str)
 std::vector<std::string> split(const std::string &str, const char delimiter);
 std::string &ltrim(std::string &str, const std::string &chars);
 std::string &rtrim(std::string &str, const std::string &chars);
-std::string &trim(std::string &str, const std::string &chars);
+std::string &trim(std::string &str, const std::string &chars = " \r\n\t");
 bool string2int(const std::string &str, int &value);
+void toLower(std::string &str);
+void toUpper(std::string &str);
 
+using ByteArray = std::vector<char>;
 
-using byte_array = std::vector<char>;
-
-std::vector<byte_array> split(const byte_array &str, const char delimiter);
-
+std::vector<ByteArray> split(const ByteArray &str, const char delimiter);
+std::vector<ByteArray> split(const ByteArray &str, const ByteArray delimiter, size_t max = SIZE_MAX);
+ByteArray trim(ByteArray &str, const ByteArray &chars = { ' ',CRLF,'\t' });
+bool contains(const ByteArray &str, char ch);
+bool look_for(const ByteArray &str, const ByteArray &search, size_t &position, size_t start = 0);
 
 #endif // COMMON_H

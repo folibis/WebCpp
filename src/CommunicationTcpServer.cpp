@@ -228,7 +228,7 @@ void *CommunicationTcpServer::ReadThread()
                         {
                             bool readMore = true;
                             bool isError = false;
-                            byte_array data;
+                            ByteArray data;
                             do
                             {
                                 retval = recv(m_fds[i].fd, m_readBuffer, READ_BUFFER_SIZE, 0);
@@ -293,7 +293,7 @@ bool CommunicationTcpServer::SetNewConnectionCallback(const std::function<void (
     return true;
 }
 
-bool CommunicationTcpServer::SetDataReadyCallback(const std::function<void(int, const std::vector<char> &)> &callback)
+bool CommunicationTcpServer::SetDataReadyCallback(const std::function<void(int, std::vector<char> &)> &callback)
 {
     m_dataReadyCallback = callback;
     return true;
