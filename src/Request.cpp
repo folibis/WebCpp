@@ -54,6 +54,7 @@ bool Request::ParseHeaders(std::vector<ByteArray> &arr)
 
             trim(methodArr[1]);
             m_uri = methodArr[1];
+            ParseQuery();
 
             trim(methodArr[2]);
             m_version = methodArr[2];
@@ -81,6 +82,26 @@ bool Request::ParseHeaders(std::vector<ByteArray> &arr)
     return true;
 }
 
+void Request::ParseQuery()
+{
+    auto pos = m_uri.find('?');
+
+    if(pos != std::string::npos)
+    {
+        m_path = std::string(m_uri.begin(), m_uri.begin() + pos);
+        std::string query = std::string(m_uri.begin() + pos + 1, m_uri.end());
+        auto q = split(query, '&');
+        for(auto &token: q)
+        {
+            auto parr = split(token, '=');
+            if(parr.size() == 2)
+            {
+                m_query[parr[0]] = parr[1];
+            }
+        }
+    }
+}
+
 Request::Method Request::GetMethod() const
 {
     return m_method;
@@ -89,6 +110,11 @@ Request::Method Request::GetMethod() const
 std::string Request::GetUri() const
 {
     return m_uri;
+}
+
+std::string Request::GetPath() const
+{
+    return m_path;
 }
 
 const std::vector<Request::Header> &Request::GetHeaders() const
@@ -137,9 +163,19 @@ const ByteArray& Request::GetData() const
     return m_data;
 }
 
-std::string Request::Param(const std::string &name) const
+void Request::SetArg(const std::string &name, const std::string &value)
 {
-    return "";
+    m_args[name] = value;
+}
+
+std::string Request::GetArg(const std::string &name) const
+{
+    if(m_args.find(name) == m_args.end())
+    {
+        return "";
+    }
+
+    return m_args.at(name);
 }
 
 std::string Request::Method2String(Request::Method method)

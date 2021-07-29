@@ -55,13 +55,20 @@ bool HttpServer::Close()
     return true;
 }
 
-HttpServer &HttpServer::Get(const std::string &path, HttpServer::RouteFunc &f)
+HttpServer &HttpServer::Get(const std::string &path, const Route::RouteFunc &f)
 {
+    Route route(path, Request::Method::GET);    
+    route.SetFunction(f);
+    m_routes.push_back(route);
+
     return *this;
 }
 
-HttpServer &HttpServer::Post(const std::string &path, HttpServer::RouteFunc &f)
+HttpServer &HttpServer::Post(const std::string &path, const Route::RouteFunc &f)
 {
+    Route route(path, Request::Method::POST);
+    route.SetFunction(f);
+    m_routes.push_back(route);
     return *this;
 }
 
@@ -143,13 +150,13 @@ Request HttpServer::GetNextRequest()
     return Request(requestData.connID, requestData.data);
 }
 
-void HttpServer::ProcessRequest(const Request &request)
+void HttpServer::ProcessRequest(Request &request)
 {
     for(auto &route: m_routes)
     {
         if(route.IsMatch(request))
         {
-            Response response;
+            Response response(request.GetVersion());
             break;
         }
     }

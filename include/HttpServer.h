@@ -22,9 +22,8 @@ public:
     bool Run();
     bool Close();
 
-    using RouteFunc = const std::function<bool(const Request&request, Response &response)>;
-    HttpServer& Get(const std::string &path, RouteFunc &f);
-    HttpServer& Post(const std::string &path, RouteFunc &f);
+    HttpServer& Get(const std::string &path, const Route::RouteFunc &f);
+    HttpServer& Post(const std::string &path, const Route::RouteFunc &f);
 
 protected:
     void OnConnected(int connID);
@@ -39,7 +38,7 @@ protected:
     void PutToQueue(int connID, ByteArray &data);
     bool IsQueueEmpty();
     Request GetNextRequest();
-    void ProcessRequest(const Request &request);
+    void ProcessRequest(Request &request);
 
 private:
     struct RequestData

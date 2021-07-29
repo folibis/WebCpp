@@ -176,3 +176,16 @@ void toUpper(std::string &str)
     });
 }
 
+
+bool compare(const char *ch1, const char *ch2, size_t size)
+{
+    for(size_t i = 0; i < size;i ++)
+    {
+        if(ch1[i] != ch2[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
