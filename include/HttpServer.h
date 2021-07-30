@@ -25,6 +25,9 @@ public:
     HttpServer& Get(const std::string &path, const Route::RouteFunc &f);
     HttpServer& Post(const std::string &path, const Route::RouteFunc &f);
 
+    void SetRoot(const std::string &root);
+    std::string GetRoot() const;
+
 protected:
     void OnConnected(int connID);
     void OnDataReady(int connID, std::vector<char> &data);
@@ -62,6 +65,7 @@ private:
     bool m_requestThreadRunning = false;
     std::queue<RequestData> m_requestQueue;
     std::vector<Route> m_routes;
+    std::string m_root;
 };
 
 }

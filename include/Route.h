@@ -17,6 +17,7 @@ public:
 
     Route(const std::string &path, Request::Method method);
     bool SetFunction(const RouteFunc& f);
+    const RouteFunc& GetFunction() const;
     bool IsMatch(Request &request);
 
 protected:

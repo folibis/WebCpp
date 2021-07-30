@@ -16,6 +16,11 @@ bool Route::SetFunction(const Route::RouteFunc &f)
     return true;
 }
 
+const Route::RouteFunc &Route::GetFunction() const
+{
+    return m_func;
+}
+
 bool Route::IsMatch(Request &request)
 {
     if(request.GetMethod() != m_method)

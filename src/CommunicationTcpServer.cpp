@@ -8,10 +8,12 @@
 #include <cstring>
 #include <iostream>
 #include "common.h"
+#include "Lock.h"
 #include "CommunicationTcpServer.h"
 
 #define QUEUE_SIZE 10
 #define POLL_TIMEOUT 1000 // milliseconds
+#define WRITE_MAX_SIZE 1500
 
 
 using namespace WebCpp;
@@ -141,6 +143,53 @@ bool CommunicationTcpServer::Close( bool wait)
     }
 
     return true;
+}
+
+bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data)
+{
+    return Write(connID, data, data.size());
+}
+
+bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, size_t size)
+{
+    bool retval = false;
+    Lock lock(m_writeMutex);
+    size_t written = 0;
+    try
+    {
+        int fd = m_fds[connID].fd;
+        if(fd != (-1))
+        {
+            while(size > 0)
+            {
+                size_t s = size > WRITE_MAX_SIZE ? WRITE_MAX_SIZE : size;
+                ssize_t sent = send(fd, data.data() + written, s, 0);
+                if(sent == ERROR)
+                {
+                    m_fds[connID].fd = (-1);
+                    m_fds[connID].events = 0;
+                    if(m_closeConnectionCallback != nullptr)
+                    {
+                        m_closeConnectionCallback(connID);
+                    }
+                    retval = false;
+                }
+                else
+                {
+                    written += sent;
+                    size -= sent;
+                    retval = true;
+                }
+            }
+        }
+    }
+    catch(const std::exception &ex)
+    {
+        std::cout << "CommunicationTcpServer::Write: " << ex.what() << std::endl;
+        retval = false;
+    }
+
+    return retval;
 }
 
 bool CommunicationTcpServer::WaitFor()

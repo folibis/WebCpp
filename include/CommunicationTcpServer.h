@@ -22,6 +22,8 @@ public:
     bool Init() override;
     bool Connect(const std::string &address = "") override;
     bool Close(bool wait = false) override;
+    bool Write(int connID, const std::vector<char> &data) override;
+    bool Write(int connID, const std::vector<char> &data, size_t size) override;
 
     bool WaitFor();
 

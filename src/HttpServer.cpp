@@ -1,6 +1,7 @@
 #include <iostream>
 #include "common.h"
 #include "Lock.h"
+#include "FileSystem.h"
 #include "Request.h"
 #include "HttpServer.h"
 
@@ -57,7 +58,7 @@ bool HttpServer::Close()
 
 HttpServer &HttpServer::Get(const std::string &path, const Route::RouteFunc &f)
 {
-    Route route(path, Request::Method::GET);    
+    Route route(path, Request::Method::GET);
     route.SetFunction(f);
     m_routes.push_back(route);
 
@@ -70,6 +71,16 @@ HttpServer &HttpServer::Post(const std::string &path, const Route::RouteFunc &f)
     route.SetFunction(f);
     m_routes.push_back(route);
     return *this;
+}
+
+void HttpServer::SetRoot(const std::string &root)
+{
+    m_root = root;
+}
+
+std::string HttpServer::GetRoot() const
+{
+    return m_root;
 }
 
 void HttpServer::OnConnected(int connID)
@@ -152,12 +163,24 @@ Request HttpServer::GetNextRequest()
 
 void HttpServer::ProcessRequest(Request &request)
 {
+    Response response(request.GetVersion(), request.GetConnectionID());
     for(auto &route: m_routes)
     {
         if(route.IsMatch(request))
         {
-            Response response(request.GetVersion());
-            break;
+            auto &f = route.GetFunction();
+            if(f != nullptr)
+            {
+                if(f(request, response))
+                {
+                    break;
+                }
+            }
         }
     }
+
+    response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
+    response.Send(&m_server);
 }
+
+

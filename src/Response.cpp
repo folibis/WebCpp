@@ -1,11 +1,14 @@
+#include <fstream>
 #include "common.h"
+#include "FileSystem.h"
 #include "Response.h"
 
 
 using namespace WebCpp;
 
-Response::Response(const std::string &version)
+Response::Response(const std::string &version, int connID)
 {
+    m_connID = connID;
     m_version = version;
     InitDefault();
 }
@@ -30,6 +33,22 @@ void Response::Write(const std::string &data)
     Write(ByteArray(data.begin(), data.end()));
 }
 
+bool Response::SendFile(const std::string &file)
+{
+    bool retval = false;
+
+    if(FileSystem::IsFileExist(file))
+    {
+        std::string ext = FileSystem::ExtractFileExtension(file);
+        SetHeader(Response::HeaderType::ContentType, Response::Extension2MimeType(ext));
+        SetHeader(Response::HeaderType::ContentLength, std::to_string(FileSystem::GetFileSize(file)));
+        m_file = file;
+        retval = true;
+    }
+
+    return retval;
+}
+
 void Response::SetResponseCode(uint16_t code, const std::string &phrase)
 {
     m_responseCode = code;
@@ -39,6 +58,43 @@ void Response::SetResponseCode(uint16_t code, const std::string &phrase)
 uint16_t Response::GetResponseCode() const
 {
     return m_responseCode;
+}
+
+bool Response::Send(ICommunication *communication)
+{
+    ByteArray header;
+
+    const ByteArray &sl = BuildStatusLine();
+    header.insert(header.end(), sl.begin(), sl.end());
+    header.push_back(CR);
+    header.push_back(LF);
+
+    const ByteArray &hdr = BuildHeaders();
+    header.insert(header.end(), hdr.begin(), hdr.end());
+    header.push_back(CR);
+    header.push_back(LF);
+    header.push_back(CR);
+    header.push_back(LF);
+
+    communication->Write(m_connID, header);
+
+    if(!m_file.empty())
+    {
+        ByteArray buffer(1024);
+        std::ifstream stream(m_file, std::ios::binary);
+        do
+        {
+            stream.read(buffer.data(), 1024);
+            communication->Write(m_connID, buffer, stream.gcount());
+        }
+        while(stream);
+    }
+    else if(m_body.size() > 0)
+    {
+        communication->Write(m_connID, m_body);
+    }
+
+    return true;
 }
 
 std::string Response::HeaderType2String(Response::HeaderType headerType)
@@ -206,7 +262,107 @@ std::string Response::ResponseCode(int code)
     return "";
 }
 
+std::string Response::Extension2MimeType(const std::string &extension)
+{
+    switch(_(extension.c_str()))
+    {
+        case _("aac"):    return "audio/aac";
+        case _("abw"):    return "application/x-abiword";
+        case _("arc"):    return "application/x-freearc";
+        case _("avi"):    return "video/x-msvideo";
+        case _("azw"):    return "application/vnd.amazon.ebook";
+        case _("bin"):    return "application/octet-stream";
+        case _("bmp"):    return "image/bmp";
+        case _("bz"):     return "application/x-bzip";
+        case _("bz2"):    return "application/x-bzip2";
+        case _("csh"):    return "application/x-csh";
+        case _("css"):    return "text/css";
+        case _("csv"):    return "text/csv";
+        case _("doc"):    return "application/msword";
+        case _("docx"):   return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        case _("eot"):    return "application/vnd.ms-fontobject";
+        case _("epub"):   return "application/epub+zip";
+        case _("gz"):     return "application/gzip";
+        case _("gif"):    return "image/gif";
+        case _("htm"):    return "text/html";
+        case _("html"):   return "text/html";
+        case _("ico"):    return "image/vnd.microsoft.icon";
+        case _("ics"):    return "text/calendar";
+        case _("jar"):    return "application/java-archive";
+        case _("jpeg"):   return "image/jpeg";
+        case _("jpg"):    return "image/jpeg";
+        case _("js"):     return "text/javascript";
+        case _("json"):   return "application/json";
+        case _("jsonld"): return "application/ld+json";
+        case _("mid"):    return "audio/midi audio/x-midi";
+        case _("mjs"):    return "text/javascript";
+        case _("mp3"):    return "audio/mpeg";
+        case _("mpeg"):   return "video/mpeg";
+        case _("mpkg"):   return "application/vnd.apple.installer+xml";
+        case _("odp"):    return "application/vnd.oasis.opendocument.presentation";
+        case _("ods"):    return "application/vnd.oasis.opendocument.spreadsheet";
+        case _("odt"):    return "application/vnd.oasis.opendocument.text";
+        case _("oga"):    return "audio/ogg";
+        case _("ogv"):    return "video/ogg";
+        case _("ogx"):    return "application/ogg";
+        case _("opus"):   return "audio/opus";
+        case _("otf"):    return "font/otf";
+        case _("png"):    return "image/png";
+        case _("pdf"):    return "application/pdf";
+        case _("php"):    return "application/x-httpd-php";
+        case _("ppt"):    return "application/vnd.ms-powerpoint";
+        case _("pptx"):   return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        case _("rar"):    return "application/vnd.rar";
+        case _("rtf"):    return "application/rtf";
+        case _("sh"):     return "application/x-sh";
+        case _("svg"):    return "image/svg+xml";
+        case _("swf"):    return "application/x-shockwave-flash";
+        case _("tar"):    return "application/x-tar";
+        case _("tif"):    return "image/tiff";
+        case _("tiff"):   return "image/tiff";
+        case _("ts"):     return "video/mp2t";
+        case _("ttf"):    return "font/ttf";
+        case _("txt"):    return "text/plain";
+        case _("vsd"):    return "application/vnd.visio";
+        case _("wav"):    return "audio/wav";
+        case _("weba"):   return "audio/webm";
+        case _("webm"):   return "video/webm";
+        case _("webp"):   return "image/webp";
+        case _("woff"):   return "font/woff";
+        case _("woff2"):  return "font/woff2";
+        case _("xhtml"):  return "application/xhtml+xml";
+        case _("xls"):    return "application/vnd.ms-excel";
+        case _("xlsx"):   return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        case _("xml"):    return "application/xml";
+        case _("xul"):    return "application/vnd.mozilla.xul+xml";
+        case _("zip"):    return "application/zip";
+        case _("3gp"):    return "video/3gpp";
+        case _("3g2"):    return "video/3gpp2";
+        case _("7z"):     return "application/x-7z-compressed";
+    }
+
+    return "application/octet-stream";
+}
 void Response::InitDefault()
 {
     m_responseCode = 200;
+    m_mimeType = "text/plain";
+    SetHeader(Response::HeaderType::Server, WEBCPP_CANONICAL_NAME);
+}
+
+ByteArray Response::BuildStatusLine() const
+{
+    std::string statusLine = m_version + " " + std::to_string(m_responseCode) + " " + m_responsePhrase + CR + LF;
+    return ByteArray(statusLine.begin(), statusLine.end());
+}
+
+ByteArray Response::BuildHeaders() const
+{
+    std::string headers;
+    for(auto &pair: m_headers)
+    {
+        headers += pair.first + ": " + pair.second + CR + LF;
+    }
+
+    return ByteArray(headers.begin(), headers.end());
 }
