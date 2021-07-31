@@ -9,6 +9,10 @@ namespace WebCpp
 class FileSystem
 {
 public:
+    static std::string GetFullPath(const std::string &path);
+    static std::string GetApplicationFolder();
+    static void ChangeDir(const std::string &path);
+    static std::string NormalizePath(const std::string &path);
     static std::string ExtractFileName(const std::string &path);
     static std::string ExtractFileExtension(const std::string &path);
     static bool IsFileExist(const std::string &path);

@@ -5,6 +5,7 @@
 #include <map>
 #include "ICommunication.h"
 #include "common.h"
+#include "HttpConfig.h"
 
 
 namespace WebCpp
@@ -66,7 +67,7 @@ public:
         XFrameOptions,
     };
 
-    Response(const std::string &version, int connID);
+    Response(int connID, const HttpConfig& config);
     void SetHeader(Response::HeaderType header, const std::string &value);
     void SetHeader(const std::string &name, const std::string &value);
     void Write(const ByteArray &data);
@@ -89,6 +90,7 @@ protected:
 
 private:
     int m_connID;
+    const HttpConfig &m_config;
     std::string m_version;
     std::map<std::string, std::string> m_headers;
     ByteArray m_body;

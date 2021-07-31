@@ -9,6 +9,7 @@
 #include "Request.h"
 #include "Response.h"
 #include "Route.h"
+#include "HttpConfig.h"
 
 
 namespace WebCpp
@@ -25,8 +26,7 @@ public:
     HttpServer& Get(const std::string &path, const Route::RouteFunc &f);
     HttpServer& Post(const std::string &path, const Route::RouteFunc &f);
 
-    void SetRoot(const std::string &root);
-    std::string GetRoot() const;
+    void SetConfig(const HttpConfig &config);
 
 protected:
     void OnConnected(int connID);
@@ -65,7 +65,8 @@ private:
     bool m_requestThreadRunning = false;
     std::queue<RequestData> m_requestQueue;
     std::vector<Route> m_routes;
-    std::string m_root;
+
+    HttpConfig m_config;
 };
 
 }

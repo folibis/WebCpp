@@ -15,23 +15,28 @@ int main()
 
     if(server.Init())
     {
-
         server.Get("/", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
-            response.SetHeader("Content-Type","text/html");
-            response.Write("<h2>Main page</h2>");
+            response.SendFile("index.html");
             return true;
         });
 
-        server.Get("/user/{user:numeric}/[{action:alpha}/]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        server.Get("/user/{user:alpha}/[{action:alpha}/]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             std::string user = request.GetArg("user");
             if(user.empty())
             {
                 user = "Unknown";
             }
+            std::string action = request.GetArg("action");
+            if(action.empty())
+            {
+                action = "Hello!";
+            }
+
+
             response.SetHeader("Content-Type","text/html");
-            response.Write(std::string("<h2>Hello, ") + user + "</h2>");
+            response.Write(std::string("<h2>") + user + ", " + action + "</h2>");
             return true;
         });
 

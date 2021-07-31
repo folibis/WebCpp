@@ -1,4 +1,6 @@
 #include <sys/stat.h>
+#include <unistd.h>
+#include <linux/limits.h>
 #include <iostream>
 #include <ctime>
 #include "FileSystem.h"
@@ -6,6 +8,39 @@
 #define MAX_EXT_LENGTH 8
 
 using namespace WebCpp;
+
+std::string FileSystem::GetFullPath(const std::string &path)
+{
+    char buffer[PATH_MAX];
+    return realpath(path.c_str(), buffer);
+}
+
+std::string FileSystem::GetApplicationFolder()
+{
+    char buffer[PATH_MAX];
+    int len = readlink("/proc/self/exe", buffer, 250);
+    if(len >= 0)
+    {
+        return std::string(buffer, len);
+    }
+
+    return "";
+}
+
+void FileSystem::ChangeDir(const std::string &path)
+{
+    chdir(path.c_str());
+}
+
+std::string FileSystem::NormalizePath(const std::string &path)
+{
+    if(path.rfind(FileSystem::PathDelimiter()) != (path.length() - 1))
+    {
+        return path + FileSystem::PathDelimiter();
+    }
+
+    return path;
+}
 
 std::string FileSystem::ExtractFileName(const std::string& path)
 {

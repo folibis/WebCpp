@@ -6,10 +6,10 @@
 
 using namespace WebCpp;
 
-Response::Response(const std::string &version, int connID)
+Response::Response(int connID, const HttpConfig& config) :
+    m_connID(connID),
+    m_config(config)
 {
-    m_connID = connID;
-    m_version = version;
     InitDefault();
 }
 
@@ -36,13 +36,25 @@ void Response::Write(const std::string &data)
 bool Response::SendFile(const std::string &file)
 {
     bool retval = false;
+    std::string path;
 
     if(FileSystem::IsFileExist(file))
     {
-        std::string ext = FileSystem::ExtractFileExtension(file);
+        path = FileSystem::NormalizePath(FileSystem::GetApplicationFolder()) +
+                FileSystem::NormalizePath(m_config.GetRoot()) +
+                file;
+    }
+    else
+    {
+        path = file;
+    }
+
+    if(FileSystem::IsFileExist(path))
+    {
+        std::string ext = FileSystem::ExtractFileExtension(path);
         SetHeader(Response::HeaderType::ContentType, Response::Extension2MimeType(ext));
-        SetHeader(Response::HeaderType::ContentLength, std::to_string(FileSystem::GetFileSize(file)));
-        m_file = file;
+        SetHeader(Response::HeaderType::ContentLength, std::to_string(FileSystem::GetFileSize(path)));
+        m_file = path;
         retval = true;
     }
 
@@ -345,9 +357,10 @@ std::string Response::Extension2MimeType(const std::string &extension)
 }
 void Response::InitDefault()
 {
+    m_version = "HTTP/1.1";
     m_responseCode = 200;
     m_mimeType = "text/plain";
-    SetHeader(Response::HeaderType::Server, WEBCPP_CANONICAL_NAME);
+    SetHeader(Response::HeaderType::Server, m_config.GetServerName());
 }
 
 ByteArray Response::BuildStatusLine() const

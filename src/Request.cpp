@@ -5,10 +5,11 @@ using namespace WebCpp;
 
 Request::Header Request::Header::defaultHeader = Request::Header();
 
-Request::Request(int connID, const ByteArray &request)
+Request::Request(int connID, const ByteArray &request, const HttpConfig& config):
+    m_connID(connID),
+    m_config(config)
 {
-    m_connID = connID,
-            Init(request);
+    Init(request);
 }
 
 int Request::GetConnectionID() const

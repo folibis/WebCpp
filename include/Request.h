@@ -3,6 +3,8 @@
 
 #include <map>
 #include "common.h"
+#include "HttpConfig.h"
+
 
 namespace WebCpp
 {
@@ -74,7 +76,7 @@ public:
         static Request::Header defaultHeader;
     };
 
-    Request(int connID, const ByteArray &request);
+    Request(int connID, const ByteArray &request, const HttpConfig &config);
 
     int GetConnectionID() const;
     Request::Method GetMethod() const;
@@ -101,6 +103,7 @@ protected:
 
 private:
     int m_connID;
+    const HttpConfig &m_config;
     Request::Method m_method = Request::Method::Undefined;
     std::string m_uri = "";
     std::string m_path = "";

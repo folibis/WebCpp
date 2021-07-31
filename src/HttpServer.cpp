@@ -22,6 +22,8 @@ bool WebCpp::HttpServer::Init()
         return false;
     }
 
+    FileSystem::ChangeDir(FileSystem::GetApplicationFolder());
+
     auto f1 = std::bind(&HttpServer::OnConnected, this, std::placeholders::_1);
     m_server.SetNewConnectionCallback(f1);
     auto f2 = std::bind(&HttpServer::OnDataReady, this, std::placeholders::_1, std::placeholders::_2);
@@ -73,14 +75,9 @@ HttpServer &HttpServer::Post(const std::string &path, const Route::RouteFunc &f)
     return *this;
 }
 
-void HttpServer::SetRoot(const std::string &root)
+void HttpServer::SetConfig(const HttpConfig &config)
 {
-    m_root = root;
-}
-
-std::string HttpServer::GetRoot() const
-{
-    return m_root;
+    m_config = config;
 }
 
 void HttpServer::OnConnected(int connID)
@@ -158,12 +155,12 @@ Request HttpServer::GetNextRequest()
     RequestData requestData = m_requestQueue.front();
     m_requestQueue.pop();
 
-    return Request(requestData.connID, requestData.data);
+    return Request(requestData.connID, requestData.data, m_config);
 }
 
 void HttpServer::ProcessRequest(Request &request)
 {
-    Response response(request.GetVersion(), request.GetConnectionID());
+    Response response(request.GetConnectionID(), m_config);
     for(auto &route: m_routes)
     {
         if(route.IsMatch(request))
@@ -182,5 +179,3 @@ void HttpServer::ProcessRequest(Request &request)
     response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
     response.Send(&m_server);
 }
-
-
