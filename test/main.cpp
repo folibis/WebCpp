@@ -15,7 +15,7 @@ int main()
 
     if(server.Init())
     {
-        HttpConfig config;
+        WebCpp::HttpConfig config;
         config.SetRoot("/home/ruslan/source/webcpp/test/public");
         server.SetConfig(config);
 

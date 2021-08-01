@@ -12,6 +12,9 @@
     private: \
     TYPE m_##NAME = DEFAULT;
 
+namespace WebCpp
+{
+
 class HttpConfig
 {
 public:
@@ -21,5 +24,7 @@ public:
     PROPERTY(std::string, ServerName, WEBCPP_CANONICAL_NAME)
     PROPERTY(std::string, Root, "public")
 };
+
+}
 
 #endif // HTTPCONFIG_H

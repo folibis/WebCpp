@@ -49,7 +49,6 @@ if(ZLIB)
     #add zlib support
     add_subdirectory(external/${ZLIB_VERSION})
     target_link_libraries(${PROJECT_NAME} PUBLIC zlib)
-
 endif()
 
 add_executable(test test/main.cpp)
