@@ -14,7 +14,7 @@ set(ZLIB_HASH c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1)
 cmake_minimum_required(VERSION 3.11)
 set(CMAKE_CXX_STANDARD 11)
 
-project(WebCpp)
+project(webcpp)
 
 file(GLOB SRC . src/*.cpp)
 file(GLOB INC . include/*.h)
@@ -53,4 +53,4 @@ if(ZLIB)
 endif()
 
 add_executable(test test/main.cpp)
-target_link_libraries(test PRIVATE WebCpp)
+target_link_libraries(test PRIVATE ${PROJECT_NAME})

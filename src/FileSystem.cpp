@@ -27,9 +27,9 @@ std::string FileSystem::GetApplicationFolder()
     return "";
 }
 
-void FileSystem::ChangeDir(const std::string &path)
+bool FileSystem::ChangeDir(const std::string &path)
 {
-    chdir(path.c_str());
+    return (chdir(path.c_str()) == 0);
 }
 
 std::string FileSystem::NormalizePath(const std::string &path)
