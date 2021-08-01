@@ -1,5 +1,5 @@
-#ifndef COMMUNICATIONTCPSERVER_H
-#define COMMUNICATIONTCPSERVER_H
+#ifndef COMMUNICATION_TCP_SERVER_H
+#define COMMUNICATION_TCP_SERVER_H
 
 #include <poll.h>
 #include <pthread.h>
@@ -26,6 +26,7 @@ public:
     bool Write(int connID, const std::vector<char> &data, size_t size) override;
 
     bool WaitFor();
+    bool CloseClient(int connID);
 
     bool SetNewConnectionCallback(const std::function<void(int)> &callback);
     bool SetDataReadyCallback(const std::function<void(int, std::vector<char> &data)> &callback);
@@ -45,9 +46,8 @@ private:
     std::function<void(int, std::vector<char> &data)> m_dataReadyCallback = nullptr;
     std::function<void(int)> m_closeConnectionCallback = nullptr;
     char m_readBuffer[READ_BUFFER_SIZE];
-
 };
 
 }
 
-#endif // COMMUNICATIONTCPSERVER_H
+#endif // COMMUNICATION_TCP_SERVER_H

@@ -198,6 +198,20 @@ bool CommunicationTcpServer::WaitFor()
     return true;
 }
 
+bool CommunicationTcpServer::CloseClient(int connID)
+{
+    if(m_fds[connID].fd != (-1))
+    {
+        close(m_fds[connID].fd);
+        m_fds[connID].fd = (-1);
+        m_fds->events = 0;
+
+        return true;
+    }
+
+    return false;
+}
+
 
 void CommunicationTcpServer::CloseConnections()
 {

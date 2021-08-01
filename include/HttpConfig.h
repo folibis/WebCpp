@@ -23,6 +23,7 @@ public:
 
     PROPERTY(std::string, ServerName, WEBCPP_CANONICAL_NAME)
     PROPERTY(std::string, Root, "public")
+    PROPERTY(int, KeepAliveTimeout, 5)
 };
 
 }
