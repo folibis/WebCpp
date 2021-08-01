@@ -80,6 +80,16 @@ void HttpServer::SetConfig(const HttpConfig &config)
     m_config = config;
 }
 
+void HttpServer::SetPreRouteFunc(const Route::RouteFunc &callback)
+{
+    m_preRoute = callback;
+}
+
+void HttpServer::SetPostRouteFunc(const Route::RouteFunc &callback)
+{
+    m_postRoute = callback;
+}
+
 void HttpServer::OnConnected(int connID)
 {
     std::cout << "client connected: #" << connID << std:: endl;
@@ -160,20 +170,41 @@ Request HttpServer::GetNextRequest()
 
 void HttpServer::ProcessRequest(Request &request)
 {
+    bool processed = false;
+
     Response response(request.GetConnectionID(), m_config);
-    for(auto &route: m_routes)
+
+    if(m_preRoute != nullptr)
     {
-        if(route.IsMatch(request))
+        processed = m_preRoute(request, response);
+    }
+
+    if(processed == false)
+    {
+        for(auto &route: m_routes)
         {
-            auto &f = route.GetFunction();
-            if(f != nullptr)
+            if(route.IsMatch(request))
             {
-                if(f(request, response))
+                auto &f = route.GetFunction();
+                if(f != nullptr)
                 {
-                    break;
+                    if((processed = f(request, response)))
+                    {
+                        break;
+                    }
                 }
             }
         }
+    }
+
+    if(m_postRoute != nullptr)
+    {
+        processed = m_postRoute(request, response);
+    }
+
+    if(processed == false)
+    {
+        response.SendNotFound();
     }
 
     response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());

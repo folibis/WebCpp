@@ -3,6 +3,42 @@
 #include "FileSystem.h"
 #include "Response.h"
 
+#ifdef WITH_ZLIB
+int inflate(const void *src, int srcLen, void *dst, int dstLen) {
+    z_stream strm  = {0};
+    strm.total_in  = strm.avail_in  = srcLen;
+    strm.total_out = strm.avail_out = dstLen;
+    strm.next_in   = (Bytef *) src;
+    strm.next_out  = (Bytef *) dst;
+
+    strm.zalloc = Z_NULL;
+    strm.zfree  = Z_NULL;
+    strm.opaque = Z_NULL;
+
+    int err = -1;
+    int ret = -1;
+
+    err = inflateInit2(&strm, (15 + 32)); //15 window bits, and the +32 tells zlib to to detect if using gzip or zlib
+    if (err == Z_OK) {
+        err = inflate(&strm, Z_FINISH);
+        if (err == Z_STREAM_END) {
+            ret = strm.total_out;
+        }
+        else {
+            inflateEnd(&strm);
+            return err;
+        }
+    }
+    else {
+        inflateEnd(&strm);
+        return err;
+    }
+
+    inflateEnd(&strm);
+    return ret;
+}
+#endif
+
 
 using namespace WebCpp;
 
@@ -26,6 +62,7 @@ void Response::SetHeader(Response::HeaderType header, const std::string &value)
 void Response::Write(const ByteArray &data)
 {
     m_body.insert(m_body.end(), data.begin(), data.end());
+    SetHeader(Response::HeaderType::ContentLength, std::to_string(m_body.size()));
 }
 
 void Response::Write(const std::string &data)
@@ -33,16 +70,24 @@ void Response::Write(const std::string &data)
     Write(ByteArray(data.begin(), data.end()));
 }
 
-bool Response::SendFile(const std::string &file)
+bool Response::AddFile(const std::string &file, const std::string &charset)
 {
     bool retval = false;
     std::string path;
 
-    if(FileSystem::IsFileExist(file))
+    if(FileSystem::IsFileExist(file) == false)
     {
-        path = FileSystem::NormalizePath(FileSystem::GetApplicationFolder()) +
-                FileSystem::NormalizePath(m_config.GetRoot()) +
-                file;
+        std::string root = FileSystem::NormalizePath(m_config.GetRoot());
+        std::string root_full = FileSystem::NormalizePath(FileSystem::GetFullPath(root));
+        if(root != root_full)
+        {
+            path = FileSystem::NormalizePath(FileSystem::GetApplicationFolder()) + root;
+        }
+        else
+        {
+            path = root;
+        }
+        path = path + file;
     }
     else
     {
@@ -52,13 +97,31 @@ bool Response::SendFile(const std::string &file)
     if(FileSystem::IsFileExist(path))
     {
         std::string ext = FileSystem::ExtractFileExtension(path);
-        SetHeader(Response::HeaderType::ContentType, Response::Extension2MimeType(ext));
+        SetHeader(Response::HeaderType::ContentType, Response::Extension2MimeType(ext) + ";charset=" + charset);
         SetHeader(Response::HeaderType::ContentLength, std::to_string(FileSystem::GetFileSize(path)));
+        SetHeader(Response::HeaderType::LastModified, FileSystem::GetFileModifiedTime(path));
         m_file = path;
         retval = true;
     }
 
     return retval;
+}
+
+bool Response::SendNotFound()
+{
+    m_responseCode = 404;
+    m_responsePhrase = Response::ResponseCode(m_responseCode);
+    SetHeader(Response::HeaderType::ContentLength, "0");
+    return true;
+}
+
+bool Response::SendRedirect(const std::string &url)
+{
+    m_responseCode = 301;
+    m_responsePhrase = Response::ResponseCode(m_responseCode);
+    SetHeader(Response::HeaderType::Location, url);
+    SetHeader(Response::HeaderType::ContentLength, "0");
+    return true;
 }
 
 void Response::SetResponseCode(uint16_t code, const std::string &phrase)
@@ -78,13 +141,9 @@ bool Response::Send(ICommunication *communication)
 
     const ByteArray &sl = BuildStatusLine();
     header.insert(header.end(), sl.begin(), sl.end());
-    header.push_back(CR);
-    header.push_back(LF);
 
     const ByteArray &hdr = BuildHeaders();
     header.insert(header.end(), hdr.begin(), hdr.end());
-    header.push_back(CR);
-    header.push_back(LF);
     header.push_back(CR);
     header.push_back(LF);
 

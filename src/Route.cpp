@@ -1,6 +1,6 @@
+#include "common.h"
 #include "Route.h"
 
-#define FUNC_PTR(object,ptrToMember)  ((object)->*(ptrToMember))
 
 using namespace WebCpp;
 
@@ -89,8 +89,12 @@ bool Route::Parse(const std::string &path)
                 if(state == State::VariableType)
                 {
                     current.view = Token::String2View(str);
+                    AddToken(current, "");
                 }
-                AddToken(current, "");
+                else
+                {
+                    AddToken(current, str);
+                }
                 str = "";
                 state = State::Default;
                 break;
@@ -212,7 +216,9 @@ bool Route::Token::IsMatch(const char *ch, size_t length, size_t &pos)
 
 bool Route::Token::IsString(char ch) const
 {
-    return (IsAlpha(ch) || IsNumeric(ch));
+    static ByteArray allowed = { '.', '_', '-' };
+
+    return (IsAlpha(ch) || IsNumeric(ch) || contains(allowed, ch));
 }
 
 bool Route::Token::IsAlpha(char ch) const

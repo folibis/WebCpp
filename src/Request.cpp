@@ -101,6 +101,10 @@ void Request::ParseQuery()
             }
         }
     }
+    else
+    {
+        m_path = m_uri;
+    }
 }
 
 Request::Method Request::GetMethod() const

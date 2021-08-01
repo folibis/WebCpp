@@ -28,6 +28,9 @@ public:
 
     void SetConfig(const HttpConfig &config);
 
+    void SetPreRouteFunc(const Route::RouteFunc &callback);
+    void SetPostRouteFunc(const Route::RouteFunc &callback);
+
 protected:
     void OnConnected(int connID);
     void OnDataReady(int connID, std::vector<char> &data);
@@ -67,6 +70,8 @@ private:
     std::vector<Route> m_routes;
 
     HttpConfig m_config;
+    Route::RouteFunc m_preRoute = nullptr;
+    Route::RouteFunc m_postRoute = nullptr;
 };
 
 }

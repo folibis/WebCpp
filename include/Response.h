@@ -72,7 +72,9 @@ public:
     void SetHeader(const std::string &name, const std::string &value);
     void Write(const ByteArray &data);
     void Write(const std::string &data);
-    bool SendFile(const std::string &file);
+    bool AddFile(const std::string &file, const std::string &charset = "utf-8");
+    bool SendNotFound();
+    bool SendRedirect(const std::string &url);
 
     void SetResponseCode(uint16_t code, const std::string &phrase);
     uint16_t GetResponseCode() const;
@@ -96,8 +98,9 @@ private:
     ByteArray m_body;
     uint16_t m_responseCode = 200;
     std::string m_responsePhrase = "";
-    std::string m_mimeType = "";
-    std::string m_file = "";
+    std::string m_mimeType = "";   
+
+    std::string  m_file;
 };
 
 }

@@ -56,12 +56,12 @@ std::string FileSystem::ExtractFileName(const std::string& path)
 std::string FileSystem::ExtractFileExtension(const std::string &path)
 {
     size_t i = path.rfind('.', path.length());
-    if (i != std::string::npos && i < MAX_EXT_LENGTH)
+    if (i != std::string::npos && (path.length() - i) < MAX_EXT_LENGTH)
     {
         return(path.substr(i + 1, path.length() - i));
     }
 
-    return path;
+    return "";
 }
 
 bool FileSystem::IsFileExist(const std::string &path)
@@ -120,4 +120,20 @@ std::string FileSystem::GetDateTime()
     timeinfo = gmtime(t);
     strftime(buffer, 30, "%a, %d %b %Y %H:%M:%S GMT", timeinfo);
     return buffer;
+}
+
+std::string FileSystem::GetFileModifiedTime(const std::string &file)
+{
+    struct stat result;
+    if(stat(file.c_str(), &result) == 0)
+    {
+        auto mod_time = result.st_mtime;
+        const time_t *t = &mod_time;
+        struct tm * timeinfo = gmtime(t);
+        char buffer[30];
+        strftime(buffer, 30, "%a, %d %b %Y %H:%M:%S GMT", timeinfo);
+        return buffer;
+    }
+
+    return "";
 }

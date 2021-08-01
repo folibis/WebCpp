@@ -19,6 +19,7 @@ public:
     static int GetFileSize(const std::string &path);
     static char PathDelimiter();
     static std::string GetDateTime();
+    static std::string GetFileModifiedTime(const std::string &file);
 };
 
 }
