@@ -4,6 +4,8 @@
 
 
 option(ZLIB "Add zlib support" OFF)
+option(OPENSSL "Add openssl/https support" ON)
+
 set(ZLIB_URL https://zlib.net/)
 set(ZLIB_VERSION zlib-1.2.11)
 set(ZLIB_ARCHIVE zlib-1.2.11.tar.gz)
@@ -46,9 +48,16 @@ if(ZLIB)
         )
     endif()
 
-    #add zlib support
+    message(STATUS "Configure with zlib support")
     add_subdirectory(external/${ZLIB_VERSION})
-    target_link_libraries(${PROJECT_NAME} PUBLIC zlib)
+    target_link_libraries(${PROJECT_NAME} PRIVATE zlib)
+endif()
+
+if(OPENSSL)
+    message(STATUS "Configure with OpenSSL support")
+    add_definitions(-DWITH_OPENSSL)
+    find_package(OpenSSL REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL)
 endif()
 
 add_executable(test test/main.cpp)

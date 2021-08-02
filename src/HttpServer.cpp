@@ -1,8 +1,11 @@
 #include <iostream>
 #include "common.h"
+#include "CommunicationTcpServer.h"
+#include "CommunicationSslServer.h"
 #include "Lock.h"
 #include "FileSystem.h"
 #include "Request.h"
+#include "KeepAliveTimer.h"
 #include "HttpServer.h"
 
 
@@ -13,11 +16,33 @@ HttpServer::HttpServer()
 
 }
 
-bool WebCpp::HttpServer::Init()
+bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
 {
-    m_server.SetPort(8080);
+    m_config = config;
 
-    if(!m_server.Init())
+    m_protocol = HttpServer::String2Protocol(m_config.GetProtocol());
+
+    switch(m_protocol)
+    {
+        case Protocol::HTTP:
+            m_server.reset(new CommunicationTcpServer());
+            break;
+#ifdef WITH_OPENSSL
+        case Protocol::HTTPS:
+            m_server.reset(new CommunicationSslServer(m_config.GetSslSertificate(), m_config.GetSslKey()));
+            break;
+#endif
+        default: break;
+    }
+
+    if(m_server == nullptr)
+    {
+        return false;
+    }
+
+    m_server->SetPort(m_config.GetServerPort());
+
+    if(!m_server->Init())
     {
         return false;
     }
@@ -25,11 +50,11 @@ bool WebCpp::HttpServer::Init()
     FileSystem::ChangeDir(FileSystem::GetApplicationFolder());
 
     auto f1 = std::bind(&HttpServer::OnConnected, this, std::placeholders::_1);
-    m_server.SetNewConnectionCallback(f1);
+    m_server->SetNewConnectionCallback(f1);
     auto f2 = std::bind(&HttpServer::OnDataReady, this, std::placeholders::_1, std::placeholders::_2);
-    m_server.SetDataReadyCallback(f2);
+    m_server->SetDataReadyCallback(f2);
     auto f3 = std::bind(&HttpServer::OnClosed, this, std::placeholders::_1);
-    m_server.SetCloseConnectionCallback(f3);
+    m_server->SetCloseConnectionCallback(f3);
 
     m_requestThreadRunning = true;
     if(pthread_create(&m_requestThread, nullptr, &HttpServer::RequestThreadWrapper, this) != 0)
@@ -38,23 +63,31 @@ bool WebCpp::HttpServer::Init()
         return false;
     }
 
+    if(m_config.GetKeepAliveTimeout() != 0)
+    {
+        auto f = std::bind(&HttpServer::ProcessKeepAlive, this, std::placeholders::_1);
+        KeepAliveTimer::SetCallback(f);
+        KeepAliveTimer::run();
+    }
+
     return true;
 }
 
 bool HttpServer::Run()
 {
-    if(!m_server.Connect())
+    if(!m_server->Connect())
     {
         return false;
     }
 
-    m_server.WaitFor();
+    m_server->WaitFor();
     return true;
 }
 
 bool HttpServer::Close()
 {
-    m_server.Close();
+    m_server->Close();
+    KeepAliveTimer::stop();
     return true;
 }
 
@@ -75,11 +108,6 @@ HttpServer &HttpServer::Post(const std::string &path, const Route::RouteFunc &f)
     return *this;
 }
 
-void HttpServer::SetConfig(const HttpConfig &config)
-{
-    m_config = config;
-}
-
 void HttpServer::SetPreRouteFunc(const Route::RouteFunc &callback)
 {
     m_preRoute = callback;
@@ -88,6 +116,38 @@ void HttpServer::SetPreRouteFunc(const Route::RouteFunc &callback)
 void HttpServer::SetPostRouteFunc(const Route::RouteFunc &callback)
 {
     m_postRoute = callback;
+}
+
+HttpServer::Protocol HttpServer::GetProtocol() const
+{
+    return m_protocol;
+}
+
+HttpServer::Protocol HttpServer::String2Protocol(const std::string &str)
+{
+    std::string s = str;
+    toUpper(s);
+
+    switch(_(s.c_str()))
+    {
+        case _("HTTP"): return HttpServer::Protocol::HTTP;
+        case _("HTTPS"): return HttpServer::Protocol::HTTPS;
+        default: break;
+    }
+
+    return HttpServer::Protocol::Undefined;
+}
+
+std::string HttpServer::Protocol2String(HttpServer::Protocol protocol)
+{
+    switch(protocol)
+    {
+        case HttpServer::Protocol::HTTP: return "HTTP";
+        case HttpServer::Protocol::HTTPS: return "HTTPS";
+        default: break;
+    }
+
+    return "";
 }
 
 void HttpServer::OnConnected(int connID)
@@ -172,6 +232,11 @@ void HttpServer::ProcessRequest(Request &request)
 {
     bool processed = false;
 
+    if(m_config.GetKeepAliveTimeout() > 0)
+    {
+        KeepAliveTimer::SetTimer(m_config.GetKeepAliveTimeout(), request.GetConnectionID());
+    }
+
     Response response(request.GetConnectionID(), m_config);
 
     if(m_preRoute != nullptr)
@@ -208,5 +273,10 @@ void HttpServer::ProcessRequest(Request &request)
     }
 
     response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
-    response.Send(&m_server);
+    response.Send(m_server.get());
+}
+
+void HttpServer::ProcessKeepAlive(int connID)
+{
+    m_server->CloseClient(connID);
 }

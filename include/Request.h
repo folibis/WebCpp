@@ -90,6 +90,7 @@ public:
     const ByteArray &GetData() const;
     std::string GetArg(const std::string &name) const;
     void SetArg(const std::string &name, const std::string &value);
+    bool IsKeepAlive() const;
 
     static std::string Method2String(Request::Method method);
     static Request::Method String2Method(const std::string &str);

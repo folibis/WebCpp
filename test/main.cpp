@@ -13,12 +13,16 @@ int main()
 {
     signal(SIGINT, handle_sigint);
 
-    if(server.Init())
-    {
-        WebCpp::HttpConfig config;
-        config.SetRoot("/home/ruslan/source/webcpp/test/public");
-        server.SetConfig(config);
+    WebCpp::HttpConfig config;
+    config.SetRoot("/home/ruslan/source/webcpp/test/public");
+    config.SetProtocol("HTTPS");
+    config.SetServerPort(8888);
+    config.SetSslSertificate("/home/ruslan/source/webcpp/test/ssl/server.cert");
+    config.SetSslKey("/home/ruslan/source/webcpp/test/ssl/server.key");
+    //config.SetKeepAliveTimeout(0);
 
+    if(server.Init(config))
+    {
         server.Get("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;

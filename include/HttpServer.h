@@ -1,10 +1,11 @@
 #ifndef HTTPSERVER_H
 #define HTTPSERVER_H
 
-#include <CommunicationTcpServer.h>
+#include <ICommunicationServer.h>
 #include "common.h"
 #include <queue>
 #include <vector>
+#include <memory>
 #include <pthread.h>
 #include "Request.h"
 #include "Response.h"
@@ -18,18 +19,28 @@ namespace WebCpp
 class HttpServer
 {
 public:
+    enum class Protocol
+    {
+        Undefined = 0,
+        HTTP,
+        HTTPS,
+    };
+
     HttpServer();
-    bool Init();
+    bool Init(WebCpp::HttpConfig config);
     bool Run();
     bool Close();
 
     HttpServer& Get(const std::string &path, const Route::RouteFunc &f);
     HttpServer& Post(const std::string &path, const Route::RouteFunc &f);
 
-    void SetConfig(const HttpConfig &config);
-
     void SetPreRouteFunc(const Route::RouteFunc &callback);
     void SetPostRouteFunc(const Route::RouteFunc &callback);
+
+    Protocol GetProtocol() const;
+
+    static Protocol String2Protocol(const std::string &str);
+    static std::string Protocol2String(Protocol protocol);
 
 protected:
     void OnConnected(int connID);
@@ -45,6 +56,7 @@ protected:
     bool IsQueueEmpty();
     Request GetNextRequest();
     void ProcessRequest(Request &request);
+    void ProcessKeepAlive(int connID);
 
 private:
     struct RequestData
@@ -58,7 +70,9 @@ private:
         ByteArray data;
     };
 
-    CommunicationTcpServer m_server;
+    std::shared_ptr<ICommunicationServer> m_server = nullptr;
+    Protocol m_protocol = Protocol::Undefined;
+
     pthread_t m_requestThread;
 
     pthread_mutex_t m_queueMutex = PTHREAD_MUTEX_INITIALIZER;
