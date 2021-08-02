@@ -1,15 +1,16 @@
+#ifdef WITH_OPENSSL
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <stdexcept>
 #include <fcntl.h>
 #include <cstring>
+#include <stdexcept>
 #include <iostream>
 #include "common.h"
 #include "Lock.h"
-#include "CommunicationTcpServer.h"
+#include "CommunicationSslServer.h"
 
 #define QUEUE_SIZE 10
 #define POLL_TIMEOUT 1000 // milliseconds
@@ -18,18 +19,25 @@
 
 using namespace WebCpp;
 
-CommunicationTcpServer::CommunicationTcpServer() noexcept
+CommunicationSslServer::CommunicationSslServer(const std::string &cert, const std::string &key) noexcept:
+    m_cert(cert),
+    m_key(key)
 {
-    m_protocol = ICommunication::CommunicationProtocol::TCP;
-    m_type = ICommunication::ComminicationType::Server;
+
 }
 
-bool CommunicationTcpServer::Init()
+bool CommunicationSslServer::Init()
 {
-    bool retval;
-
+    bool retval = false;
     try
     {
+        retval = InitSSL();
+        if(retval == false)
+        {
+            SetLastError(std::string("SSL init error"));
+            throw std::runtime_error(GetLastError());
+        }
+
         m_socket = socket(AF_INET, SOCK_STREAM, 0);
         if(m_socket == ERROR)
         {
@@ -48,13 +56,13 @@ bool CommunicationTcpServer::Init()
     }
     catch(const std::exception &ex)
     {
-        std::cout << "CommunicationTcpServer::Init error: " << ex.what() << std::endl;
+        std::cout << "CommunicationSslServer::Init error: " << ex.what() << std::endl;
         CloseConnections();
         retval = false;
     }
     catch(...)
     {
-        std::cout << "CommunicationTcpServer::Init unexpected error" << std::endl;
+        std::cout << "CommunicationSslServer::Init unexpected error" << std::endl;
         CloseConnections();
         retval = false;
     }
@@ -62,7 +70,7 @@ bool CommunicationTcpServer::Init()
     return retval;
 }
 
-bool CommunicationTcpServer::Connect(const std::string &address)
+bool CommunicationSslServer::Connect(const std::string &address)
 {
     try
     {
@@ -108,7 +116,7 @@ bool CommunicationTcpServer::Connect(const std::string &address)
         m_fds[0].revents = 0;
 
         m_running = true;
-        if(pthread_create(&m_readThread, nullptr, &CommunicationTcpServer::ReadThreadWrapper, this) != 0)
+        if(pthread_create(&m_readThread, nullptr, &CommunicationSslServer::ReadThreadWrapper, this) != 0)
         {
             SetLastError(strerror(errno), errno);
             m_running = false;
@@ -130,7 +138,7 @@ bool CommunicationTcpServer::Connect(const std::string &address)
     }
 }
 
-bool CommunicationTcpServer::Close(bool wait)
+bool CommunicationSslServer::Close(bool wait)
 {
     if(m_running == true)
     {
@@ -141,17 +149,20 @@ bool CommunicationTcpServer::Close(bool wait)
         }
 
         CloseConnections();
+
+        SSL_CTX_free(m_ctx);
+        EVP_cleanup();
     }
 
     return true;
 }
 
-bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data)
+bool CommunicationSslServer::Write(int connID, const std::vector<char> &data)
 {
     return Write(connID, data, data.size());
 }
 
-bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, size_t size)
+bool CommunicationSslServer::Write(int connID, const std::vector<char> &data, size_t size)
 {
     bool retval = false;
     Lock lock(m_writeMutex);
@@ -164,8 +175,10 @@ bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, si
             while(size > 0)
             {
                 size_t s = size > WRITE_MAX_SIZE ? WRITE_MAX_SIZE : size;
-                ssize_t sent = send(fd, data.data() + written, s, 0);
-                if(sent == ERROR)
+                SSL *ssl = m_sslClient[connID];
+                int sent = SSL_write(ssl, data.data() + written, s);
+
+                if(sent <= 0)
                 {
                     CloseClient(connID);
                     retval = false;
@@ -188,13 +201,13 @@ bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, si
     return retval;
 }
 
-bool CommunicationTcpServer::WaitFor()
+bool CommunicationSslServer::WaitFor()
 {
     pthread_join(m_readThread, nullptr);
     return true;
 }
 
-bool CommunicationTcpServer::CloseClient(int connID)
+bool CommunicationSslServer::CloseClient(int connID)
 {
     if(m_fds[connID].fd != (-1))
     {
@@ -202,6 +215,11 @@ bool CommunicationTcpServer::CloseClient(int connID)
         m_fds[connID].fd = (-1);
         m_fds[connID].events = 0;
         m_fds[connID].revents = 0;
+
+        SSL *ssl = m_sslClient[connID];
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+        m_sslClient[connID] = nullptr;
 
         if(m_closeConnectionCallback != nullptr)
         {
@@ -214,8 +232,47 @@ bool CommunicationTcpServer::CloseClient(int connID)
     return false;
 }
 
+bool CommunicationSslServer::InitSSL()
+{
+    bool retval = false;
+    try
+    {
+        SSL_load_error_strings();
+        OpenSSL_add_ssl_algorithms();
 
-void CommunicationTcpServer::CloseConnections()
+        const SSL_METHOD *method;
+
+        method = SSLv23_server_method();
+
+        m_ctx = SSL_CTX_new(method);
+        if (!m_ctx)
+        {
+            throw std::runtime_error("Unable to create SSL context");
+        }
+
+        SSL_CTX_set_ecdh_auto(ctx, 1);
+
+        if (SSL_CTX_use_certificate_file(m_ctx, m_cert.c_str(), SSL_FILETYPE_PEM) <= 0)
+        {
+            throw std::runtime_error("Unable to init certificate file");
+        }
+
+        if (SSL_CTX_use_PrivateKey_file(m_ctx, m_key.c_str(), SSL_FILETYPE_PEM) <= 0 )
+        {
+            throw std::runtime_error("Unable to init private key file");
+        }
+
+        retval = true;
+    }
+    catch(...)
+    {
+        retval = false;
+    }
+
+    return retval;
+}
+
+void CommunicationSslServer::CloseConnections()
 {
     try
     {
@@ -228,9 +285,9 @@ void CommunicationTcpServer::CloseConnections()
     { }
 }
 
-void *CommunicationTcpServer::ReadThreadWrapper(void *ptr)
+void *CommunicationSslServer::ReadThreadWrapper(void *ptr)
 {
-    CommunicationTcpServer *instance = static_cast<CommunicationTcpServer *>(ptr);
+    CommunicationSslServer *instance = static_cast<CommunicationSslServer *>(ptr);
     if(instance != nullptr)
     {
         return instance->ReadThread();
@@ -239,7 +296,7 @@ void *CommunicationTcpServer::ReadThreadWrapper(void *ptr)
     return nullptr;
 }
 
-void *CommunicationTcpServer::ReadThread()
+void *CommunicationSslServer::ReadThread()
 {
     int retval = (-1);
 
@@ -274,8 +331,43 @@ void *CommunicationTcpServer::ReadThread()
                             {
                                 if(m_fds[j].fd == (-1))
                                 {
+                                    SSL *ssl;
+                                    ssl = SSL_new(m_ctx);
+                                    SSL_set_fd(ssl, new_socket);
+                                    bool isContinue = true;
+                                    bool isError = false;
+
+                                    while(isContinue)
+                                    {
+                                        int ret = SSL_accept(ssl);
+                                        if(ret <= 0)
+                                        {
+                                            int errorCode = SSL_get_error(ssl, ret);
+                                            if (errorCode == SSL_ERROR_WANT_READ)
+                                            {
+                                                isContinue = true;
+                                            }
+                                            else
+                                            {
+                                                isContinue = false;
+                                                SSL_shutdown(ssl);
+                                                SSL_free(ssl);
+                                                close(new_socket);
+                                                isError = true;
+                                                break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            isError = false;
+                                            break;
+                                        }
+                                    }
+
                                     m_fds[j].fd = new_socket;
                                     m_fds[j].events = POLLIN;
+                                    m_sslClient[j] = ssl;
+
                                     if(m_newConnectionCallback != nullptr)
                                     {
                                         m_newConnectionCallback(j);
@@ -291,23 +383,22 @@ void *CommunicationTcpServer::ReadThread()
                             ByteArray data;
                             do
                             {
-                                retval = recv(m_fds[i].fd, m_readBuffer, READ_BUFFER_SIZE, 0);
-                                if (retval < 0)
+                                SSL *ssl = m_sslClient[i];
+                                retval = SSL_read(ssl, m_readBuffer, READ_BUFFER_SIZE);
+                                if (retval <= 0)
                                 {
-                                    readMore = false;
-                                    if (errno != EWOULDBLOCK)
+                                    int errorCode = SSL_get_error(ssl, retval);
+                                    if (errorCode == SSL_ERROR_WANT_READ)
                                     {
+                                        readMore = false;
+                                        isError = false;
+                                    }
+                                    else
+                                    {
+                                        readMore = false;
                                         isError = true;
                                         CloseClient(i);
                                     }
-                                    break;
-                                }
-                                else if(retval == 0) // the peer connection probably has closed
-                                {
-                                    readMore = false;
-                                    isError = true;
-                                    CloseClient(i);
-                                    break;
                                 }
                                 else
                                 {
@@ -336,3 +427,5 @@ void *CommunicationTcpServer::ReadThread()
 
     return nullptr;
 }
+
+#endif

@@ -37,7 +37,7 @@ public:
 
     virtual bool Init() = 0;
     virtual bool Connect(const std::string &address = "") = 0;
-    virtual bool Close(bool wait) = 0;
+    virtual bool Close(bool wait = false) = 0;
     virtual bool Write(int connID, const std::vector<char> &data) = 0;
     virtual bool Write(int connID, const std::vector<char> &data, size_t size) = 0;
 
