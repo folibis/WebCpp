@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <map>
+#include <algorithm>
 #include "Request.h"
 #include "Response.h"
 
@@ -28,6 +29,7 @@ protected:
         {
             Default = 0,
             Variable,
+            Group,
         };
         enum class View
         {
@@ -40,6 +42,7 @@ protected:
         };
 
         std::string text = "";
+        std::vector<std::string> group;
         Type type = Type::Default;
         View view = View::Default;
         bool optional = false;
@@ -54,11 +57,26 @@ protected:
             text = "";
             type = Type::Default;
             view = View::Default;
+            group.clear();
+            group.shrink_to_fit();
         }
         bool IsEmpty()
         {
-            return text.empty();
+            return (text.empty() && group.size() == 0);
         }
+        void SortGroup()
+        {
+            std::sort(group.begin(), group.end(), [](const std::string& first, const std::string& second)
+            {
+                if(first.size() != second.size())
+                {
+                    return first.size() > second.size();
+                }
+                return first > second;
+
+            });
+        }
+
         bool IsMatch(const char *ch, size_t length, size_t& pos);
         bool IsString(char ch) const;
         bool IsAlpha(char ch) const;
@@ -77,6 +95,7 @@ private:
         Variable,
         Optional,
         VariableType,
+        OrGroup,
     };
 
     RouteFunc m_func;

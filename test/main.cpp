@@ -19,10 +19,9 @@ int main()
     config.SetServerPort(8888);
     config.SetSslSertificate("/home/ruslan/source/webcpp/test/ssl/server.cert");
     config.SetSslKey("/home/ruslan/source/webcpp/test/ssl/server.key");
-    //config.SetKeepAliveTimeout(0);
 
     if(server.Init(config))
-    {
+    {        
         server.Get("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;
@@ -42,9 +41,9 @@ int main()
             }
 
             return retval;
-        });
+        });        
 
-        server.Get("/user/{user:alpha}/[{action:alpha}/]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        server.Get("/(user|users)/{user:alpha}/[{action:alpha}/]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             std::string user = request.GetArg("user");
             if(user.empty())

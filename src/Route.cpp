@@ -124,6 +124,23 @@ bool Route::Parse(const std::string &path)
                     str += ch[i];
                 }
                 break;
+            case '(':
+                AddToken(current, str);
+                str = "";
+                state = State::OrGroup;
+                current.type = Token::Type::Group;
+                break;
+            case '|':
+                current.group.push_back(str);
+                str = "";
+                break;
+            case ')':
+                current.group.push_back(str);
+                current.SortGroup();
+                str = "";
+                state = State::Default;
+                AddToken(current, "");
+                break;
             default:
                 str += ch[i];
         }
@@ -169,45 +186,60 @@ bool Route::Token::IsMatch(const char *ch, size_t length, size_t &pos)
             }
             break;
         case Type::Variable:
-
-            bool(Route::Token::*fptr)(char) const = &Route::Token::IsString;
-
-            switch(view)
             {
-                case View::Alpha:
-                    fptr = &Route::Token::IsAlpha;
-                    break;
-                case View::Numeric:
-                    fptr = &Route::Token::IsNumeric;
-                    break;
-                case View::String:
-                    fptr = &Route::Token::IsString;
-                    break;
-                case View::Upper:
-                    fptr = &Route::Token::IsUpper;
-                    break;
-                case View::Lower:
-                    fptr = &Route::Token::IsLower;
-                    break;
-                default: break;
+                bool(Route::Token::*fptr)(char) const = &Route::Token::IsString;
+
+                switch(view)
+                {
+                    case View::Alpha:
+                        fptr = &Route::Token::IsAlpha;
+                        break;
+                    case View::Numeric:
+                        fptr = &Route::Token::IsNumeric;
+                        break;
+                    case View::String:
+                        fptr = &Route::Token::IsString;
+                        break;
+                    case View::Upper:
+                        fptr = &Route::Token::IsUpper;
+                        break;
+                    case View::Lower:
+                        fptr = &Route::Token::IsLower;
+                        break;
+                    default: break;
+                }
+
+                auto f = std::mem_fn(fptr);
+                size_t i = 0;
+                for(i = 0;i < length;i ++)
+                {
+                    if(f(this, ch[i]) == false)
+                    {
+                        break;
+                    }
+                }
+
+                retval = (i > 0);
+                if(retval)
+                {
+                    pos = i;
+                }
             }
-
-            auto f = std::mem_fn(fptr);
-            size_t i = 0;
-            for(i = 0;i < length;i ++)
+            break;
+        case Type::Group:
+            for(auto &str: group)
             {
-                if(f(this, ch[i]) == false)
-                {                    
+                if(str.length() > length)
+                {
+                    continue;
+                }
+                if(compare(ch, str.data(), str.length()))
+                {
+                    pos = str.length();
+                    retval = true;
                     break;
                 }
             }
-
-            retval = (i > 0);
-            if(retval)
-            {
-                pos = i;
-            }
-
             break;
     }
 
