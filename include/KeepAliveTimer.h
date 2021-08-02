@@ -1,12 +1,12 @@
 /**************************************************************************
-/// @brief The GlobalTimer class
+/// @brief The KeepAliveTimer class
 /// @author ruslan@muhlinin.com
 /// @date August 1, 2021
 /// @details The class that handles multiple timers
 **************************************************************************/
 
-#ifndef GLOBAL_TIMER_H
-#define GLOBAL_TIMER_H
+#ifndef KEEP_ALIVE_TIMER_H
+#define KEEP_ALIVE_TIMER_H
 
 #include <functional>
 #include <vector>
@@ -16,14 +16,14 @@
 namespace WebCpp
 {
 
-class GlobalTimer final
+class KeepAliveTimer final
 {
 public:
-    ~GlobalTimer();
+    ~KeepAliveTimer();
     static void run();
     static void stop();
-    static uint32_t addCallback(uint32_t delay, std::function<void (void)> callback);
-    static void updateDelay(uint32_t pos, uint32_t delay);
+    static void SetCallback(std::function<void(int)> callback);
+    static void SetTimer(uint32_t delay, int connID);
 
 protected:
     static void *task(bool *);
@@ -31,13 +31,12 @@ protected:
 private:
     struct Timer
     {
-        uint32_t pos;
+        int connID;
         int ticks;
         int remain;
-        std::function<void (void)> callback;
     };
 
-    static uint32_t m_pos;
+    static std::function<void(int)> m_callback;
     static PeriodicalTask m_task;
     static std::vector<Timer> m_timers;
     static pthread_mutex_t m_mutex;
@@ -45,4 +44,4 @@ private:
 
 }
 
-#endif // GLOBAL_TIMER_H
+#endif // KEEP_ALIVE_TIMER_H
