@@ -21,7 +21,32 @@ int main()
     config.SetSslKey("/home/ruslan/source/webcpp/test/ssl/server.key");
 
     if(server.Init(config))
-    {        
+    {
+        server.Get("/form", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        {
+            bool retval = false;
+
+            retval = response.AddFile("form.html");
+
+            if(retval == false)
+            {
+                response.SendNotFound();
+            }
+
+            return retval;
+        });
+
+        server.Post("/form", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        {
+            bool retval = true;
+
+            response.SetHeader("Content-Type","text/html;charset=utf-8");
+            response.Write("<div>Ok</div>");
+
+            return retval;
+        });
+
+
         server.Get("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;

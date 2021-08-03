@@ -20,11 +20,13 @@ int Request::GetConnectionID() const
 void Request::Init(const ByteArray &data)
 {
     size_t pos;
-    if(look_for(data, { CRLFCRLF }, pos))
-    {
-        m_data = ByteArray(pos, data.size());
+    ByteArray delimiter { { CRLFCRLF } };
+    if(look_for(data, delimiter, pos))
+    {        
         auto arr = split(data, { CRLF }, pos);
         ParseHeaders(arr);
+        auto body = ByteArray(data.begin() + pos + delimiter.size(), data.end());
+        ParseBody(body);
     }
     else
     {
@@ -107,6 +109,12 @@ void Request::ParseQuery()
     }
 }
 
+void Request::ParseBody(const ByteArray &data)
+{
+    auto contentType = GetHeader(Request::HeaderType::ContentType);
+    m_requestBody.Parse(data, contentType);
+}
+
 Request::Method Request::GetMethod() const
 {
     return m_method;
@@ -127,30 +135,30 @@ const std::vector<Request::Header> &Request::GetHeaders() const
     return m_headers;
 }
 
-const Request::Header &Request::GetHeader(Request::HeaderType headerType) const
+std::string Request::GetHeader(Request::HeaderType headerType) const
 {
     for(auto &header: m_headers)
     {
         if(header.type == headerType)
         {
-            return header;
+            return header.value;
         }
     }
 
-    return Request::Header::defaultHeader;
+    return "";
 }
 
-const Request::Header &Request::GetHeader(const std::string &headerType) const
+std::string Request::GetHeader(const std::string &headerType) const
 {
     for(auto &header: m_headers)
     {
         if(header.name == headerType)
         {
-            return header;
+            return header.value;
         }
     }
 
-    return Request::Header::defaultHeader;
+    return "";
 }
 
 std::string Request::GetVersion() const
@@ -166,6 +174,11 @@ std::string Request::GetHost() const
 const ByteArray& Request::GetData() const
 {
     return m_data;
+}
+
+const RequestBody &Request::GetRequestBody() const
+{
+    return m_requestBody;
 }
 
 void Request::SetArg(const std::string &name, const std::string &value)

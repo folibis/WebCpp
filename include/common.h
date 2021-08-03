@@ -44,6 +44,7 @@ std::vector<ByteArray> split(const ByteArray &str, const ByteArray delimiter, si
 ByteArray trim(ByteArray &str, const ByteArray &chars = { ' ',CRLF,'\t' });
 bool contains(const ByteArray &str, char ch);
 bool look_for(const ByteArray &str, const ByteArray &search, size_t &position, size_t start = 0);
+bool look_for(const std::string &str, const std::string &search, size_t &position, size_t start = 0);
 
 bool compare(const char *ch1, const char *ch2, size_t size);
 

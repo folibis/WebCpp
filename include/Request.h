@@ -4,6 +4,7 @@
 #include <map>
 #include "common.h"
 #include "HttpConfig.h"
+#include "RequestBody.h"
 
 
 namespace WebCpp
@@ -83,11 +84,12 @@ public:
     std::string GetUri() const;
     std::string GetPath() const;
     const std::vector<Header>& GetHeaders() const;
-    const Header& GetHeader(Request::HeaderType headerType) const;
-    const Header& GetHeader(const std::string& headerType) const;
+    std::string GetHeader(Request::HeaderType headerType) const;
+    std::string GetHeader(const std::string& headerType) const;
     std::string GetVersion() const;
     std::string GetHost() const;
     const ByteArray &GetData() const;
+    const RequestBody& GetRequestBody() const;
     std::string GetArg(const std::string &name) const;
     void SetArg(const std::string &name, const std::string &value);
     bool IsKeepAlive() const;
@@ -101,6 +103,7 @@ protected:
     void Init(const ByteArray &data);
     bool ParseHeaders(std::vector<ByteArray> &arr);    
     void ParseQuery();
+    void ParseBody(const ByteArray &data);
 
 private:
     int m_connID;
@@ -114,6 +117,7 @@ private:
     ByteArray m_data;
     std::map<std::string, std::string> m_args;
     std::map<std::string, std::string> m_query;
+    RequestBody m_requestBody;
 };
 
 }

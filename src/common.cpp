@@ -160,6 +160,19 @@ bool look_for(const ByteArray &str, const ByteArray &search, size_t &position, s
     return false;
 }
 
+bool look_for(const std::string &str, const std::string &search, size_t &position, size_t start)
+{
+    auto pos = str.find(search, start);
+    if(pos != std::string::npos)
+    {
+        position = pos;
+        return true;
+    }
+
+    return false;
+}
+
+
 void toLower(std::string &str)
 {
     std::transform(str.begin(), str.end(), str.begin(),[](unsigned char c)
@@ -189,3 +202,4 @@ bool compare(const char *ch1, const char *ch2, size_t size)
 
     return true;
 }
+
