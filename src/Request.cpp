@@ -114,7 +114,7 @@ void Request::ParseQuery()
 void Request::ParseBody(const ByteArray &data)
 {
     auto contentType = GetHeader(Request::HeaderType::ContentType);
-    m_requestBody.Parse(data, contentType);
+    m_requestBody.Parse(data, ByteArray(contentType.begin(), contentType.end()));
 }
 
 Request::Method Request::GetMethod() const

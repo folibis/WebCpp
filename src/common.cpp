@@ -203,3 +203,9 @@ bool compare(const char *ch1, const char *ch2, size_t size)
     return true;
 }
 
+
+bool look_for(const ByteArray &str, const std::string &search, size_t &position, size_t start)
+{
+    auto arr = ByteArray(search.begin(), search.end());
+    return look_for(str, arr, position, start);
+}
