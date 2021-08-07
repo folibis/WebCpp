@@ -33,7 +33,7 @@ std::vector<std::string> split(const std::string &str, const char delimiter);
 std::string &ltrim(std::string &str, const std::string &chars);
 std::string &rtrim(std::string &str, const std::string &chars);
 std::string &trim(std::string &str, const std::string &chars = " \r\n\t");
-bool string2int(const std::string &str, int &value);
+bool string2int(const std::string &str, int &value, int base = 10);
 void toLower(std::string &str);
 void toUpper(std::string &str);
 

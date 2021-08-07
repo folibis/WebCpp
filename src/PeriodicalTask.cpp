@@ -22,11 +22,12 @@ void PeriodicalTask::Start()
     if(m_isRunning)
         return;
 
+    ClearError();
     m_isRunning = true;
 
     if(pthread_create( &m_thread, nullptr, PeriodicalTask::StartThread, this) != 0)
     {
-        perror("PeriodicalTask: failed to starting a thread");
+        SetLastError("failed to starting a thread");
     }
 }
 

@@ -18,6 +18,7 @@ HttpServer::HttpServer()
 
 bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
 {
+    ClearError();
     m_config = config;
 
     m_protocol = HttpServer::String2Protocol(m_config.GetProtocol());
@@ -32,11 +33,13 @@ bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
             m_server.reset(new CommunicationSslServer(m_config.GetSslSertificate(), m_config.GetSslKey()));
             break;
 #endif
-        default: break;
+        default:
+            break;
     }
 
     if(m_server == nullptr)
     {
+        SetLastError("protocol isn't set or not implemented");
         return false;
     }
 
@@ -44,6 +47,7 @@ bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
 
     if(!m_server->Init())
     {
+        SetLastError("HttpServer init failed");
         return false;
     }
 
@@ -59,6 +63,7 @@ bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
     m_requestThreadRunning = true;
     if(pthread_create(&m_requestThread, nullptr, &HttpServer::RequestThreadWrapper, this) != 0)
     {
+        SetLastError("failed to run request thread");
         m_requestThreadRunning = false;
         return false;
     }

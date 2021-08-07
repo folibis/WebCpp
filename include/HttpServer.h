@@ -7,6 +7,7 @@
 #include <vector>
 #include <memory>
 #include <pthread.h>
+#include "IError.h"
 #include "Request.h"
 #include "Response.h"
 #include "Route.h"
@@ -16,7 +17,7 @@
 namespace WebCpp
 {
 
-class HttpServer
+class HttpServer: public IError
 {
 public:
     enum class Protocol

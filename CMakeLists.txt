@@ -4,7 +4,7 @@
 
 
 option(ZLIB "Add zlib support" OFF)
-option(OPENSSL "Add openssl/https support" ON)
+option(OPENSSL "Add openssl/https support" OFF)
 
 set(ZLIB_URL https://zlib.net/)
 set(ZLIB_VERSION zlib-1.2.11)

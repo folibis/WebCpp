@@ -34,11 +34,11 @@ std::string &trim(std::string &str, const std::string &chars)
     return ltrim(rtrim(str, chars), chars);
 }
 
-bool string2int(const std::string &str, int &value)
+bool string2int(const std::string &str, int &value, int base)
 {
     try
     {
-        value = std::stoi(str);
+        value = std::stoi(str, 0, base);
         return true;
     }
     catch(...)

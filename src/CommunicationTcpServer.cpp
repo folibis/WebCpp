@@ -9,6 +9,7 @@
 #include <iostream>
 #include "common.h"
 #include "Lock.h"
+#include "Print.h"
 #include "CommunicationTcpServer.h"
 
 #define QUEUE_SIZE 10
@@ -48,13 +49,13 @@ bool CommunicationTcpServer::Init()
     }
     catch(const std::exception &ex)
     {
-        std::cout << "CommunicationTcpServer::Init error: " << ex.what() << std::endl;
+        Print() << "CommunicationTcpServer::Init error: " << ex.what() << std::endl;
         CloseConnections();
         retval = false;
     }
     catch(...)
     {
-        std::cout << "CommunicationTcpServer::Init unexpected error" << std::endl;
+        Print() << "CommunicationTcpServer::Init unexpected error" << std::endl;
         CloseConnections();
         retval = false;
     }
@@ -118,13 +119,13 @@ bool CommunicationTcpServer::Connect(const std::string &address)
     }
     catch(const std::exception &ex)
     {
-        std::cout << "CommunicationTcpServer::Connect error: " << ex.what() << std::endl;
+        Print() << "CommunicationTcpServer::Connect error: " << ex.what() << std::endl;
         CloseConnections();
         return false;
     }
     catch(...)
     {
-        std::cout << "CommunicationTcpServer::Connect unexpected error" << std::endl;
+        Print() << "CommunicationTcpServer::Connect unexpected error" << std::endl;
         CloseConnections();
         return false;
     }
@@ -181,7 +182,7 @@ bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, si
     }
     catch(const std::exception &ex)
     {
-        std::cout << "CommunicationTcpServer::Write: " << ex.what() << std::endl;
+        Print() << "CommunicationTcpServer::Write: " << ex.what() << std::endl;
         retval = false;
     }
 
@@ -331,7 +332,7 @@ void *CommunicationTcpServer::ReadThread()
     }
     catch(...)
     {
-        std::cout << "critical unexpected error occured in the read thread" << std::endl;
+        Print() << "critical unexpected error occured in the read thread" << std::endl;
     }
 
     return nullptr;

@@ -1,6 +1,7 @@
 #include <signal.h>
 #include "HttpServer.h"
-
+#include "Request.h"
+#include <string>
 
 static WebCpp::HttpServer server;
 
@@ -12,6 +13,9 @@ void handle_sigint(int)
 int main()
 {
     signal(SIGINT, handle_sigint);
+
+    std::string q = "home?a=2&value=%7Bxyz%7D&name=Ruslan%20Muhlinin";
+    WebCpp::Request::UrlDecode(q);
 
     WebCpp::HttpConfig config;
     config.SetRoot("/home/ruslan/source/webcpp/test/public");

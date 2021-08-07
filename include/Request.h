@@ -98,6 +98,7 @@ public:
     static Request::Method String2Method(const std::string &str);
     static std::string HeaderType2String(Request::HeaderType headerType);
     static Request::HeaderType String2HeaderType(const std::string &str);
+    static void UrlDecode(std::string &str);
 
 protected:
     void Init(const ByteArray &data);

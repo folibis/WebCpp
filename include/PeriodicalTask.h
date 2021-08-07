@@ -11,11 +11,13 @@
 #include <pthread.h>
 #include <functional>
 #include <unistd.h>
+#include "IError.h"
+
 
 namespace WebCpp
 {
 
-class PeriodicalTask
+class PeriodicalTask: public IError
 {
 public:
     PeriodicalTask();
