@@ -1,4 +1,6 @@
+#include "common.h"
 #include "RequestBody.h"
+
 
 using namespace WebCpp;
 
@@ -32,7 +34,7 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
                     std::string contentType,name,filename;
 
                     auto chunkHeader = ByteArray(chunk.begin(), chunk.begin() + pos);
-                    auto chunkData = ByteArray(chunk.begin() + pos + 4, chunk.end() - 2); // remove trailing CRLF (2 bytes)
+                    auto chunkData = ByteArray(chunk.begin() + pos + 4, chunk.end() - 2); // remove 2*CRLF + trailing CRLF
                     auto chunkHeaders = ParseHeaders(chunkHeader);
                     contentType = GetHeader("Content-Type", chunkHeaders);
                     auto contentDisposition = GetHeader("Content-Disposition", chunkHeaders);
@@ -60,13 +62,14 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
         {
             auto pair = split(line, '&');
             if(pair.size() > 0)
-            {
+            {                
                 std::string name(pair[0].begin(), pair[0].end());
                 std::string value = pair.size() > 1 ? std::string(pair[1].begin(), pair[1].end()) : "";
+                urlDecode(name);
+                urlDecode(value);
                 m_values.push_back(ContentValue {
                                        name,
-                                       std::string(contentType.begin(),
-                                       contentType.end()),
+                                       std::string(contentType.begin(), contentType.end()),
                                        value,
                                        {} });
             }
@@ -78,8 +81,7 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
         m_contentType = ContentType::Text;
         m_values.push_back(ContentValue {
                                "",
-                               std::string(contentType.begin(),
-                               contentType.end()),
+                               std::string(contentType.begin(), contentType.end()),
                                "",
                                data });
         retval = true;

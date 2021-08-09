@@ -99,8 +99,8 @@ void Request::ParseQuery()
             auto parr = split(token, '=');
             if(parr.size() == 2)
             {
-                UrlDecode(parr[0]);
-                UrlDecode(parr[1]);
+                urlDecode(parr[0]);
+                urlDecode(parr[1]);
                 m_query[parr[0]] = parr[1];
             }
         }
@@ -333,21 +333,4 @@ Request::HeaderType Request::String2HeaderType(const std::string &str)
     }
 
     return Request::HeaderType::Undefined;
-}
-
-void Request::UrlDecode(std::string &str)
-{
-    size_t from = 0;
-    while((from = str.find('%', from)) != std::string::npos)
-    {
-        std::string value(str.begin() + from + 1, str.begin() + from + 3);
-        int ascii;
-        if(string2int(value, ascii, 16))
-        {
-            str.erase(from, 3);
-            str.insert(from, 1, static_cast<char>(ascii));
-        }
-    }
-
-    std::replace(str.begin(), str.end(), '+', ' ');
 }

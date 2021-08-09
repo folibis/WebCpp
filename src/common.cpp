@@ -235,3 +235,20 @@ bool compare(const char *ch1, const char *ch2, size_t size)
 
     return true;
 }
+
+void urlDecode(std::string &str)
+{
+    size_t from = 0;
+    while((from = str.find('%', from)) != std::string::npos)
+    {
+        std::string value(str.begin() + from + 1, str.begin() + from + 3);
+        int ascii;
+        if(string2int(value, ascii, 16))
+        {
+            str.erase(from, 3);
+            str.insert(from, 1, static_cast<char>(ascii));
+        }
+    }
+
+    std::replace(str.begin(), str.end(), '+', ' ');
+}
