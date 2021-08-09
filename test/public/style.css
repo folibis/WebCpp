@@ -1,3 +1,7 @@
 body {
   background-color:#ABEBC6;
 }
+
+form div {
+  padding: 10px;
+}

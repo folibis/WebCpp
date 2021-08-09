@@ -33,12 +33,17 @@ public:
         std::string contentType;
         std::string fileName;
         ByteArray data;
+
+        std::string GetDataString() const;
+        static ContentValue defaultValue;
     };
 
     const std::vector<ContentValue>& GetValues() const;
+    const ContentValue& GetValue(const std::string &name) const;
 
 protected:
-    std::map<std::string, std::string> GetHeaders(const ByteArray &header) const;
+    std::map<std::string, std::string> ParseHeaders(const ByteArray &header) const;
+    std::map<std::string, std::string> ParseFields(const ByteArray &header) const;
     std::string GetHeader(const std::string &name, const std::map<std::string, std::string> &map) const;
 
 private:

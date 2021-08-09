@@ -60,6 +60,11 @@ std::vector<ByteArray> split(const ByteArray &str, const char delimiter)
         it = i + 1;
     }
 
+    if(it != str.end())
+    {
+        retval.push_back(ByteArray(it, str.end()));
+    }
+
     return retval;
 }
 
@@ -71,12 +76,20 @@ std::vector<ByteArray> split(const ByteArray &str, const ByteArray delimiter, si
 
     while(look_for(str, delimiter, pos, start))
     {
-        retval.push_back(ByteArray(str.begin() + start, str.begin() + pos));
+        if(pos > 0)
+        {
+            retval.push_back(ByteArray(str.begin() + start, str.begin() + pos));
+        }
         start = pos + delimiter.size();
         if(start >= max)
         {
             break;
         }
+    }
+
+    if(start < max)
+    {
+        retval.push_back(ByteArray(str.begin() + start, str.end()));
     }
 
     return retval;
@@ -140,6 +153,11 @@ bool look_for(const ByteArray &str, const ByteArray &search, size_t &position, s
     auto size1 = str.size();
     auto size2 = search.size();
 
+    if(size1 < size2)
+    {
+        return false;
+    }
+
     for(size_t pos1 = start; pos1 < (size1 - size2); pos1 ++)
     {        
         for(size_t pos2 = 0; pos2 < size2; pos2 ++)
@@ -162,6 +180,11 @@ bool look_for(const ByteArray &str, const ByteArray &search, size_t &position, s
 
 bool look_for(const std::string &str, const std::string &search, size_t &position, size_t start)
 {
+    if(search.empty() || str.empty())
+    {
+        return false;
+    }
+
     auto pos = str.find(search, start);
     if(pos != std::string::npos)
     {
@@ -172,6 +195,16 @@ bool look_for(const std::string &str, const std::string &search, size_t &positio
     return false;
 }
 
+bool look_for(const ByteArray &str, const std::string &search, size_t &position, size_t start)
+{
+    if(search.empty() || str.empty())
+    {
+        return false;
+    }
+
+    auto arr = ByteArray(search.begin(), search.end());
+    return look_for(str, arr, position, start);
+}
 
 void toLower(std::string &str)
 {
@@ -201,11 +234,4 @@ bool compare(const char *ch1, const char *ch2, size_t size)
     }
 
     return true;
-}
-
-
-bool look_for(const ByteArray &str, const std::string &search, size_t &position, size_t start)
-{
-    auto arr = ByteArray(search.begin(), search.end());
-    return look_for(str, arr, position, start);
 }

@@ -14,8 +14,8 @@ int main()
 {
     signal(SIGINT, handle_sigint);
 
-    std::string q = "home?a=2&value=%7Bxyz%7D&name=Ruslan%20Muhlinin";
-    WebCpp::Request::UrlDecode(q);
+    std::string arr { 'a','b', 'c' };
+    std::string del;
 
     WebCpp::HttpConfig config;
     config.SetRoot("/home/ruslan/source/webcpp/test/public");
@@ -26,7 +26,7 @@ int main()
 
     if(server.Init(config))
     {
-        server.Get("/form", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        server.Get("/form", [](const WebCpp::Request &, WebCpp::Response &response) -> bool
         {
             bool retval = false;
 
@@ -44,8 +44,12 @@ int main()
         {
             bool retval = true;
 
+            auto body = request.GetRequestBody();
+            auto file1 = body.GetValue("file1");
+
             response.SetHeader("Content-Type","text/html;charset=utf-8");
-            response.Write("<div>Ok</div>");
+            response.Write("<div>Hello, " + body.GetValue("name").GetDataString() + " " + body.GetValue("surname").GetDataString() + "</div>");
+            response.Write("<div>file '" + file1.fileName + "'" + " with length: " + std::to_string(file1.data.size()) + " and mimetype: '" + file1.contentType + "' was successfully uploaded</div>");
 
             return retval;
         });
