@@ -5,7 +5,7 @@
 #include "common.h"
 #include "HttpConfig.h"
 #include "RequestBody.h"
-
+#include "HttpHeader.h"
 
 namespace WebCpp
 {
@@ -13,110 +13,27 @@ namespace WebCpp
 class Request
 {
 public:
-    enum class Method
-    {
-        Undefined = 0,
-        OPTIONS,
-        GET,
-        HEAD,
-        POST,
-        PUT,
-        DELETE,
-        TRACE,
-        CONNECT
-    };
+    Request(const HttpConfig& config);
+    Request(int connID, const ByteArray &request, HttpHeader &&header, const HttpConfig &config);
 
-    enum class HeaderType
-    {
-        Undefined = 0,
-        Accept,
-        AcceptCharset,
-        AcceptEncoding,
-        AcceptDatetime,
-        AcceptLanguage,
-        Authorization,
-        CacheControl,
-        Connection,
-        ContentEncoding,
-        ContentLength,
-        ContentMD5,
-        ContentType,
-        Cookie,
-        Date,
-        Expect,
-        Forwarded,
-        From,
-        Host,
-        HTTP2Settings,
-        IfMatch,
-        IfModifiedSince,
-        IfNoneMatch,
-        IfRange,
-        IfUnmodifiedSince,
-        MaxForwards,
-        Origin,
-        Pragma,
-        Prefer,
-        ProxyAuthorization,
-        Range,
-        Referer,
-        TE,
-        Trailer,
-        TransferEncoding,
-        UserAgent,
-        Upgrade,
-        Via,
-        Warning,
-    };
-
-    struct Header
-    {
-        Request::HeaderType type = Request::HeaderType::Undefined;
-        std::string name = "";
-        std::string value = "";
-        static Request::Header defaultHeader;
-    };
-
-    Request(int connID, const ByteArray &request, const HttpConfig &config);
-
-    int GetConnectionID() const;
-    Request::Method GetMethod() const;
-    std::string GetUri() const;
-    std::string GetPath() const;
-    const std::vector<Header>& GetHeaders() const;
-    std::string GetHeader(Request::HeaderType headerType) const;
-    std::string GetHeader(const std::string& headerType) const;
-    std::string GetVersion() const;
-    std::string GetHost() const;
+    int GetConnectionID() const;        
+    const HttpHeader& GetHeader() const;
     const ByteArray &GetData() const;
     const RequestBody& GetRequestBody() const;
     std::string GetArg(const std::string &name) const;
     void SetArg(const std::string &name, const std::string &value);
-    bool IsKeepAlive() const;
-
-    static std::string Method2String(Request::Method method);
-    static Request::Method String2Method(const std::string &str);
-    static std::string HeaderType2String(Request::HeaderType headerType);
-    static Request::HeaderType String2HeaderType(const std::string &str);    
+    bool IsKeepAlive() const;    
 
 protected:
-    void Init(const ByteArray &data);
-    bool ParseHeaders(std::vector<ByteArray> &arr);    
-    void ParseQuery();
+    void Init(const ByteArray &data);    
     void ParseBody(const ByteArray &data);
 
 private:
     int m_connID;
     const HttpConfig &m_config;
-    Request::Method m_method = Request::Method::Undefined;
-    std::string m_uri = "";
-    std::string m_path = "";
-    std::vector<Header> m_headers = {};
-    std::string m_version = "";
-    std::string m_host = "";
+    HttpHeader m_header;
     ByteArray m_data;
-    std::map<std::string, std::string> m_args;
-    std::map<std::string, std::string> m_query;
+    std::map<std::string, std::string> m_args;    
     RequestBody m_requestBody;
 };
 

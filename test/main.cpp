@@ -2,6 +2,8 @@
 #include "HttpServer.h"
 #include "Request.h"
 #include <string>
+#include <iostream>
+
 
 static WebCpp::HttpServer server;
 
@@ -12,15 +14,12 @@ void handle_sigint(int)
 
 int main()
 {
-    signal(SIGINT, handle_sigint);
-
-    std::string arr { 'a','b', 'c' };
-    std::string del;
+    signal(SIGINT, handle_sigint);    
 
     WebCpp::HttpConfig config;
     config.SetRoot("/home/ruslan/source/webcpp/test/public");
-    config.SetProtocol("HTTPS");
-    config.SetServerPort(8888);
+    config.SetProtocol("HTTP");
+    config.SetServerPort(8080);
     config.SetSslSertificate("/home/ruslan/source/webcpp/test/ssl/server.cert");
     config.SetSslKey("/home/ruslan/source/webcpp/test/ssl/server.key");
 
@@ -46,10 +45,12 @@ int main()
 
             auto body = request.GetRequestBody();
             auto file1 = body.GetValue("file1");
+            auto file2 = body.GetValue("file2");
 
             response.SetHeader("Content-Type","text/html;charset=utf-8");
             response.Write("<div>Hello, " + body.GetValue("name").GetDataString() + " " + body.GetValue("surname").GetDataString() + "</div>");
-            response.Write("<div>file '" + file1.fileName + "'" + " with length: " + std::to_string(file1.data.size()) + " and mimetype: '" + file1.contentType + "' was successfully uploaded</div>");
+            response.Write("<div>file 1 '" + file1.fileName + "'" + " with length: " + std::to_string(file1.data.size()) + " and mimetype: '" + file1.contentType + "' was successfully uploaded</div>");
+            response.Write("<div>file 2 '" + file2.fileName + "'" + " with length: " + std::to_string(file2.data.size()) + " and mimetype: '" + file2.contentType + "' was successfully uploaded</div>");
 
             return retval;
         });

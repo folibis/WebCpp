@@ -15,6 +15,7 @@
 #define QUEUE_SIZE 10
 #define POLL_TIMEOUT 1000 // milliseconds
 #define WRITE_MAX_SIZE 1500
+#define READ_FAIL_COUNT 10
 
 
 using namespace WebCpp;
@@ -289,19 +290,31 @@ void *CommunicationTcpServer::ReadThread()
                         {
                             bool readMore = true;
                             bool isError = false;
+                            int fails = READ_FAIL_COUNT;
+
+                            std::cout << "new data for #" << i << std::endl;
+
                             ByteArray data;
                             do
                             {
-                                retval = recv(m_fds[i].fd, m_readBuffer, READ_BUFFER_SIZE, 0);
+                                retval = recv(m_fds[i].fd, m_readBuffer, READ_BUFFER_SIZE, MSG_DONTWAIT);
+                                std::cout << retval << ", " << errno << std::endl;
                                 if (retval < 0)
-                                {
-                                    readMore = false;
-                                    if (errno != EWOULDBLOCK)
+                                {                                    
+                                    if (errno == EWOULDBLOCK)
+                                    {
+                                        fails --;
+                                        if(fails <= 0)
+                                        {
+                                            readMore = false;
+                                        }
+                                    }
+                                    else
                                     {
                                         isError = true;
                                         CloseClient(i);
-                                    }
-                                    break;
+                                        readMore = false;
+                                    }                                    
                                 }
                                 else if(retval == 0) // the peer connection probably has closed
                                 {
@@ -313,6 +326,7 @@ void *CommunicationTcpServer::ReadThread()
                                 else
                                 {
                                     data.insert(data.end(), m_readBuffer, m_readBuffer + retval);
+                                    fails = READ_FAIL_COUNT;
                                 }
                             }
                             while(readMore == true);

@@ -98,7 +98,7 @@ bool HttpServer::Close()
 
 HttpServer &HttpServer::Get(const std::string &path, const Route::RouteFunc &f)
 {
-    Route route(path, Request::Method::GET);
+    Route route(path, HttpHeader::Method::GET);
     route.SetFunction(f);
     m_routes.push_back(route);
 
@@ -107,7 +107,7 @@ HttpServer &HttpServer::Get(const std::string &path, const Route::RouteFunc &f)
 
 HttpServer &HttpServer::Post(const std::string &path, const Route::RouteFunc &f)
 {
-    Route route(path, Request::Method::POST);
+    Route route(path, HttpHeader::Method::POST);
     route.SetFunction(f);
     m_routes.push_back(route);
     return *this;
@@ -189,8 +189,11 @@ void *HttpServer::RequestThread()
         WaitForSignal();
         while(!IsQueueEmpty())
         {
-            Request request = GetNextRequest();
-            ProcessRequest(request);
+            if(CheckDataFullness())
+            {
+                Request request = GetNextRequest();
+                ProcessRequest(request);
+            }
         }
     }
 
@@ -215,7 +218,23 @@ void HttpServer::WaitForSignal()
 void HttpServer::PutToQueue(int connID, ByteArray &data)
 {
     Lock lock(m_queueMutex);
-    m_requestQueue.push(RequestData(connID, data));
+
+    bool alreadyExists = false;
+
+    for(auto &req: m_requestQueue)
+    {
+        if(req.connID == connID)
+        {
+            req.data.insert(req.data.end(), data.begin(), data.end());
+            alreadyExists = true;
+            break;
+        }
+    }
+
+    if(alreadyExists == false)
+    {
+        m_requestQueue.push_back(RequestData(connID, data));
+    }
 }
 
 bool HttpServer::IsQueueEmpty()
@@ -224,13 +243,61 @@ bool HttpServer::IsQueueEmpty()
     return m_requestQueue.empty();
 }
 
+bool HttpServer::CheckDataFullness()
+{
+    Lock lock(m_queueMutex);
+    bool retval = false;
+
+    for(RequestData& requestData: m_requestQueue)
+    {
+        if(requestData.header.IsComplete() == false)
+        {
+            requestData.header.Parse(requestData.data);
+        }
+
+        if(requestData.header.IsComplete())
+        {
+            size_t size = requestData.header.GetRequestSize();
+            if(requestData.data.size() >= size)
+            {
+                requestData.readyForDispatch = true;
+                retval = true;
+                break;
+            }
+        }
+    }
+
+    return retval;
+}
+
 Request HttpServer::GetNextRequest()
 {
     Lock lock(m_queueMutex);
-    RequestData requestData = m_requestQueue.front();
-    m_requestQueue.pop();
 
-    return Request(requestData.connID, requestData.data, m_config);
+    for (auto it = m_requestQueue.begin(); it != m_requestQueue.end(); ++it)
+    {
+        if(it->readyForDispatch == true)
+        {
+            RequestData data = std::move(*it);
+            m_requestQueue.erase(it);
+            return Request(data.connID, data.data, std::move(data.header), m_config);
+        }
+    }
+
+    return Request(m_config); // should never be called
+}
+
+void HttpServer::RemoveFromQueue(int connID)
+{
+    Lock lock(m_queueMutex);
+    for (auto it = m_requestQueue.begin(); it != m_requestQueue.end(); ++it)
+    {
+        if(it->connID == connID)
+        {
+            m_requestQueue.erase(it);
+            break;
+        }
+    }
 }
 
 void HttpServer::ProcessRequest(Request &request)
@@ -258,10 +325,14 @@ void HttpServer::ProcessRequest(Request &request)
                 auto &f = route.GetFunction();
                 if(f != nullptr)
                 {
-                    if((processed = f(request, response)))
+                    try
                     {
-                        break;
+                        if((processed = f(request, response)))
+                        {
+                            break;
+                        }
                     }
+                    catch(...) { }
                 }
             }
         }
@@ -284,4 +355,5 @@ void HttpServer::ProcessRequest(Request &request)
 void HttpServer::ProcessKeepAlive(int connID)
 {
     m_server->CloseClient(connID);
+    RemoveFromQueue(connID);
 }

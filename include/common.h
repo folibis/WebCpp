@@ -47,6 +47,18 @@ bool look_for(const ByteArray &str, const ByteArray &search, size_t &position, s
 bool look_for(const ByteArray &str, const std::string &search, size_t &position, size_t start = 0);
 bool look_for(const std::string &str, const std::string &search, size_t &position, size_t start = 0);
 
+std::vector<ByteArray> split_back(const ByteArray &str, const ByteArray &delimiter);
+bool look_for_back(const ByteArray &str, const ByteArray &search, size_t &position, size_t offset = SIZE_MAX);
+
+struct point
+{
+    size_t p1;
+    size_t p2;
+};
+using PointArray = std::vector<point>;
+
+PointArray find_all_entries(const ByteArray &str, const ByteArray &delimiter);
+
 bool compare(const char *ch1, const char *ch2, size_t size);
 
 void urlDecode(std::string &str);

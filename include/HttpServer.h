@@ -3,7 +3,7 @@
 
 #include <ICommunicationServer.h>
 #include "common.h"
-#include <queue>
+#include <deque>
 #include <vector>
 #include <memory>
 #include <pthread.h>
@@ -12,6 +12,7 @@
 #include "Response.h"
 #include "Route.h"
 #include "HttpConfig.h"
+#include "HttpHeader.h"
 
 
 namespace WebCpp
@@ -55,20 +56,25 @@ protected:
     void WaitForSignal();
     void PutToQueue(int connID, ByteArray &data);
     bool IsQueueEmpty();
+    bool CheckDataFullness();
     Request GetNextRequest();
+    void RemoveFromQueue(int connID);
     void ProcessRequest(Request &request);
-    void ProcessKeepAlive(int connID);
+    void ProcessKeepAlive(int connID);    
 
 private:
     struct RequestData
-    {
+    {        
         RequestData(int connID, ByteArray& data)
         {
             this->connID= connID;
             this->data = std::move(data);
+            readyForDispatch = false;           
         }
         int connID;
         ByteArray data;
+        HttpHeader header;
+        bool readyForDispatch;               
     };
 
     std::shared_ptr<ICommunicationServer> m_server = nullptr;
@@ -81,7 +87,7 @@ private:
     pthread_cond_t m_signalCondition = PTHREAD_COND_INITIALIZER;
 
     bool m_requestThreadRunning = false;
-    std::queue<RequestData> m_requestQueue;
+    std::deque<RequestData> m_requestQueue;
     std::vector<Route> m_routes;
 
     HttpConfig m_config;

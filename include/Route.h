@@ -16,7 +16,7 @@ class Route
 public:
     using RouteFunc = std::function<bool(const Request&request, Response &response)>;
 
-    Route(const std::string &path, Request::Method method);
+    Route(const std::string &path, HttpHeader::Method method);
     bool SetFunction(const RouteFunc& f);
     const RouteFunc& GetFunction() const;
     bool IsMatch(Request &request);
@@ -100,7 +100,7 @@ private:
 
     RouteFunc m_func;
     std::vector<Token> m_tokens;
-    Request::Method m_method;
+    HttpHeader::Method m_method;
 };
 
 }

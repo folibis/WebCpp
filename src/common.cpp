@@ -114,6 +114,11 @@ ByteArray trim(ByteArray &str, const ByteArray &chars)
         break;
     }
 
+    if(b == str.end())
+    {
+        return ByteArray();
+    }
+
     for(e = str.end() - 1; e != b; e --)
     {
         if(contains(chars, *e))
@@ -121,6 +126,11 @@ ByteArray trim(ByteArray &str, const ByteArray &chars)
             continue;
         }
         break;
+    }
+
+    if(e == b)
+    {
+        return ByteArray();
     }
 
     e += 1;
@@ -158,7 +168,7 @@ bool look_for(const ByteArray &str, const ByteArray &search, size_t &position, s
         return false;
     }
 
-    for(size_t pos1 = start; pos1 < (size1 - size2); pos1 ++)
+    for(size_t pos1 = start; pos1 <= (size1 - size2); pos1 ++)
     {        
         for(size_t pos2 = 0; pos2 < size2; pos2 ++)
         {
@@ -178,6 +188,90 @@ bool look_for(const ByteArray &str, const ByteArray &search, size_t &position, s
     return false;
 }
 
+std::vector<ByteArray> split_back(const ByteArray &str, const ByteArray &delimiter)
+{
+    std::vector<ByteArray> retval;
+    size_t pos = 0;
+    size_t offset = 0;
+
+    while(look_for_back(str, delimiter, pos, offset))
+    {
+        if(pos >= 0)
+        {
+            retval.push_back(ByteArray(str.begin() + pos + delimiter.size(), str.end() - offset));
+        }
+        offset = str.size() - pos + 1;
+        if(offset <= 0)
+        {
+            break;
+        }
+    }
+
+    return retval;
+}
+
+bool look_for_back(const ByteArray &str, const ByteArray &search, size_t &position, size_t offset)
+{
+    auto ptr1 = str.data();
+    auto ptr2 = search.data();
+
+    auto size1 = str.size();
+    auto size2 = search.size();
+
+    if(size1 < size2 || offset < size2)
+    {
+        return false;
+    }
+
+    if(offset == SIZE_MAX)
+    {
+        offset = size1 - 1;
+    }
+
+    for(size_t pos1 = (offset - size2 + 1); pos1 >= 0; pos1 --)
+    {
+        for(size_t pos2 = 0; pos2 < size2; pos2 ++)
+        {
+            if(ptr1[pos1 + pos2] != ptr2[pos2])
+            {
+                break;
+            }
+
+            if(pos2 == (size2 - 1))
+            {
+                position = pos1;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+PointArray find_all_entries(const ByteArray &str, const ByteArray &delimiter)
+{
+    PointArray retval;
+    size_t pos = SIZE_MAX;
+    size_t offset = str.size() - 1;
+
+    while(pos > 0 && look_for_back(str, delimiter, pos, offset))
+    {
+        size_t start = pos + delimiter.size();
+        size_t end = offset;
+
+        retval.push_back(point{ start, end });
+        offset = pos - 1;
+    }
+
+    if(offset > 0)
+    {
+        retval.push_back(point{0, offset });
+    }
+
+    return retval;
+}
+
+
 bool look_for(const std::string &str, const std::string &search, size_t &position, size_t start)
 {
     if(search.empty() || str.empty())
@@ -193,6 +287,17 @@ bool look_for(const std::string &str, const std::string &search, size_t &positio
     }
 
     return false;
+}
+
+bool look_for(const ByteArray &str, const std::string &search, size_t &position, size_t start)
+{
+    if(search.empty() || str.empty())
+    {
+        return false;
+    }
+
+    auto arr = ByteArray(search.begin(), search.end());
+    return look_for(str, arr, position, start);
 }
 
 bool look_for(const ByteArray &str, const std::string &search, size_t &position, size_t start)

@@ -1,4 +1,5 @@
 #include "common.h"
+#include <fstream>
 #include "RequestBody.h"
 
 
@@ -17,6 +18,11 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
 
     size_t pos;
 
+    std::ofstream f("/home/ruslan/html.output", std::ofstream::binary | std::ofstream::trunc);
+    f.write(data.data(), data.size());
+    f.close();
+
+
     if(look_for(contentType, "multipart/form-data", pos))
     {
         m_contentType = ContentType::FormData;
@@ -26,9 +32,18 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
         if(!boundary.empty())
         {
             boundary = "--" + boundary + std::string { CRLF };
-            auto bodyChunks = split(data, ByteArray(boundary.begin(), boundary.end()));
-            for(auto &chunk: bodyChunks)
+            auto arr = find_all_entries(data, ByteArray(boundary.begin(), boundary.end()));
+            for(auto &p: arr)
             {
+            //    std::string s(str.begin() + p.p1, str.begin() + p.p2 + 1);
+            //    std::cout << s << std::endl;
+            //}
+
+            //auto bodyChunks = split(data, ByteArray(boundary.begin(), boundary.end()));
+            //for(auto &chunk: bodyChunks)
+            //{
+
+
                 if(look_for(chunk, ByteArray{ CRLFCRLF }, pos))
                 {
                     std::string contentType,name,filename;
