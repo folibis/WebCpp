@@ -1,6 +1,8 @@
 #ifndef STRINGUTIL_H
 #define STRINGUTIL_H
 
+#include "common.h"
+
 
 class StringUtil
 {

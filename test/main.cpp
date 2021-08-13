@@ -3,6 +3,7 @@
 #include "Request.h"
 #include <string>
 #include <iostream>
+#include "StringUtil.h"
 
 
 static WebCpp::HttpServer server;
@@ -54,7 +55,6 @@ int main()
 
             return retval;
         });
-
 
         server.Get("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {

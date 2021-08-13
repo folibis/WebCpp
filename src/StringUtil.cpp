@@ -1,12 +1,5 @@
 #include "StringUtil.h"
 
-StringUtil::StringUtil()
-{
-
-}
-
-
-
 
 size_t StringUtil::SearchPosition(const ByteArray &str, const ByteArray&substring, size_t start, size_t end)
 {
@@ -35,7 +28,7 @@ size_t StringUtil::SearchPosition(const ByteArray &str, const ByteArray&substrin
     return SIZE_MAX;
 }
 
-Ranges StringUtil::Split(const ByteArray &str, const ByteArray &delimiter, size_t start, size_t end)
+StringUtil::Ranges StringUtil::Split(const ByteArray &str, const ByteArray &delimiter, size_t start, size_t end)
 {
     Ranges retval;
     size_t pos = SIZE_MAX;
@@ -46,11 +39,11 @@ Ranges StringUtil::Split(const ByteArray &str, const ByteArray &delimiter, size_
         size_t p2 = pos - 1;
         retval.push_back(Range {p1, p2});
 
-        //if(pos <= start + delimiter.size())
-        //{
-        //    retval.push_back(Range {start, pos});
-        //    break;
-        //}
+        if(pos >= end - delimiter.size())
+        {
+            retval.push_back(Range {pos + delimiter.size(), end});
+            break;
+        }
         start = pos + delimiter.size();
     }
 
@@ -89,7 +82,7 @@ size_t StringUtil::SearchPositionReverse(const ByteArray &str, const ByteArray &
     return SIZE_MAX;
 }
 
-Ranges StringUtil::SplitReverse(const ByteArray &str, const ByteArray &delimiter, size_t start, size_t end)
+StringUtil::Ranges StringUtil::SplitReverse(const ByteArray &str, const ByteArray &delimiter, size_t start, size_t end)
 {
     Ranges retval;
     size_t pos = SIZE_MAX;

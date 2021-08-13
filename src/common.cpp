@@ -300,17 +300,6 @@ bool look_for(const ByteArray &str, const std::string &search, size_t &position,
     return look_for(str, arr, position, start);
 }
 
-bool look_for(const ByteArray &str, const std::string &search, size_t &position, size_t start)
-{
-    if(search.empty() || str.empty())
-    {
-        return false;
-    }
-
-    auto arr = ByteArray(search.begin(), search.end());
-    return look_for(str, arr, position, start);
-}
-
 void toLower(std::string &str)
 {
     std::transform(str.begin(), str.end(), str.begin(),[](unsigned char c)

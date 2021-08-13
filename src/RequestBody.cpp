@@ -33,17 +33,9 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
         {
             boundary = "--" + boundary + std::string { CRLF };
             auto arr = find_all_entries(data, ByteArray(boundary.begin(), boundary.end()));
-            for(auto &p: arr)
+            auto bodyChunks = split(data, ByteArray(boundary.begin(), boundary.end()));
+            for(auto &chunk: bodyChunks)
             {
-            //    std::string s(str.begin() + p.p1, str.begin() + p.p2 + 1);
-            //    std::cout << s << std::endl;
-            //}
-
-            //auto bodyChunks = split(data, ByteArray(boundary.begin(), boundary.end()));
-            //for(auto &chunk: bodyChunks)
-            //{
-
-
                 if(look_for(chunk, ByteArray{ CRLFCRLF }, pos))
                 {
                     std::string contentType,name,filename;
