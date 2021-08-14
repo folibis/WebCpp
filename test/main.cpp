@@ -18,7 +18,7 @@ int main()
     signal(SIGINT, handle_sigint);    
 
     WebCpp::HttpConfig config;
-    config.SetRoot("/home/ruslan/source/webcpp/test/public");
+    config.SetRoot(PUBLIC_DIR);
     config.SetProtocol("HTTP");
     config.SetServerPort(8080);
     config.SetSslSertificate("/home/ruslan/source/webcpp/test/ssl/server.cert");

@@ -60,5 +60,7 @@ if(OPENSSL)
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL)
 endif()
 
+add_definitions(-DPUBLIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/public")
+
 add_executable(test test/main.cpp)
 target_link_libraries(test PRIVATE ${PROJECT_NAME})

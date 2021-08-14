@@ -1,5 +1,6 @@
 #include "common.h"
 #include <fstream>
+#include "StringUtil.h"
 #include "RequestBody.h"
 
 
@@ -22,7 +23,6 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
     f.write(data.data(), data.size());
     f.close();
 
-
     if(look_for(contentType, "multipart/form-data", pos))
     {
         m_contentType = ContentType::FormData;
@@ -31,9 +31,40 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
 
         if(!boundary.empty())
         {
-            boundary = "--" + boundary + std::string { CRLF };
-            auto arr = find_all_entries(data, ByteArray(boundary.begin(), boundary.end()));
-            auto bodyChunks = split(data, ByteArray(boundary.begin(), boundary.end()));
+            boundary = "--" + boundary;
+            auto ranges = StringUtil::SplitReverse(data, ByteArray(boundary.begin(), boundary.end()));
+            for(auto &range: ranges)
+            {
+                if(range.end > range.start)
+                {
+                    auto chunkHeaderPos = StringUtil::SearchPosition(data, ByteArray{ CRLFCRLF }, range.start, range.end);
+                    if(chunkHeaderPos != SIZE_MAX)
+                    {
+                        auto chunkHeader = ByteArray(data.begin() + range.start, data.begin() + chunkHeaderPos);
+                        auto chunkHeaders = ParseHeaders(chunkHeader);
+                        std::string name,filename;
+                        std::string contentType = GetHeader("Content-Type", chunkHeaders);
+                        auto contentDisposition = GetHeader("Content-Disposition", chunkHeaders);
+                        if(!contentDisposition.empty())
+                        {
+                            auto contentDispositionFields = ParseFields(ByteArray(contentDisposition.begin(), contentDisposition.end()));
+                            name = GetHeader("name", contentDispositionFields);
+                            filename = GetHeader("filename", contentDispositionFields);
+
+                            auto chunkData = ByteArray(data.begin() + chunkHeaderPos + 4, data.begin() + range.end - 1);
+                            m_values.push_back(ContentValue {
+                                                   name,
+                                                   contentType,
+                                                   filename,
+                                                   chunkData });
+                        }
+                    }
+                }
+            }
+
+            //auto arr = find_all_entries(data, ByteArray(boundary.begin(), boundary.end()));
+
+            /*auto bodyChunks = split(data, ByteArray(boundary.begin(), boundary.end()));
             for(auto &chunk: bodyChunks)
             {
                 if(look_for(chunk, ByteArray{ CRLFCRLF }, pos))
@@ -59,6 +90,7 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
                     }
                 }
             }
+            */
         }
     }
     else if(look_for(contentType, "application/x-www-form-urlencoded", pos))
@@ -69,7 +101,7 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
         {
             auto pair = split(line, '&');
             if(pair.size() > 0)
-            {                
+            {
                 std::string name(pair[0].begin(), pair[0].end());
                 std::string value = pair.size() > 1 ? std::string(pair[1].begin(), pair[1].end()) : "";
                 urlDecode(name);
