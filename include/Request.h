@@ -26,7 +26,7 @@ public:
 
 protected:
     void Init(const ByteArray &data);    
-    void ParseBody(const ByteArray &data);
+    void ParseBody(const ByteArray &data, size_t headerSize);
 
 private:
     int m_connID;

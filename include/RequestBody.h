@@ -23,7 +23,7 @@ public:
     };
 
     RequestBody();
-    bool Parse(const ByteArray &data, const ByteArray &contentType);
+    bool Parse(const ByteArray &data, size_t offset, const ByteArray &contentType);
 
     ContentType GetContentType() const;
 

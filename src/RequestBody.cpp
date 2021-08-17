@@ -13,7 +13,7 @@ RequestBody::RequestBody()
 
 }
 
-bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
+bool RequestBody::Parse(const ByteArray &data, size_t offset, const ByteArray &contentType)
 {
     bool retval = false;
 
@@ -21,7 +21,7 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
 
     std::ofstream f("/home/ruslan/html.output", std::ofstream::binary | std::ofstream::trunc);
     f.write(data.data(), data.size());
-    f.close();
+    f.close();    
 
     if(look_for(contentType, "multipart/form-data", pos))
     {
@@ -31,8 +31,15 @@ bool RequestBody::Parse(const ByteArray &data, const ByteArray &contentType)
 
         if(!boundary.empty())
         {
-            boundary = "--" + boundary;
-            auto ranges = StringUtil::SplitReverse(data, ByteArray(boundary.begin(), boundary.end()));
+            std::string commonBoundary =  "--" + boundary + std::string { CRLF };
+            std::string finalBoundary = "--" + boundary + "--";
+            size_t end = StringUtil::SearchPositionReverse(data, ByteArray(finalBoundary.begin(), finalBoundary.end()));
+            if(end != SIZE_MAX)
+            {
+                end = end - 1;
+            }
+
+            auto ranges = StringUtil::SplitReverse(data, ByteArray(commonBoundary.begin(), commonBoundary.end()), offset, end);
             for(auto &range: ranges)
             {
                 if(range.end > range.start)
