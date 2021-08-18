@@ -2,6 +2,7 @@
 #include "common.h"
 #include "CommunicationTcpServer.h"
 #include "CommunicationSslServer.h"
+#include "LogWriter.h"
 #include "Lock.h"
 #include "FileSystem.h"
 #include "StringUtil.h"
@@ -41,6 +42,7 @@ bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
     if(m_server == nullptr)
     {
         SetLastError("protocol isn't set or not implemented");
+        LOG(GetLastError(), LogWriter::LogType::Error);
         return false;
     }
 
@@ -49,8 +51,11 @@ bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
     if(!m_server->Init())
     {
         SetLastError("HttpServer init failed");
+        LOG(GetLastError(), LogWriter::LogType::Error);
         return false;
     }
+
+    LOG(ToString(), LogWriter::LogType::Info);
 
     FileSystem::ChangeDir(FileSystem::GetApplicationFolder());
 
@@ -65,6 +70,7 @@ bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
     if(pthread_create(&m_requestThread, nullptr, &HttpServer::RequestThreadWrapper, this) != 0)
     {
         SetLastError("failed to run request thread");
+        LOG(GetLastError(), LogWriter::LogType::Error);
         m_requestThreadRunning = false;
         return false;
     }
@@ -100,6 +106,7 @@ bool HttpServer::Close()
 HttpServer &HttpServer::Get(const std::string &path, const Route::RouteFunc &f)
 {
     Route route(path, HttpHeader::Method::GET);
+    LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
     route.SetFunction(f);
     m_routes.push_back(std::move(route));
 
@@ -109,6 +116,7 @@ HttpServer &HttpServer::Get(const std::string &path, const Route::RouteFunc &f)
 HttpServer &HttpServer::Post(const std::string &path, const Route::RouteFunc &f)
 {
     Route route(path, HttpHeader::Method::POST);
+    LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
     route.SetFunction(f);
     m_routes.push_back(std::move(route));
     return *this;
@@ -156,6 +164,11 @@ std::string HttpServer::Protocol2String(HttpServer::Protocol protocol)
     return "";
 }
 
+std::string HttpServer::ToString() const
+{
+    return m_config.ToString();
+}
+
 void HttpServer::OnConnected(int connID)
 {
     std::cout << "client connected: #" << connID << std:: endl;
@@ -193,7 +206,7 @@ void *HttpServer::RequestThread()
             if(CheckDataFullness())
             {
                 Request request = GetNextRequest();
-                ProcessRequest(std::move(request));
+                ProcessRequest(request);
             }
         }
     }
@@ -301,7 +314,7 @@ void HttpServer::RemoveFromQueue(int connID)
     }
 }
 
-void HttpServer::ProcessRequest(Request &&request)
+void HttpServer::ProcessRequest(Request &request)
 {
     bool processed = false;
 
@@ -348,6 +361,9 @@ void HttpServer::ProcessRequest(Request &&request)
     {
         response.SendNotFound();
     }
+
+
+    LOG(request.GetHeader().ToString() + (processed ? ", processed" : ", not processed"), LogWriter::LogType::Access);
 
     response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
     response.Send(m_server.get());

@@ -94,7 +94,6 @@ public:
     std::string GetPath() const;
     std::string GetUri() const;
     std::string GetVersion() const;
-    std::string GetHost() const;
 
     std::string GetHeader(HeaderType headerType) const;
     std::string GetHeader(const std::string &headerType) const;
@@ -104,6 +103,8 @@ public:
     static std::string Method2String(HttpHeader::Method method);
     static HttpHeader::HeaderType String2HeaderType(const std::string &str);
     static std::string HeaderType2String(HttpHeader::HeaderType headerType);
+
+    std::string ToString() const;
 
 protected:
     bool ParseHeaders(const ByteArray &data, const StringUtil::Ranges &ranges);
@@ -116,7 +117,6 @@ private:
     std::string m_path = "";
     std::vector<Header> m_headers = {};
     std::string m_version = "";
-    std::string m_host = "";
     size_t m_headerSize = 0;
     std::map<std::string, std::string> m_query;
 };

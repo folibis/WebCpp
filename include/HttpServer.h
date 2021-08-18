@@ -49,6 +49,8 @@ public:
     static Protocol String2Protocol(const std::string &str);
     static std::string Protocol2String(Protocol protocol);
 
+    std::string ToString() const;
+
 protected:
     void OnConnected(int connID);
     void OnDataReady(int connID, std::vector<char> &data);
@@ -64,7 +66,7 @@ protected:
     bool CheckDataFullness();
     Request GetNextRequest();
     void RemoveFromQueue(int connID);
-    void ProcessRequest(Request &&request);
+    void ProcessRequest(Request &request);
     void ProcessKeepAlive(int connID);    
 
 private:

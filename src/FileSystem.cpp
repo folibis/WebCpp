@@ -154,8 +154,8 @@ bool FileSystem::CreateFolder(const std::string &path)
             {
                 if (S_ISDIR(s.st_mode))
                 {
-                    continue;
                     retval = true;
+                    continue;
                 }
             }
             else

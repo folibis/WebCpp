@@ -26,6 +26,8 @@ public:
     const RouteFunc& GetFunction() const;
     bool IsMatch(Request &request);
 
+    std::string ToString() const;
+
 protected:
     bool Parse(const std::string &path);
     struct Token
@@ -108,6 +110,7 @@ private:
     RouteFunc m_func;
     std::vector<Token> m_tokens;
     HttpHeader::Method m_method;
+    std::string m_path;
 };
 
 }

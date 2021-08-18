@@ -22,6 +22,7 @@ public:
     HttpConfig();
     void Init();
     bool Load();
+    std::string ToString() const;
 
     PROPERTY(std::string, ServerName, WEBCPP_CANONICAL_NAME)
     PROPERTY(std::string, Root, "public")

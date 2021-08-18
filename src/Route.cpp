@@ -9,6 +9,7 @@ Route::Route(const std::string &path, HttpHeader::Method method)
 {
     m_method = method;
     Parse(path);
+    m_path = path;
 }
 
 bool Route::SetFunction(const Route::RouteFunc &f)
@@ -61,6 +62,11 @@ bool Route::IsMatch(Request &request)
     }
 
     return true;
+}
+
+std::string Route::ToString() const
+{
+    return "Route (method: " + HttpHeader::Method2String(m_method) + ", path: " + m_path + ")";
 }
 
 bool Route::Parse(const std::string &path)

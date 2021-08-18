@@ -265,6 +265,11 @@ std::string HttpHeader::HeaderType2String(HttpHeader::HeaderType headerType)
     return "";
 }
 
+std::string HttpHeader::ToString() const
+{
+    return "HttpHeader (method: " + HttpHeader::Method2String(m_method) + ", version: " + m_version + ", uri: " + m_uri + ", host: " + GetHeader(HeaderType::Host) + ")";
+}
+
 void HttpHeader::ParseQuery()
 {
     auto pos = m_uri.find('?');
@@ -319,9 +324,4 @@ std::string HttpHeader::GetHeader(const std::string &headerType) const
 std::string HttpHeader::GetVersion() const
 {
     return m_version;
-}
-
-std::string HttpHeader::GetHost() const
-{
-    return m_host;
 }
