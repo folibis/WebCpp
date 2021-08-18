@@ -4,6 +4,7 @@
 #include "CommunicationSslServer.h"
 #include "Lock.h"
 #include "FileSystem.h"
+#include "StringUtil.h"
 #include "Request.h"
 #include "KeepAliveTimer.h"
 #include "HttpServer.h"
@@ -100,7 +101,7 @@ HttpServer &HttpServer::Get(const std::string &path, const Route::RouteFunc &f)
 {
     Route route(path, HttpHeader::Method::GET);
     route.SetFunction(f);
-    m_routes.push_back(route);
+    m_routes.push_back(std::move(route));
 
     return *this;
 }
@@ -109,7 +110,7 @@ HttpServer &HttpServer::Post(const std::string &path, const Route::RouteFunc &f)
 {
     Route route(path, HttpHeader::Method::POST);
     route.SetFunction(f);
-    m_routes.push_back(route);
+    m_routes.push_back(std::move(route));
     return *this;
 }
 
@@ -131,7 +132,7 @@ HttpServer::Protocol HttpServer::GetProtocol() const
 HttpServer::Protocol HttpServer::String2Protocol(const std::string &str)
 {
     std::string s = str;
-    toUpper(s);
+    StringUtil::ToUpper(s);
 
     switch(_(s.c_str()))
     {
@@ -192,7 +193,7 @@ void *HttpServer::RequestThread()
             if(CheckDataFullness())
             {
                 Request request = GetNextRequest();
-                ProcessRequest(request);
+                ProcessRequest(std::move(request));
             }
         }
     }
@@ -300,7 +301,7 @@ void HttpServer::RemoveFromQueue(int connID)
     }
 }
 
-void HttpServer::ProcessRequest(Request &request)
+void HttpServer::ProcessRequest(Request &&request)
 {
     bool processed = false;
 

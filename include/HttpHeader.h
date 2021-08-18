@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include "common.h"
+#include "StringUtil.h"
 
 
 namespace WebCpp
@@ -78,6 +79,11 @@ public:
     };
 
     HttpHeader();
+    HttpHeader(const HttpHeader& other) = delete;
+    HttpHeader& operator=(const HttpHeader& other) = delete;
+    HttpHeader(HttpHeader&& other) = default;
+    HttpHeader& operator=(HttpHeader&& other) = default;
+
     bool Parse(const ByteArray &data);
     bool IsComplete() const;
     size_t GetHeaderSize() const;
@@ -100,7 +106,7 @@ public:
     static std::string HeaderType2String(HttpHeader::HeaderType headerType);
 
 protected:
-    bool ParseHeaders(std::vector<ByteArray> &arr);
+    bool ParseHeaders(const ByteArray &data, const StringUtil::Ranges &ranges);
     void ParseQuery();
 
 private:

@@ -2,6 +2,7 @@
 #include <fstream>
 #include "StringUtil.h"
 #include "RequestBody.h"
+#include  "FileSystem.h"
 
 
 using namespace WebCpp;
@@ -13,126 +14,161 @@ RequestBody::RequestBody()
 
 }
 
-bool RequestBody::Parse(const ByteArray &data, size_t offset, const ByteArray &contentType)
+RequestBody::~RequestBody()
 {
-    bool retval = false;
-
-    size_t pos;
-
-    std::ofstream f("/home/ruslan/html.output", std::ofstream::binary | std::ofstream::trunc);
-    f.write(data.data(), data.size());
-    f.close();    
-
-    if(look_for(contentType, "multipart/form-data", pos))
+    if(!m_tempFolder.empty() && FileSystem::IsFileExist(m_tempFolder))
     {
-        m_contentType = ContentType::FormData;
-        auto headers = ParseFields(contentType);
-        auto boundary = GetHeader("boundary", headers);
+        FileSystem::DeleteFolder(m_tempFolder);
+    }
+}
 
-        if(!boundary.empty())
+RequestBody::RequestBody(RequestBody &&other)
+{
+    m_values = std::move(other.m_values);
+    m_contentType = other.m_contentType;
+    m_tempFolder = other.m_tempFolder;
+
+    other.m_contentType = ContentType::Undefined;
+    other.m_tempFolder = "";
+}
+
+bool RequestBody::Parse(const ByteArray &data, size_t offset, const ByteArray &contentType, bool useTempFile)
+{
+    bool retval = false;    
+
+    if(useTempFile)
+    {
+        m_tempFolder = FileSystem::TempFolder();
+        FileSystem::CreateFolder(m_tempFolder);
+    }
+
+    auto type = ParseContentType(contentType);
+
+    //std::ofstream f("/home/ruslan/html.output", std::ofstream::binary | std::ofstream::trunc);
+    //f.write(data.data(), data.size());
+    //f.close();
+
+    switch(type)
+    {
+        case ContentType::FormData:
+            retval = ParseFormData(data, offset, contentType, useTempFile);
+            break;
+        case  ContentType::UrlEncoded:
+            retval = ParseUrlEncoded(data, offset, contentType);
+            break;
+        case ContentType::Text:
+            retval = ParseText(data, offset, contentType);
+        default: break;
+
+    }
+
+    return retval;
+}
+
+bool RequestBody::ParseFormData(const ByteArray &data, size_t offset, const ByteArray &contentType, bool useTempFile)
+{
+    bool retval = true;
+
+    m_contentType = ContentType::FormData;
+    auto headers = ParseFields(contentType);
+    auto boundary = GetHeader("boundary", headers);
+
+    if(!boundary.empty())
+    {
+        std::string commonBoundary =  "--" + boundary + std::string { CRLF };
+        std::string finalBoundary = "--" + boundary + "--";
+        size_t end = StringUtil::SearchPositionReverse(data, ByteArray(finalBoundary.begin(), finalBoundary.end()));
+        if(end != SIZE_MAX)
         {
-            std::string commonBoundary =  "--" + boundary + std::string { CRLF };
-            std::string finalBoundary = "--" + boundary + "--";
-            size_t end = StringUtil::SearchPositionReverse(data, ByteArray(finalBoundary.begin(), finalBoundary.end()));
-            if(end != SIZE_MAX)
-            {
-                end = end - 1;
-            }
+            end = end - 1;
+        }
 
-            auto ranges = StringUtil::SplitReverse(data, ByteArray(commonBoundary.begin(), commonBoundary.end()), offset, end);
-            for(auto &range: ranges)
+        auto ranges = StringUtil::SplitReverse(data, ByteArray(commonBoundary.begin(), commonBoundary.end()), offset, end);
+        for(auto &range: ranges)
+        {
+            if(range.end > range.start)
             {
-                if(range.end > range.start)
+                auto chunkHeaderPos = StringUtil::SearchPosition(data, ByteArray{ CRLFCRLF }, range.start, range.end);
+                if(chunkHeaderPos != SIZE_MAX)
                 {
-                    auto chunkHeaderPos = StringUtil::SearchPosition(data, ByteArray{ CRLFCRLF }, range.start, range.end);
-                    if(chunkHeaderPos != SIZE_MAX)
-                    {
-                        auto chunkHeader = ByteArray(data.begin() + range.start, data.begin() + chunkHeaderPos);
-                        auto chunkHeaders = ParseHeaders(chunkHeader);
-                        std::string name,filename;
-                        std::string contentType = GetHeader("Content-Type", chunkHeaders);
-                        auto contentDisposition = GetHeader("Content-Disposition", chunkHeaders);
-                        if(!contentDisposition.empty())
-                        {
-                            auto contentDispositionFields = ParseFields(ByteArray(contentDisposition.begin(), contentDisposition.end()));
-                            name = GetHeader("name", contentDispositionFields);
-                            filename = GetHeader("filename", contentDispositionFields);
-
-                            auto chunkData = ByteArray(data.begin() + chunkHeaderPos + 4, data.begin() + range.end - 1);
-                            m_values.push_back(ContentValue {
-                                                   name,
-                                                   contentType,
-                                                   filename,
-                                                   chunkData });
-                        }
-                    }
-                }
-            }
-
-            //auto arr = find_all_entries(data, ByteArray(boundary.begin(), boundary.end()));
-
-            /*auto bodyChunks = split(data, ByteArray(boundary.begin(), boundary.end()));
-            for(auto &chunk: bodyChunks)
-            {
-                if(look_for(chunk, ByteArray{ CRLFCRLF }, pos))
-                {
-                    std::string contentType,name,filename;
-
-                    auto chunkHeader = ByteArray(chunk.begin(), chunk.begin() + pos);
-                    auto chunkData = ByteArray(chunk.begin() + pos + 4, chunk.end() - 2); // remove 2*CRLF + trailing CRLF
+                    auto chunkHeader = ByteArray(data.begin() + range.start, data.begin() + chunkHeaderPos);
                     auto chunkHeaders = ParseHeaders(chunkHeader);
-                    contentType = GetHeader("Content-Type", chunkHeaders);
+                    std::string name,filename;
+                    std::string contentType = GetHeader("Content-Type", chunkHeaders);
                     auto contentDisposition = GetHeader("Content-Disposition", chunkHeaders);
                     if(!contentDisposition.empty())
                     {
                         auto contentDispositionFields = ParseFields(ByteArray(contentDisposition.begin(), contentDisposition.end()));
                         name = GetHeader("name", contentDispositionFields);
                         filename = GetHeader("filename", contentDispositionFields);
+                        StringUtil::Trim(filename,"\" ");
 
-                        m_values.push_back(ContentValue {
-                                               name,
-                                               contentType,
-                                               filename,
-                                               chunkData });
+                        if(useTempFile && !filename.empty())
+                        {
+                            std::ofstream f(m_tempFolder + "/" + filename, std::ofstream::binary | std::ofstream::trunc);
+                            f.write(data.data() + chunkHeaderPos + 4, range.end - 1 - (chunkHeaderPos + 4));
+                            f.close();
+                            m_values.push_back(ContentValue {
+                                                   name,
+                                                   contentType,
+                                                   filename,
+                                                   {} });
+                        }
+                        else
+                        {
+                            m_values.push_back(ContentValue {
+                                                   name,
+                                                   contentType,
+                                                   filename,
+                                                   ByteArray(data.begin() + chunkHeaderPos + 4, data.begin() + range.end - 1) });
+                        }
                     }
                 }
             }
-            */
         }
-    }
-    else if(look_for(contentType, "application/x-www-form-urlencoded", pos))
-    {
-        m_contentType = ContentType::UrlEncoded;
-        auto lines = split(data, { CRLF });
-        for(auto &line: lines)
-        {
-            auto pair = split(line, '&');
-            if(pair.size() > 0)
-            {
-                std::string name(pair[0].begin(), pair[0].end());
-                std::string value = pair.size() > 1 ? std::string(pair[1].begin(), pair[1].end()) : "";
-                urlDecode(name);
-                urlDecode(value);
-                m_values.push_back(ContentValue {
-                                       name,
-                                       std::string(contentType.begin(), contentType.end()),
-                                       value,
-                                       {} });
-            }
-        }
-        retval = true;
-    }
-    else if(look_for(contentType, "text/plain", pos))
-    {
-        m_contentType = ContentType::Text;
-        m_values.push_back(ContentValue {
-                               "",
-                               std::string(contentType.begin(), contentType.end()),
-                               "",
-                               data });
-        retval = true;
     }
 
+    return retval;
+}
+
+bool RequestBody::ParseUrlEncoded(const ByteArray &data, size_t offset, const ByteArray &contentType)
+{
+    bool retval = true;
+
+    m_contentType = ContentType::UrlEncoded;
+    auto ranges = StringUtil::Split(data, { CRLF }, offset);
+    for(auto &range: ranges)
+    {
+        auto pair = StringUtil::Split(data, {'&'}, range.start, range.end);
+        if(pair.size() > 0)
+        {
+            std::string name(data.begin() + pair.at(0).start ,data.begin() + pair.at(0).end);
+            std::string value = pair.size() > 1 ? std::string(data.begin() + pair.at(1).start ,data.begin() + pair.at(1).end) : "";
+            StringUtil::UrlDecode(name);
+            StringUtil::UrlDecode(value);
+            m_values.push_back(ContentValue {
+                                   name,
+                                   std::string(contentType.begin(), contentType.end()),
+                                   value,
+                                   {} });
+        }
+    }
+    retval = true;
+    return retval;
+}
+
+bool RequestBody::ParseText(const ByteArray &data, size_t offset, const ByteArray &contentType)
+{
+    bool retval = true;
+
+    m_contentType = ContentType::Text;
+    m_values.push_back(ContentValue {
+                           "",
+                           std::string(contentType.begin(), contentType.end()),
+                           "",
+                           ByteArray(data.begin() + offset, data.end())
+                       });
+    retval = true;
     return retval;
 }
 
@@ -159,19 +195,25 @@ const RequestBody::ContentValue& RequestBody::GetValue(const std::string &name) 
     return RequestBody::ContentValue::defaultValue;
 }
 
+std::string RequestBody::GetTempFolder() const
+{
+    return m_tempFolder;
+}
+
 std::map<std::string, std::string> RequestBody::ParseHeaders(const ByteArray &header) const
 {
     std::map<std::string, std::string> retval;
-    auto lines = split(header, { CRLF });
-    for(auto &line: lines)
+    auto ranges = StringUtil::Split(header, { CRLF });
+    for(auto &range: ranges)
     {
-        auto pair = split(line, ':');
+        auto pair = StringUtil::Split(header, {':'}, range.start, range.end);
         if(pair.size() == 2)
         {
-            trim(pair[0]);
-            trim(pair[1], { ' ', CRLF });
-            retval[std::string(pair[0].begin(), pair[0].end())]
-                    = std::string(pair[1].begin(), pair[1].end());
+            std::string name(header.begin() + pair.at(0).start, header.begin() + pair.at(0).end + 1);
+            std::string value(header.begin() + pair.at(1).start, header.begin() + pair.at(1).end + 1);
+            StringUtil::Trim(name);
+            StringUtil::Trim(value, { ' ', CRLF });
+            retval[name] = value;
         }
     }
 
@@ -182,22 +224,22 @@ std::map<std::string, std::string> RequestBody::ParseFields(const ByteArray &hea
 {
     std::map<std::string, std::string> retval;
 
-    auto headers = split(header, ';');
+    auto ranges = StringUtil::Split(header, {';'});
     std::string boundary = "";
-    for(auto &header: headers)
+    for(auto &range: ranges)
     {
-        auto pair = split(header, '=');
+        auto pair = StringUtil::Split(header, {'='}, range.start, range.end);
         if(pair.size() >= 1)
         {
-            trim(pair[0]);
-            ByteArray value;
+            std::string name(header.begin() + pair.at(0).start, header.begin() + pair.at(0).end + 1);
+            StringUtil::Trim(name);
+            std::string value;
             if(pair.size() >= 2)
             {
-                value = pair[1];
-                trim(value, { ' ', CRLF, '\"' });
+                value = std::string(header.begin() + pair.at(1).start, header.begin() + pair.at(1).end + 1);
+                StringUtil::Trim(value, { ' ', CRLF, '\"' });
             }
-            retval[std::string(pair[0].begin(), pair[0].end())]
-                    = std::string(value.begin(), value.end());
+            retval[name] = value;
         }
     }
 
@@ -213,6 +255,24 @@ std::string RequestBody::GetHeader(const std::string &name, const std::map<std::
     }
 
     return "";
+}
+
+RequestBody::ContentType RequestBody::ParseContentType(const ByteArray &contentType) const
+{
+    if(StringUtil::SearchPosition(contentType, StringUtil::String2ByteArray("multipart/form-data")) != SIZE_MAX)
+    {
+        return ContentType::FormData;
+    }
+    else if(StringUtil::SearchPosition(contentType, StringUtil::String2ByteArray("application/x-www-form-urlencoded")) != SIZE_MAX)
+    {
+        return ContentType::UrlEncoded;
+    }
+    else if(StringUtil::SearchPosition(contentType, StringUtil::String2ByteArray("text/plain")) != SIZE_MAX)
+    {
+        return ContentType::Text;
+    }
+
+    return ContentType::Undefined;
 }
 
 std::string RequestBody::ContentValue::GetDataString() const

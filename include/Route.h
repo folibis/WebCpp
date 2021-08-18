@@ -17,6 +17,11 @@ public:
     using RouteFunc = std::function<bool(const Request&request, Response &response)>;
 
     Route(const std::string &path, HttpHeader::Method method);
+    Route(const Route& other) = delete;
+    Route& operator=(const Route& other) = delete;
+    Route(Route&& other) = default;
+    Route& operator=(Route&& other) = default;
+
     bool SetFunction(const RouteFunc& f);
     const RouteFunc& GetFunction() const;
     bool IsMatch(Request &request);
@@ -85,9 +90,11 @@ protected:
         bool IsUpper(char ch) const;
 
         static View String2View(const std::string &str);
+        bool Compare(const char *ch1, const char *ch2, size_t size);
     };
 
     bool AddToken(Token &token, const std::string &str);
+
 private:
     enum class State
     {

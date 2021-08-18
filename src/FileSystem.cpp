@@ -1,11 +1,16 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <linux/limits.h>
+#include <dirent.h>
 #include <iostream>
 #include <ctime>
+#include <vector>
 #include "FileSystem.h"
+#include "StringUtil.h"
+#include "common.h"
 
 #define MAX_EXT_LENGTH 8
+
 
 using namespace WebCpp;
 
@@ -109,6 +114,125 @@ char FileSystem::PathDelimiter()
 #endif
 }
 
+std::string FileSystem::Root()
+{
+#ifdef _WIN32
+    char const *folder = getenv("SystemDrive");
+    if(folder == nullptr)
+    {
+        return "\\";
+    }
+    std::string root(folder);
+    if(root.at(root.size() - 1) != FileSystem::PathDelimiter())
+    {
+        root += FileSystem::PathDelimiter();
+    }
+    return root;
+#else
+    return "/";
+#endif
+}
+
+bool FileSystem::CreateFolder(const std::string &path)
+{
+    struct stat s;
+    std::string fullpath = "";
+    bool retval = false;
+
+    try
+    {
+        auto list = StringUtil::Split(path, FileSystem::PathDelimiter());
+        for(auto &folder: list)
+        {
+            if(fullpath.empty() && folder.empty())
+            {
+                fullpath = FileSystem::Root();
+                continue;
+            }
+            fullpath += ((fullpath.empty() || fullpath == FileSystem::Root()) ? "" : std::string(1, FileSystem::PathDelimiter())) + folder;
+            if(stat(fullpath.c_str(), &s) == 0)
+            {
+                if (S_ISDIR(s.st_mode))
+                {
+                    continue;
+                    retval = true;
+                }
+            }
+            else
+            {
+#ifdef __linux__
+                if(mkdir(fullpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0)
+#else
+                if(mkdir(fullpath.c_str()) != 0)
+#endif
+                {
+                    retval = false;
+                }
+                else
+                {
+                    retval = true;
+                }
+            }
+        }
+
+        return retval;
+    }
+    catch(std::exception &ex)
+    {
+        std::cout << "exception while creating a folder: " << ex.what() << std::endl;
+        return false;
+    }
+}
+
+bool FileSystem::DeleteFolder(const std::string &path)
+{
+    DIR *dir;
+    struct stat s;
+    struct dirent *entry;
+
+    try
+    {
+        if(stat(path.c_str(), &s) == 0)
+        {
+            dir = opendir(path.c_str());
+            while((entry = readdir(dir)))
+            {
+                std::string file(entry->d_name);
+                if (file == "." || file == "..")
+                {
+                    continue;
+                }
+
+                file = FileSystem::NormalizePath(path) + file;
+                if(stat(file.c_str(), &s) == 0)
+                {
+                    if(S_ISDIR(s.st_mode))
+                    {
+                        DeleteFolder(file);
+                    }
+                    else
+                    {
+                        unlink(file.c_str());
+                    }
+                }
+            }
+
+            rmdir(path.c_str());
+
+            return true;
+        }
+        else
+        {
+            throw "cannot access the folder";
+        }
+    }
+    catch(std::exception &ex)
+    {
+        std::cout << "exception while removing the folder: " << ex.what() << std::endl;
+        return false;
+    }
+}
+
 std::string FileSystem::GetDateTime()
 {
     time_t tm;
@@ -136,4 +260,50 @@ std::string FileSystem::GetFileModifiedTime(const std::string &file)
     }
 
     return "";
+}
+
+void RandInit()
+{
+    srand(static_cast<unsigned int>(time(nullptr)));
+}
+
+uint32_t GetRand(uint32_t min, uint32_t max)
+{
+    return static_cast<uint32_t>(rand()) % (max - min) + min;
+}
+
+std::string FileSystem::TempFolder()
+{
+    std::vector<std::string> tmpFolders = { "TMPDIR","TEMP","TMP", "TEMPDIR" };
+
+    char const *folder = nullptr;
+    for(auto &env: tmpFolders)
+    {
+        folder = getenv(env.c_str());
+        if(folder == nullptr)
+        {
+            continue;
+        }
+    }
+
+    if(folder == nullptr)
+    {
+        folder = "/tmp";
+    }
+
+    std::string path(folder);
+
+    if(path.at(path.size() - 1) != FileSystem::PathDelimiter())
+    {
+        path += FileSystem::PathDelimiter();
+    }
+
+    RandInit();
+    for(int i = 0;i < 6;i ++)
+    {
+        char ch = GetRand(static_cast<int>('a'), static_cast<int>('z'));
+        path.push_back(ch);
+    }
+
+    return path;
 }

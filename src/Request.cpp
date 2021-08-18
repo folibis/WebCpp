@@ -33,8 +33,7 @@ void Request::Init(const ByteArray &data)
     ByteArray delimiter { { CRLFCRLF } };
 
     if(m_header.GetBodySize() > 0)
-    {
-        //auto body = ByteArray(data.begin() + m_header.GetHeaderSize() + 2, data.end());
+    {        
         ParseBody(data, m_header.GetHeaderSize() + 2);
     }    
 }
@@ -42,7 +41,7 @@ void Request::Init(const ByteArray &data)
 void Request::ParseBody(const ByteArray &data, size_t headerSize)
 {
     auto contentType = m_header.GetHeader(HttpHeader::HeaderType::ContentType);
-    m_requestBody.Parse(data, headerSize, ByteArray(contentType.begin(), contentType.end()));
+    m_requestBody.Parse(data, headerSize, ByteArray(contentType.begin(), contentType.end()), m_config.GetTempFile());
 }
 
 const ByteArray& Request::GetData() const

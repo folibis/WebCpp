@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "StringUtil.h"
 #include "HttpHeader.h"
 
 
@@ -15,12 +16,12 @@ bool HttpHeader::Parse(const ByteArray &data)
 {
     m_complete = false;
     ByteArray delimiter { { CRLFCRLF } };
-    size_t pos;
 
-    if(look_for(data, delimiter, pos))
+    size_t pos = StringUtil::SearchPosition(data, { CRLFCRLF });
+    if(pos != SIZE_MAX)
     {
-        auto arr = split(data, { CRLF }, pos);
-        if(ParseHeaders(arr))
+        auto arr = StringUtil::Split(data, { CRLF }, 0, pos);
+        if(ParseHeaders(data, arr))
         {
             m_headerSize = pos;
             m_complete = true;
@@ -48,7 +49,7 @@ size_t HttpHeader::GetBodySize() const
     {
         auto str = GetHeader(HeaderType::ContentLength);
         int num;
-        if(string2int(str, num))
+        if(StringUtil::String2int(str, num))
         {
             size = num;
         }
@@ -59,7 +60,7 @@ size_t HttpHeader::GetBodySize() const
 
 size_t HttpHeader::GetRequestSize() const
 {
-    return GetHeaderSize() + GetBodySize() + 4; // header + CRLFCRLF + body
+    return GetHeaderSize() + GetBodySize() + 4; // header + delimiter + body
 }
 
 HttpHeader::Method HttpHeader::GetMethod() const
@@ -77,42 +78,42 @@ std::string HttpHeader::GetUri() const
     return m_uri;
 }
 
-bool HttpHeader::ParseHeaders(std::vector<ByteArray> &arr)
+bool HttpHeader::ParseHeaders(const ByteArray &data, const StringUtil::Ranges &ranges)
 {
-    for(auto &line: arr)
+    for(auto &range: ranges)
     {
         if(m_method == HttpHeader::Method::Undefined)
         {
-            std::string s(line.begin(), line.end());
-            auto methodArr = split(s, ' ');
+            std::string s(data.begin() + range.start, data.begin() + range.end + 1);
+            auto methodArr = StringUtil::Split(s, ' ');
             if(methodArr.size() < 3)
             {
                 return false;
             }
 
-            trim(methodArr[0]);
+            StringUtil::Trim(methodArr[0]);
             m_method = HttpHeader::String2Method(methodArr[0]);
             if(m_method == HttpHeader::Method::Undefined)
             {
                 return false;
             }
 
-            trim(methodArr[1]);
+            StringUtil::Trim(methodArr[1]);
             m_uri = methodArr[1];
             ParseQuery();
 
-            trim(methodArr[2]);
+            StringUtil::Trim(methodArr[2]);
             m_version = methodArr[2];
         }
         else
         {
-            auto it = std::find(line.begin(), line.end(), ':');
-            if(it != line.end())
+            auto headerDelimiter = StringUtil::SearchPosition(data, {':'}, range.start, range.end);
+            if(headerDelimiter != SIZE_MAX)
             {
-                std::string name = std::string(line.begin(), it);
-                std::string value = std::string(it + 1, line.end());
-                trim(name);
-                trim(value);
+                std::string name = std::string(data.begin() + range.start, data.begin() + headerDelimiter);
+                std::string value = std::string(data.begin() + headerDelimiter + 1, data.begin() + range.end + 1);
+                StringUtil::Trim(name);
+                StringUtil::Trim(value);
 
                 HttpHeader::Header header;
                 header.name = name;
@@ -130,7 +131,7 @@ bool HttpHeader::ParseHeaders(std::vector<ByteArray> &arr)
 HttpHeader::Method HttpHeader::String2Method(const std::string &str)
 {
     std::string s = str;
-    toUpper(s);
+    StringUtil::ToUpper(s);
 
     switch(_(s.c_str()))
     {
@@ -272,14 +273,14 @@ void HttpHeader::ParseQuery()
     {
         m_path = std::string(m_uri.begin(), m_uri.begin() + pos);
         std::string query = std::string(m_uri.begin() + pos + 1, m_uri.end());
-        auto q = split(query, '&');
+        auto q = StringUtil::Split(query, '&');
         for(auto &token: q)
         {
-            auto parr = split(token, '=');
+            auto parr = StringUtil::Split(token, '=');
             if(parr.size() == 2)
             {
-                urlDecode(parr[0]);
-                urlDecode(parr[1]);
+                StringUtil::UrlDecode(parr[0]);
+                StringUtil::UrlDecode(parr[1]);
                 m_query[parr[0]] = parr[1];
             }
         }

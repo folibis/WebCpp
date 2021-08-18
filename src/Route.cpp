@@ -1,4 +1,5 @@
 #include "common.h"
+#include "StringUtil.h"
 #include "Route.h"
 
 
@@ -179,7 +180,7 @@ bool Route::Token::IsMatch(const char *ch, size_t length, size_t &pos)
             {
                 break;
             }
-            if(compare(ch, text.data(), text.length()))
+            if(Compare(ch, text.data(), text.length()))
             {
                 pos = text.length();
                 retval = true;
@@ -233,7 +234,7 @@ bool Route::Token::IsMatch(const char *ch, size_t length, size_t &pos)
                 {
                     continue;
                 }
-                if(compare(ch, str.data(), str.length()))
+                if(Compare(ch, str.data(), str.length()))
                 {
                     pos = str.length();
                     retval = true;
@@ -250,7 +251,7 @@ bool Route::Token::IsString(char ch) const
 {
     static ByteArray allowed = { '.', '_', '-' };
 
-    return (IsAlpha(ch) || IsNumeric(ch) || contains(allowed, ch));
+    return (IsAlpha(ch) || IsNumeric(ch) || StringUtil::Contains(allowed, ch));
 }
 
 bool Route::Token::IsAlpha(char ch) const
@@ -276,7 +277,7 @@ bool Route::Token::IsUpper(char ch) const
 Route::Token::View Route::Token::String2View(const std::string &str)
 {
     std::string s = str;
-    toLower(s);
+    StringUtil::ToLower(s);
     switch(_(s.c_str()))
     {
         case _("alpha"): return Route::Token::View::Alpha;
@@ -288,4 +289,17 @@ Route::Token::View Route::Token::String2View(const std::string &str)
     }
 
     return Route::Token::View::Default;
+}
+
+bool Route::Token::Compare(const char *ch1, const char *ch2, size_t size)
+{
+    for(size_t i = 0; i < size;i ++)
+    {
+        if(ch1[i] != ch2[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
 }

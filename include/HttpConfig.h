@@ -31,6 +31,7 @@ public:
     PROPERTY(int, KeepAliveTimeout, 2000)
     PROPERTY(std::string, SslSertificate, "cert.pem")
     PROPERTY(std::string, SslKey, "key.pem")
+    PROPERTY(bool, TempFile, false)
 };
 
 }

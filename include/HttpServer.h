@@ -29,6 +29,11 @@ public:
     };
 
     HttpServer();
+    HttpServer(const HttpServer&other) = delete;
+    HttpServer& operator=(const HttpServer& other) = delete;
+    HttpServer(HttpServer&& other) = delete;
+    HttpServer& operator=(HttpServer&& other) = delete;
+
     bool Init(WebCpp::HttpConfig config);
     bool Run();
     bool Close();
@@ -59,7 +64,7 @@ protected:
     bool CheckDataFullness();
     Request GetNextRequest();
     void RemoveFromQueue(int connID);
-    void ProcessRequest(Request &request);
+    void ProcessRequest(Request &&request);
     void ProcessKeepAlive(int connID);    
 
 private:

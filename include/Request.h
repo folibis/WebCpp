@@ -15,6 +15,10 @@ class Request
 public:
     Request(const HttpConfig& config);
     Request(int connID, const ByteArray &request, HttpHeader &&header, const HttpConfig &config);
+    Request(const Request& other) = delete;
+    Request& operator=(const Request& other) = delete;
+    Request(Request&& other) = default;
+    Request& operator=(Request&& other) = default;
 
     int GetConnectionID() const;        
     const HttpHeader& GetHeader() const;

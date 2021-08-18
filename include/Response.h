@@ -68,6 +68,11 @@ public:
     };
 
     Response(int connID, const HttpConfig& config);
+    Response(const Response& other) = delete;
+    Response& operator=(const Response& other) = delete;
+    Response(Response&& other) = delete;
+    Response& operator=(Response&& other) = delete;
+
     void SetHeader(Response::HeaderType header, const std::string &value);
     void SetHeader(const std::string &name, const std::string &value);
     void Write(const ByteArray &data);

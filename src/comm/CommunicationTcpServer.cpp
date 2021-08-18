@@ -10,6 +10,7 @@
 #include "common.h"
 #include "Lock.h"
 #include "Print.h"
+#include "StringUtil.h"
 #include "CommunicationTcpServer.h"
 
 #define QUEUE_SIZE 10
@@ -70,12 +71,12 @@ bool CommunicationTcpServer::Connect(const std::string &address)
     {
         if(!address.empty())
         {
-            auto addr_arr = split(address, ':');
+            auto addr_arr = StringUtil::Split(address, ':');
             if(addr_arr.size() == 2)
             {
                 m_address = addr_arr[0];
                 int port;
-                if(string2int(addr_arr[1], port))
+                if(StringUtil::String2int(addr_arr[1], port))
                 {
                     m_port = port;
                 }
@@ -183,7 +184,7 @@ bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, si
     }
     catch(const std::exception &ex)
     {
-        Print() << "CommunicationTcpServer::Write: " << ex.what() << std::endl;
+        Print() << "CommunicationTcpServer::Write() exception: " << ex.what() << std::endl;
         retval = false;
     }
 
@@ -292,13 +293,10 @@ void *CommunicationTcpServer::ReadThread()
                             bool isError = false;
                             int fails = READ_FAIL_COUNT;
 
-                            std::cout << "new data for #" << i << std::endl;
-
                             ByteArray data;
                             do
                             {
                                 retval = recv(m_fds[i].fd, m_readBuffer, READ_BUFFER_SIZE, MSG_DONTWAIT);
-                                std::cout << retval << ", " << errno << std::endl;
                                 if (retval < 0)
                                 {                                    
                                     if (errno == EWOULDBLOCK)

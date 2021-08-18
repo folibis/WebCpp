@@ -23,6 +23,7 @@ int main()
     config.SetServerPort(8080);
     config.SetSslSertificate("/home/ruslan/source/webcpp/test/ssl/server.cert");
     config.SetSslKey("/home/ruslan/source/webcpp/test/ssl/server.key");
+    config.SetTempFile(true);
 
     if(server.Init(config))
     {
@@ -44,7 +45,7 @@ int main()
         {
             bool retval = true;
 
-            auto body = request.GetRequestBody();
+            auto &body = request.GetRequestBody();
             auto file1 = body.GetValue("file1");
             auto file2 = body.GetValue("file2");
 

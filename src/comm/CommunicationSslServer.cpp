@@ -10,7 +10,9 @@
 #include <iostream>
 #include "common.h"
 #include "Lock.h"
+#include "StringUtil.h"
 #include "CommunicationSslServer.h"
+
 
 #define QUEUE_SIZE 10
 #define POLL_TIMEOUT 1000 // milliseconds
@@ -76,12 +78,12 @@ bool CommunicationSslServer::Connect(const std::string &address)
     {
         if(!address.empty())
         {
-            auto addr_arr = split(address, ':');
+            auto addr_arr = StringUtil::Split(address, ':');
             if(addr_arr.size() == 2)
             {
                 m_address = addr_arr[0];
                 int port;
-                if(string2int(addr_arr[1], port))
+                if(StringUtil::String2int(addr_arr[1], port))
                 {
                     m_port = port;
                 }

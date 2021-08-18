@@ -1,3 +1,5 @@
+#include <sstream>
+#include <algorithm>
 #include "StringUtil.h"
 
 
@@ -11,7 +13,7 @@ size_t StringUtil::SearchPosition(const ByteArray &str, const ByteArray&substrin
         end = str.size() - 1;
     }
 
-    for(size_t pos1 = start;pos1 <= end - substringLen; pos1++)
+    for(size_t pos1 = start;pos1 <= end - substringLen + 1; pos1++)
     {
         size_t pos2;
         for(pos2 = 0; pos2 < substringLen; pos2++)
@@ -53,6 +55,11 @@ StringUtil::Ranges StringUtil::Split(const ByteArray &str, const ByteArray &deli
             break;
         }
         start = pos + delimiter.size();
+    }
+
+    if(start < end)
+    {
+        retval.push_back( Range{ start, end } );
     }
 
     return retval;
@@ -118,4 +125,152 @@ StringUtil::Ranges StringUtil::SplitReverse(const ByteArray &str, const ByteArra
     }
 
     return retval;
+}
+
+ByteArray StringUtil::Trim(ByteArray &str, const ByteArray &chars)
+{
+    if(str.empty())
+    {
+        return str;
+    }
+
+    ByteArray::const_iterator b;
+    ByteArray::const_iterator e;
+
+    for(b = str.begin(); b != str.end(); b ++)
+    {
+        if(StringUtil::Contains(chars, *b))
+        {
+            continue;
+        }
+        break;
+    }
+
+    if(b == str.end())
+    {
+        return ByteArray();
+    }
+
+    for(e = str.end() - 1; e != b; e --)
+    {
+        if(StringUtil::Contains(chars, *e))
+        {
+            continue;
+        }
+        break;
+    }
+
+    if(e == b)
+    {
+        return ByteArray();
+    }
+
+    e += 1;
+
+    if(b != str.begin() || e != str.end())
+    {
+        str = ByteArray(b, e);
+    }
+    return str;
+}
+
+bool StringUtil::Contains(const ByteArray &str, char ch)
+{
+    for(auto &c: str)
+    {
+        if(c == ch)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// ----------------------  std::string -------------------------
+
+std::vector<std::string> StringUtil::Split(const std::string &str, const char delimiter)
+{
+    std::vector<std::string> strings;
+    std::istringstream f(str);
+    std::string s;
+    while (getline(f, s, delimiter))
+    {
+        strings.push_back(s);
+    }
+
+    return strings;
+}
+
+std::string& StringUtil::LTrim(std::string &str, const std::string &chars)
+{
+    str.erase(0, str.find_first_not_of(chars));
+    return str;
+}
+
+std::string& StringUtil::RTrim(std::string &str, const std::string &chars)
+{
+    str.erase(str.find_last_not_of(chars) + 1);
+    return str;
+}
+
+std::string& StringUtil::Trim(std::string &str, const std::string &chars)
+{
+    return LTrim(RTrim(str, chars), chars);
+}
+
+bool StringUtil::String2int(const std::string &str, int &value, int base)
+{
+    try
+    {
+        value = std::stoi(str, 0, base);
+        return true;
+    }
+    catch(...)
+    {
+        return false;
+    }
+}
+
+void StringUtil::ToLower(std::string &str)
+{
+    std::transform(str.begin(), str.end(), str.begin(),[](unsigned char c)
+    {
+        return std::tolower(c);
+    });
+}
+
+void StringUtil::ToUpper(std::string &str)
+{
+    std::transform(str.begin(), str.end(), str.begin(),[](unsigned char c)
+    {
+        return std::toupper(c);
+    });
+}
+
+std::string StringUtil::ByteArray2String(const StringUtil::ByteArray &array)
+{
+    return std::string(array.begin(), array.end());
+}
+
+StringUtil::ByteArray StringUtil::String2ByteArray(const std::string &string)
+{
+    return ByteArray(string.begin(), string.end());
+}
+
+void StringUtil::UrlDecode(std::string &str)
+{
+    size_t from = 0;
+    while((from = str.find('%', from)) != std::string::npos)
+    {
+        std::string value(str.begin() + from + 1, str.begin() + from + 3);
+        int ascii;
+        if(StringUtil::String2int(value, ascii, 16))
+        {
+            str.erase(from, 3);
+            str.insert(from, 1, static_cast<char>(ascii));
+        }
+    }
+
+    std::replace(str.begin(), str.end(), '+', ' ');
 }
