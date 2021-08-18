@@ -1,3 +1,5 @@
+![example workflow](https://github.com/folibis/WebCpp/actions/workflows/cmake/badge.svg)
+
 # WebCpp
 
 simple HTTP/HTTPS C++11 library, mainly intended for old CPUs/compilers
