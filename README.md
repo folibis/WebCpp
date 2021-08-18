@@ -1,6 +1,6 @@
 # WebCpp
 
-simple HTTP/HTTPS library, mainly intended for old CPUs/compilers
+simple HTTP/HTTPS C++11 library, mainly intended for old CPUs/compilers
 
 Currently supported:
 - HTTP
