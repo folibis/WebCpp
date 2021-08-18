@@ -2,6 +2,8 @@
 
 simple HTTP/HTTPS C++11 library, mainly intended for old CPUs/compilers
 
+Note: the code in the midst of development, use it at your own risk
+
 Currently supported:
 - HTTP
 - HTTPS (using OpenSSL)
