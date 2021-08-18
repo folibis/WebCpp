@@ -124,6 +124,11 @@ StringUtil::Ranges StringUtil::SplitReverse(const ByteArray &str, const ByteArra
         end = pos - 1;
     }
 
+    if(end > 0)
+    {
+        retval.push_back( Range{ start, end } );
+    }
+
     return retval;
 }
 
