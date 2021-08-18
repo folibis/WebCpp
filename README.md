@@ -1,4 +1,4 @@
-![example workflow](https://github.com/folibis/WebCpp/actions/workflows/cmake/badge.svg)
+![example workflow](https://github.com/folibis/WebCpp/actions/workflows/cmake.yml/badge.svg)
 
 # WebCpp
 
