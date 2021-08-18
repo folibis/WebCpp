@@ -288,6 +288,7 @@ void HttpHeader::ParseQuery()
     else
     {
         m_path = m_uri;
+        StringUtil::UrlDecode(m_path);
     }
 }
 

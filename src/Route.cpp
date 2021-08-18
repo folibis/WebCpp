@@ -249,7 +249,7 @@ bool Route::Token::IsMatch(const char *ch, size_t length, size_t &pos)
 
 bool Route::Token::IsString(char ch) const
 {
-    static ByteArray allowed = { '.', '_', '-' };
+    static ByteArray allowed = { '.', '_', '-', ' ' };
 
     return (IsAlpha(ch) || IsNumeric(ch) || StringUtil::Contains(allowed, ch));
 }

@@ -78,7 +78,7 @@ int main()
             return retval;
         });        
 
-        server.Get("/(user|users)/{user:alpha}/[{action:alpha}/]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        server.Get("/(user|users)/{user:alpha}/[{action:string}/]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             std::string user = request.GetArg("user");
             if(user.empty())
