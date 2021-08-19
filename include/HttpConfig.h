@@ -27,12 +27,16 @@ public:
     PROPERTY(std::string, ServerName, WEBCPP_CANONICAL_NAME)
     PROPERTY(std::string, Root, "public")
     PROPERTY(std::string, IndexFile, "index.html")
-    PROPERTY(int, ServerPort, 8080)
-    PROPERTY(std::string, Protocol, "HTTP")
+    PROPERTY(bool, HttpEnabled, true)
+    PROPERTY(int, HttpServerPort, 8080)
+    PROPERTY(std::string, HttpProtocol, "HTTP")
     PROPERTY(int, KeepAliveTimeout, 2000)
     PROPERTY(std::string, SslSertificate, "cert.pem")
     PROPERTY(std::string, SslKey, "key.pem")
     PROPERTY(bool, TempFile, false)
+    PROPERTY(bool, WsEnabled, false)
+    PROPERTY(int, WsServerPort, 8081)
+    PROPERTY(std::string, WsProtocol, "ws")
 };
 
 }

@@ -4,13 +4,13 @@
 
 using namespace WebCpp;
 
-Request::Request(const HttpConfig& config):
+Request::Request(HttpConfig& config):
     m_config(config)
 {
 
 }
 
-Request::Request(int connID, const ByteArray &request, HttpHeader &&header, const HttpConfig& config):
+Request::Request(int connID, const ByteArray &request, HttpHeader &&header, HttpConfig& config):
     m_connID(connID),
     m_config(config),
     m_header(std::move(header))
@@ -57,6 +57,16 @@ const RequestBody &Request::GetRequestBody() const
 void Request::SetArg(const std::string &name, const std::string &value)
 {
     m_args[name] = value;
+}
+
+Request::Protocol Request::GetProtocol() const
+{
+    if(m_header.GetHeader(HttpHeader::HeaderType::Upgrade) == "websocket")
+    {
+        return Request::Protocol::WebSocket;
+    }
+
+    return Request::Protocol::HTTP1;
 }
 
 std::string Request::GetArg(const std::string &name) const

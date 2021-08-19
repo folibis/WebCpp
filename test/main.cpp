@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include "StringUtil.h"
+#include "Data.h"
 
 
 static WebCpp::HttpServer server;
@@ -15,12 +16,12 @@ void handle_sigint(int)
 
 int main()
 {
-    signal(SIGINT, handle_sigint);    
+    signal(SIGINT, handle_sigint);        
 
     WebCpp::HttpConfig config;
     config.SetRoot(PUBLIC_DIR);
-    config.SetProtocol("HTTP");
-    config.SetServerPort(8080);
+    config.SetHttpProtocol("HTTP");
+    config.SetHttpServerPort(8080);
     config.SetSslSertificate("/home/ruslan/source/webcpp/test/ssl/server.cert");
     config.SetSslKey("/home/ruslan/source/webcpp/test/ssl/server.key");
     config.SetTempFile(true);

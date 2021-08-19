@@ -1,0 +1,58 @@
+<html>
+    <head>
+	<title>The test page</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+	<link rel="stylesheet" href="style.css" type="text/css" />
+    </head>
+    <body>
+	<h3 style="text-align: center;margin-top:50px;">This is a test page for WebSocket test of the WebCpp server</h3>
+    <div class="box">
+  	  <div><button id="button_connect">Connect</button></div>
+  	  <div>Status: <span id="status_box"></span></div>
+    </div>
+    </body>
+    <script>
+    	var socket;
+		var buttonConnect = document.getElementById("button_connect");
+	  	document.getElementById('button_connect').addEventListener('click', function () 
+	  	{
+			socket = new WebSocket('ws://127.0.0.1:8081');
+  	  	});
+	  		  
+      	var const dataToSend = "{ \"message\": \"Hello\" }";
+
+	  	// Fired when a connection with a WebSocket is opened
+	  	socket.onopen = function () {
+			setInterval(function() {
+  		  		if (socket.bufferedAmount == 0)
+		  		{
+		  			setStatus("Sent ...");
+    				socket.send(dataToSend);
+		  		}
+			}, 50);
+	  	};
+
+	  	// Fired when data is received through a WebSocket
+	  	socket.onmessage = function(event) {
+			setStatus("Received: " + event.data);
+	  	};
+
+	  	// Fired when a connection with a WebSocket is closed
+	  	socket.onclose = function(event) {
+			setStatus("Closed");
+	  	};
+
+	  	// Fired when a connection with a WebSocket has been closed because of an error
+	  	socket.onerror = function(event) {
+			setStatus("Error: " + event);
+	  	};
+
+	  	var statusBox = document.getElementById("status_box");
+	  	function setStatus(str)
+	  	{
+	  		statusBox.innerHtml = str;
+	  	}
+
+	</script>
+<html>

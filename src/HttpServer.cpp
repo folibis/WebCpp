@@ -8,7 +8,10 @@
 #include "StringUtil.h"
 #include "Request.h"
 #include "KeepAliveTimer.h"
+#include "Data.h"
 #include "HttpServer.h"
+
+#define WEBSOCKET_KEY_TOKEN "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 
 using namespace WebCpp;
@@ -23,7 +26,7 @@ bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
     ClearError();
     m_config = config;
 
-    m_protocol = HttpServer::String2Protocol(m_config.GetProtocol());
+    m_protocol = HttpServer::String2Protocol(m_config.GetHttpProtocol());
 
     switch(m_protocol)
     {
@@ -46,7 +49,7 @@ bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
         return false;
     }
 
-    m_server->SetPort(m_config.GetServerPort());
+    m_server->SetPort(m_config.GetHttpServerPort());
 
     if(!m_server->Init())
     {
@@ -59,7 +62,7 @@ bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
 
     FileSystem::ChangeDir(FileSystem::GetApplicationFolder());
 
-    auto f1 = std::bind(&HttpServer::OnConnected, this, std::placeholders::_1);
+    auto f1 = std::bind(&HttpServer::OnConnected, this, std::placeholders::_1, std::placeholders::_2);
     m_server->SetNewConnectionCallback(f1);
     auto f2 = std::bind(&HttpServer::OnDataReady, this, std::placeholders::_1, std::placeholders::_2);
     m_server->SetDataReadyCallback(f2);
@@ -169,9 +172,9 @@ std::string HttpServer::ToString() const
     return m_config.ToString();
 }
 
-void HttpServer::OnConnected(int connID)
+void HttpServer::OnConnected(int connID, const std::string &remote)
 {
-    std::cout << "client connected: #" << connID << std:: endl;
+    LOG(std::string("client connected: #") + std::to_string(connID) + ", " + remote, LogWriter::LogType::Access);
 }
 
 void HttpServer::OnDataReady(int connID, ByteArray &data)
@@ -182,7 +185,7 @@ void HttpServer::OnDataReady(int connID, ByteArray &data)
 
 void HttpServer::OnClosed(int connID)
 {    
-    std::cout << "client disconnected: #" << connID << std:: endl;
+    LOG(std::string("client disconnected: #") + std::to_string(connID), LogWriter::LogType::Access);
 }
 
 void *HttpServer::RequestThreadWrapper(void *ptr)
@@ -206,7 +209,15 @@ void *HttpServer::RequestThread()
             if(CheckDataFullness())
             {
                 Request request = GetNextRequest();
-                ProcessRequest(request);
+                switch(request.GetProtocol())
+                {
+                    case Request::Protocol::WebSocket:
+                        ProcessWebSocketRequest(request);
+                        break;
+                    default:
+                        ProcessHttpRequest(request);
+                        break;
+                }
             }
         }
     }
@@ -264,19 +275,26 @@ bool HttpServer::CheckDataFullness()
 
     for(RequestData& requestData: m_requestQueue)
     {
-        if(requestData.header.IsComplete() == false)
+        if(isWs(requestData.connID))
         {
-            requestData.header.Parse(requestData.data);
-        }
 
-        if(requestData.header.IsComplete())
+        }
+        else
         {
-            size_t size = requestData.header.GetRequestSize();
-            if(requestData.data.size() >= size)
+            if(requestData.header.IsComplete() == false)
             {
-                requestData.readyForDispatch = true;
-                retval = true;
-                break;
+                requestData.header.Parse(requestData.data);
+            }
+
+            if(requestData.header.IsComplete())
+            {
+                size_t size = requestData.header.GetRequestSize();
+                if(requestData.data.size() >= size)
+                {
+                    requestData.readyForDispatch = true;
+                    retval = true;
+                    break;
+                }
             }
         }
     }
@@ -314,7 +332,7 @@ void HttpServer::RemoveFromQueue(int connID)
     }
 }
 
-void HttpServer::ProcessRequest(Request &request)
+void HttpServer::ProcessHttpRequest(Request &request)
 {
     bool processed = false;
 
@@ -362,15 +380,64 @@ void HttpServer::ProcessRequest(Request &request)
         response.SendNotFound();
     }
 
-
     LOG(request.GetHeader().ToString() + (processed ? ", processed" : ", not processed"), LogWriter::LogType::Access);
 
     response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
     response.Send(m_server.get());
 }
 
+void HttpServer::ProcessWebSocketRequest(Request &request)
+{
+    Response response(request.GetConnectionID(), m_config);
+
+    if(m_webSocketRequest != nullptr)
+    {
+        m_webSocketRequest(request, response);
+    }
+
+    std::string key = request.GetHeader().GetHeader("Sec-WebSocket-Key");
+    key = key + WEBSOCKET_KEY_TOKEN;
+    unsigned char buffer[key.size() / 2];
+    Data::HexString2Array(key, buffer);
+    key = Data::Base64Encode(buffer, key.size() / 2);
+
+    response.SetResponseCode(101);
+    response.SetHeader(Response::HeaderType::Upgrade, "websocket");
+    response.SetHeader(Response::HeaderType::Connection, "Upgrade");
+    response.SetHeader("Sec-WebSocket-Accept", key);
+    response.SetHeader("Sec-WebSocket-Protocol", "chat");
+
+    response.Send(m_server.get());
+    markConnAsWs(request.GetConnectionID(), true);
+}
+
 void HttpServer::ProcessKeepAlive(int connID)
 {
     m_server->CloseClient(connID);
     RemoveFromQueue(connID);
+}
+
+void HttpServer::markConnAsWs(int connID, bool mark)
+{
+    auto it = std::find(m_wsSocket.begin(), m_wsSocket.end(), connID);
+    if(mark)
+    {
+        if(it == m_wsSocket.end())
+        {
+            m_wsSocket.push_back(connID);
+        }
+    }
+    else
+    {
+        if(it != m_wsSocket.end())
+        {
+            m_wsSocket.erase(it);
+        }
+    }
+}
+
+bool HttpServer::isWs(int connID) const
+{
+    auto it = std::find(m_wsSocket.begin(), m_wsSocket.end(), connID);
+    return (it != m_wsSocket.end());
 }

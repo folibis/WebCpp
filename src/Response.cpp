@@ -3,6 +3,9 @@
 #include "FileSystem.h"
 #include "Response.h"
 
+#define WRITE_BIFFER_SIZE 1024
+
+
 #ifdef WITH_ZLIB
 int inflate(const void *src, int srcLen, void *dst, int dstLen) {
     z_stream strm  = {0};
@@ -110,7 +113,7 @@ bool Response::AddFile(const std::string &file, const std::string &charset)
 bool Response::SendNotFound()
 {
     m_responseCode = 404;
-    m_responsePhrase = Response::ResponseCode(m_responseCode);
+    m_responsePhrase = Response::ResponseCode2String(m_responseCode);
     SetHeader(Response::HeaderType::ContentLength, "0");
     return true;
 }
@@ -118,10 +121,16 @@ bool Response::SendNotFound()
 bool Response::SendRedirect(const std::string &url)
 {
     m_responseCode = 301;
-    m_responsePhrase = Response::ResponseCode(m_responseCode);
+    m_responsePhrase = Response::ResponseCode2String(m_responseCode);
     SetHeader(Response::HeaderType::Location, url);
     SetHeader(Response::HeaderType::ContentLength, "0");
     return true;
+}
+
+void Response::SetResponseCode(uint16_t code)
+{
+    m_responseCode = code;
+    m_responsePhrase = Response::ResponseCode2String(m_responseCode);
 }
 
 void Response::SetResponseCode(uint16_t code, const std::string &phrase)
@@ -151,11 +160,11 @@ bool Response::Send(ICommunication *communication)
 
     if(!m_file.empty())
     {
-        ByteArray buffer(1024);
+        ByteArray buffer(WRITE_BIFFER_SIZE);
         std::ifstream stream(m_file, std::ios::binary);
         do
         {
-            stream.read(buffer.data(), 1024);
+            stream.read(buffer.data(), WRITE_BIFFER_SIZE);
             communication->Write(m_connID, buffer, stream.gcount());
         }
         while(stream);
@@ -284,7 +293,7 @@ Response::HeaderType Response::String2HeaderType(const std::string &str)
     return HeaderType::Undefined;
 }
 
-std::string Response::ResponseCode(int code)
+std::string Response::ResponseCode2String(int code)
 {
     switch(code)
     {

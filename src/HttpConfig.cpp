@@ -24,5 +24,5 @@ bool HttpConfig::Load()
 
 std::string HttpConfig::ToString() const
 {
-    return "HttpConfig (name: " + m_ServerName + ", protocol: " + m_Protocol + ", port: " + std::to_string(m_ServerPort) + ")";
+    return "HttpConfig (name: " + m_ServerName + ", protocol: " + m_HttpProtocol + ", port: " + std::to_string(m_HttpServerPort) + ")";
 }

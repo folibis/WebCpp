@@ -81,13 +81,14 @@ public:
     bool SendNotFound();
     bool SendRedirect(const std::string &url);
 
+    void SetResponseCode(uint16_t code);
     void SetResponseCode(uint16_t code, const std::string &phrase);
     uint16_t GetResponseCode() const;
 
     bool Send(ICommunication *communication);
     static std::string HeaderType2String(Response::HeaderType headerType);
     static Response::HeaderType String2HeaderType(const std::string &str);
-    static std::string ResponseCode(int code);
+    static std::string ResponseCode2String(int code);
     static std::string Extension2MimeType(const std::string &extension);
 
 protected:

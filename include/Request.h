@@ -13,12 +13,19 @@ namespace WebCpp
 class Request
 {
 public:
-    Request(const HttpConfig& config);
-    Request(int connID, const ByteArray &request, HttpHeader &&header, const HttpConfig &config);
+    enum class Protocol
+    {
+        Undefined,
+        HTTP1,
+        WebSocket,
+    };
+
+    Request(HttpConfig &config);
+    Request(int connID, const ByteArray &request, HttpHeader &&header, HttpConfig &config);
     Request(const Request& other) = delete;
     Request& operator=(const Request& other) = delete;
     Request(Request&& other) = default;
-    Request& operator=(Request&& other) = default;
+    Request& operator=(Request&& other) = delete;
 
     int GetConnectionID() const;        
     const HttpHeader& GetHeader() const;
@@ -26,7 +33,8 @@ public:
     const RequestBody& GetRequestBody() const;
     std::string GetArg(const std::string &name) const;
     void SetArg(const std::string &name, const std::string &value);
-    bool IsKeepAlive() const;    
+    bool IsKeepAlive() const;
+    Protocol GetProtocol() const;
 
 protected:
     void Init(const ByteArray &data);    
@@ -34,7 +42,7 @@ protected:
 
 private:
     int m_connID;
-    const HttpConfig &m_config;
+    HttpConfig &m_config;
     HttpHeader m_header;
     ByteArray m_data;
     std::map<std::string, std::string> m_args;    

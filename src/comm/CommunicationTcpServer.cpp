@@ -86,7 +86,15 @@ bool CommunicationTcpServer::Connect(const std::string &address)
         struct sockaddr_in server_sockaddr;
         server_sockaddr.sin_family = AF_INET;
         server_sockaddr.sin_port = htons(m_port);
-        server_sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+        if(m_address.empty() || m_address == "*")
+        {
+            server_sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+        }
+        else
+        {
+            server_sockaddr.sin_addr.s_addr = inet_addr(m_address.c_str());
+        }
+
         if(bind(m_socket, (struct sockaddr* ) &server_sockaddr, sizeof(server_sockaddr)) == ERROR)
         {
             SetLastError(std::string("socket bind error: ") + strerror(errno), errno);
@@ -281,7 +289,14 @@ void *CommunicationTcpServer::ReadThread()
                                     m_fds[j].events = POLLIN;
                                     if(m_newConnectionCallback != nullptr)
                                     {
-                                        m_newConnectionCallback(j);
+                                        struct sockaddr_in client_sockaddr;
+                                        socklen_t len;
+                                        std::string remote;
+                                        if (getpeername(new_socket, reinterpret_cast<struct sockaddr *>(&client_sockaddr), &len ) != -1)
+                                        {
+                                            remote = std::string(inet_ntoa(client_sockaddr.sin_addr)) + ":" + std::to_string(ntohs(client_sockaddr.sin_port));
+                                        }
+                                        m_newConnectionCallback(j,remote);
                                     }
                                     break;
                                 }
@@ -298,7 +313,7 @@ void *CommunicationTcpServer::ReadThread()
                             {
                                 retval = recv(m_fds[i].fd, m_readBuffer, READ_BUFFER_SIZE, MSG_DONTWAIT);
                                 if (retval < 0)
-                                {                                    
+                                {
                                     if (errno == EWOULDBLOCK)
                                     {
                                         fails --;
@@ -312,7 +327,7 @@ void *CommunicationTcpServer::ReadThread()
                                         isError = true;
                                         CloseClient(i);
                                         readMore = false;
-                                    }                                    
+                                    }
                                 }
                                 else if(retval == 0) // the peer connection probably has closed
                                 {
