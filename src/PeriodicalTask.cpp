@@ -55,8 +55,12 @@ void PeriodicalTask::Wait() const
 
 void *PeriodicalTask::StartThread(void *cls)
 {
+    void *res = nullptr;
     PeriodicalTask *instance = static_cast<PeriodicalTask *>(cls);
-    void *res = instance->m_func(&(instance->m_isRunning));
+    if(instance->m_func)
+    {
+        res = instance->m_func(&(instance->m_isRunning));
+    }
     instance->SetStop();
     if(instance->m_funcFinish)
     {

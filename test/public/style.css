@@ -2,6 +2,13 @@ body {
   background-color:#ABEBC6;
 }
 
+body.ws {
+ background-color:#AED6F1;
+}
+
 form div {
+  padding: 10px;
+}
+.box div {
   padding: 10px;
 }

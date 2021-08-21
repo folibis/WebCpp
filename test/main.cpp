@@ -1,5 +1,7 @@
 #include <signal.h>
+#include "common.h"
 #include "HttpServer.h"
+#include "WebSocketServer.h"
 #include "Request.h"
 #include <string>
 #include <iostream>
@@ -7,11 +9,13 @@
 #include "Data.h"
 
 
-static WebCpp::HttpServer server;
+static WebCpp::HttpServer httpServer;
+static WebCpp::WebSocketServer wsServer;
 
 void handle_sigint(int)
 {
-    server.Close();
+    httpServer.Close(false);
+    wsServer.Close(false);
 }
 
 int main()
@@ -26,9 +30,23 @@ int main()
     config.SetSslKey("/home/ruslan/source/webcpp/test/ssl/server.key");
     config.SetTempFile(true);
 
-    if(server.Init(config))
+    if(httpServer.Init(config))
     {
-        server.Get("/form", [](const WebCpp::Request &, WebCpp::Response &response) -> bool
+        httpServer.Get("/ws", [](const WebCpp::Request &, WebCpp::Response &response) -> bool
+        {
+            bool retval = false;
+
+            retval = response.AddFile("ws.html");
+
+            if(retval == false)
+            {
+                response.SendNotFound();
+            }
+
+            return retval;
+        });
+
+        httpServer.Get("/form", [](const WebCpp::Request &, WebCpp::Response &response) -> bool
         {
             bool retval = false;
 
@@ -42,7 +60,7 @@ int main()
             return retval;
         });
 
-        server.Post("/form", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        httpServer.Post("/form", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = true;
 
@@ -58,7 +76,7 @@ int main()
             return retval;
         });
 
-        server.Get("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        httpServer.Get("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;
             std::string file = request.GetArg("file");
@@ -79,7 +97,7 @@ int main()
             return retval;
         });        
 
-        server.Get("/(user|users)/{user:alpha}/[{action:string}/]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        httpServer.Get("/(user|users)/{user:alpha}/[{action:string}/]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             std::string user = request.GetArg("user");
             if(user.empty())
@@ -97,7 +115,20 @@ int main()
             return true;
         });
 
-        server.Run();
+        if(wsServer.Init(config))
+        {
+            wsServer.Data([](const WebCpp::HttpHeader &header, const ByteArray &data) -> ByteArray {
+
+                return ByteArray();
+            });
+        }
+
+        httpServer.Run();
+        wsServer.Run();
+
+        httpServer.WaitFor();
+        wsServer.WaitFor();
+
         return 0;
     }
 

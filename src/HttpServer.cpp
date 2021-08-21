@@ -11,9 +11,6 @@
 #include "Data.h"
 #include "HttpServer.h"
 
-#define WEBSOCKET_KEY_TOKEN "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-
-
 using namespace WebCpp;
 
 HttpServer::HttpServer()
@@ -95,15 +92,24 @@ bool HttpServer::Run()
         return false;
     }
 
-    m_server->WaitFor();
+    if(!m_server->Run())
+    {
+        return false;
+    }
+
     return true;
 }
 
-bool HttpServer::Close()
+bool HttpServer::Close(bool wait)
 {
-    m_server->Close();
+    m_server->Close(wait);
     KeepAliveTimer::stop();
     return true;
+}
+
+bool HttpServer::WaitFor()
+{
+    return m_server->WaitFor();
 }
 
 HttpServer &HttpServer::Get(const std::string &path, const Route::RouteFunc &f)
@@ -209,15 +215,7 @@ void *HttpServer::RequestThread()
             if(CheckDataFullness())
             {
                 Request request = GetNextRequest();
-                switch(request.GetProtocol())
-                {
-                    case Request::Protocol::WebSocket:
-                        ProcessWebSocketRequest(request);
-                        break;
-                    default:
-                        ProcessHttpRequest(request);
-                        break;
-                }
+                ProcessRequest(request);
             }
         }
     }
@@ -275,26 +273,19 @@ bool HttpServer::CheckDataFullness()
 
     for(RequestData& requestData: m_requestQueue)
     {
-        if(isWs(requestData.connID))
+        if(requestData.header.IsComplete() == false)
         {
-
+            requestData.header.Parse(requestData.data);
         }
-        else
-        {
-            if(requestData.header.IsComplete() == false)
-            {
-                requestData.header.Parse(requestData.data);
-            }
 
-            if(requestData.header.IsComplete())
+        if(requestData.header.IsComplete())
+        {
+            size_t size = requestData.header.GetRequestSize();
+            if(requestData.data.size() >= size)
             {
-                size_t size = requestData.header.GetRequestSize();
-                if(requestData.data.size() >= size)
-                {
-                    requestData.readyForDispatch = true;
-                    retval = true;
-                    break;
-                }
+                requestData.readyForDispatch = true;
+                retval = true;
+                break;
             }
         }
     }
@@ -332,7 +323,7 @@ void HttpServer::RemoveFromQueue(int connID)
     }
 }
 
-void HttpServer::ProcessHttpRequest(Request &request)
+void HttpServer::ProcessRequest(Request &request)
 {
     bool processed = false;
 
@@ -386,58 +377,9 @@ void HttpServer::ProcessHttpRequest(Request &request)
     response.Send(m_server.get());
 }
 
-void HttpServer::ProcessWebSocketRequest(Request &request)
-{
-    Response response(request.GetConnectionID(), m_config);
-
-    if(m_webSocketRequest != nullptr)
-    {
-        m_webSocketRequest(request, response);
-    }
-
-    std::string key = request.GetHeader().GetHeader("Sec-WebSocket-Key");
-    key = key + WEBSOCKET_KEY_TOKEN;
-    unsigned char buffer[key.size() / 2];
-    Data::HexString2Array(key, buffer);
-    key = Data::Base64Encode(buffer, key.size() / 2);
-
-    response.SetResponseCode(101);
-    response.SetHeader(Response::HeaderType::Upgrade, "websocket");
-    response.SetHeader(Response::HeaderType::Connection, "Upgrade");
-    response.SetHeader("Sec-WebSocket-Accept", key);
-    response.SetHeader("Sec-WebSocket-Protocol", "chat");
-
-    response.Send(m_server.get());
-    markConnAsWs(request.GetConnectionID(), true);
-}
-
 void HttpServer::ProcessKeepAlive(int connID)
 {
     m_server->CloseClient(connID);
     RemoveFromQueue(connID);
 }
 
-void HttpServer::markConnAsWs(int connID, bool mark)
-{
-    auto it = std::find(m_wsSocket.begin(), m_wsSocket.end(), connID);
-    if(mark)
-    {
-        if(it == m_wsSocket.end())
-        {
-            m_wsSocket.push_back(connID);
-        }
-    }
-    else
-    {
-        if(it != m_wsSocket.end())
-        {
-            m_wsSocket.erase(it);
-        }
-    }
-}
-
-bool HttpServer::isWs(int connID) const
-{
-    auto it = std::find(m_wsSocket.begin(), m_wsSocket.end(), connID);
-    return (it != m_wsSocket.end());
-}

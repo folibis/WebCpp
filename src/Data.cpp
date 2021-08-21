@@ -4,15 +4,15 @@
 
 
 static const char* base64_chars[2] = {
-             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-             "abcdefghijklmnopqrstuvwxyz"
-             "0123456789"
-             "+/",
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789"
+    "+/",
 
-             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-             "abcdefghijklmnopqrstuvwxyz"
-             "0123456789"
-             "-_"};
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789"
+    "-_"};
 
 
 std::string Data::Base64Encode(unsigned char const* bytes_to_encode, size_t in_len)
@@ -34,18 +34,18 @@ std::string Data::Base64Encode(unsigned char const* bytes_to_encode, size_t in_l
 
         if (pos+1 < in_len)
         {
-           ret.push_back(base64_chars_[((bytes_to_encode[pos + 0] & 0x03) << 4) + ((bytes_to_encode[pos + 1] & 0xf0) >> 4)]);
+            ret.push_back(base64_chars_[((bytes_to_encode[pos + 0] & 0x03) << 4) + ((bytes_to_encode[pos + 1] & 0xf0) >> 4)]);
 
-           if (pos+2 < in_len)
-           {
-              ret.push_back(base64_chars_[((bytes_to_encode[pos + 1] & 0x0f) << 2) + ((bytes_to_encode[pos + 2] & 0xc0) >> 6)]);
-              ret.push_back(base64_chars_[  bytes_to_encode[pos + 2] & 0x3f]);
-           }
-           else
-           {
-              ret.push_back(base64_chars_[(bytes_to_encode[pos + 1] & 0x0f) << 2]);
-              ret.push_back(trailing_char);
-           }
+            if (pos+2 < in_len)
+            {
+                ret.push_back(base64_chars_[((bytes_to_encode[pos + 1] & 0x0f) << 2) + ((bytes_to_encode[pos + 2] & 0xc0) >> 6)]);
+                ret.push_back(base64_chars_[  bytes_to_encode[pos + 2] & 0x3f]);
+            }
+            else
+            {
+                ret.push_back(base64_chars_[(bytes_to_encode[pos + 1] & 0x0f) << 2]);
+                ret.push_back(trailing_char);
+            }
         }
         else
         {
@@ -78,28 +78,28 @@ std::string Data::Base64Decode(const std::string &str)
 
     while (pos < length_of_string)
     {
-       size_t pos_of_char_1 = pos_of_char(str[pos+1] );
+        size_t pos_of_char_1 = pos_of_char(str[pos+1] );
 
-       ret.push_back(static_cast<std::string::value_type>(((pos_of_char(str[pos+0])) << 2) + ((pos_of_char_1 & 0x30 ) >> 4)));
+        ret.push_back(static_cast<std::string::value_type>(((pos_of_char(str[pos+0])) << 2) + ((pos_of_char_1 & 0x30 ) >> 4)));
 
-       if ( ( pos + 2 < length_of_string  )       &&
-              str[pos+2] != '='        &&
-              str[pos+2] != '.'
-          )
-       {
-          unsigned int pos_of_char_2 = pos_of_char(str[pos+2] );
-          ret.push_back(static_cast<std::string::value_type>( (( pos_of_char_1 & 0x0f) << 4) + (( pos_of_char_2 & 0x3c) >> 2)));
+        if ( ( pos + 2 < length_of_string  )       &&
+             str[pos+2] != '='        &&
+             str[pos+2] != '.'
+             )
+        {
+            unsigned int pos_of_char_2 = pos_of_char(str[pos+2] );
+            ret.push_back(static_cast<std::string::value_type>( (( pos_of_char_1 & 0x0f) << 4) + (( pos_of_char_2 & 0x3c) >> 2)));
 
-          if ( ( pos + 3 < length_of_string )     &&
+            if ( ( pos + 3 < length_of_string )     &&
                  str[pos+3] != '='     &&
                  str[pos+3] != '.'
-             )
-          {
-             ret.push_back(static_cast<std::string::value_type>( ( (pos_of_char_2 & 0x03 ) << 6 ) + pos_of_char(str[pos+3])   ));
-          }
-       }
+                 )
+            {
+                ret.push_back(static_cast<std::string::value_type>( ( (pos_of_char_2 & 0x03 ) << 6 ) + pos_of_char(str[pos+3])   ));
+            }
+        }
 
-       pos += 4;
+        pos += 4;
     }
 
     return ret;
@@ -107,15 +107,13 @@ std::string Data::Base64Decode(const std::string &str)
 
 unsigned int Data::pos_of_char(const unsigned char chr)
 {
-
     if      (chr >= 'A' && chr <= 'Z') return chr - 'A';
     else if (chr >= 'a' && chr <= 'z') return chr - 'a' + ('Z' - 'A')               + 1;
     else if (chr >= '0' && chr <= '9') return chr - '0' + ('Z' - 'A') + ('z' - 'a') + 2;
     else if (chr == '+' || chr == '-') return 62;
     else if (chr == '/' || chr == '_') return 63;
     else
-
-    throw std::runtime_error("Input is not valid base64-encoded data.");
+        throw std::runtime_error("Input is not valid base64-encoded data.");
 }
 
 std::string Data::Sha1(const std::string &string)

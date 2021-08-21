@@ -1,8 +1,14 @@
+#include <cstring>
+#include <iostream>
 #include "CommunicationTcpServer.h"
 #include "CommunicationSslServer.h"
 #include "LogWriter.h"
 #include "FileSystem.h"
+#include "Lock.h"
+#include "Data.h"
 #include "WebSocketServer.h"
+
+#define WEBSOCKET_KEY_TOKEN "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 
 using namespace WebCpp;
@@ -18,7 +24,6 @@ bool WebSocketServer::Init(WebCpp::HttpConfig config)
     m_config = config;
 
     m_protocol = WebSocketServer::String2Protocol(m_config.GetWsProtocol());
-
     switch(m_protocol)
     {
         case Protocol::WS:
@@ -41,7 +46,6 @@ bool WebSocketServer::Init(WebCpp::HttpConfig config)
     }
 
     m_server->SetPort(m_config.GetWsServerPort());
-
     if(!m_server->Init())
     {
         SetLastError("WebSocketServer init failed");
@@ -79,19 +83,33 @@ bool WebSocketServer::Run()
         return false;
     }
 
-    m_server->WaitFor();
+    if(!m_server->Run())
+    {
+        return false;
+    }
+
     return true;
 }
 
-bool WebSocketServer::Close()
+bool WebSocketServer::Close(bool wait)
 {
-    m_server->Close();
+    m_server->Close(wait);
     return true;
+}
+
+bool WebSocketServer::WaitFor()
+{
+    return m_server->WaitFor();
 }
 
 void WebSocketServer::SetWebSocketRequestFunc(const WebCpp::Route::RouteFunc &callback)
 {
     m_webSocketRequest = callback;
+}
+
+void WebSocketServer::Data(const std::function<ByteArray (const HttpHeader &, const ByteArray &)> &func)
+{
+    m_dataFunc = func;
 }
 
 WebSocketServer::Protocol WebSocketServer::GetProtocol() const
@@ -144,55 +162,264 @@ void WebSocketServer::OnDataReady(int connID, std::vector<char> &data)
 
 void WebSocketServer::OnClosed(int connID)
 {
-
+    LOG(std::string("client disconnected: #") + std::to_string(connID), LogWriter::LogType::Access);
 }
 
 void *WebSocketServer::RequestThreadWrapper(void *ptr)
 {
+    WebSocketServer *instance = static_cast<WebSocketServer *>(ptr);
+    if(instance != nullptr)
+    {
+        return instance->RequestThread();
+    }
 
+    return nullptr;
 }
 
 void *WebSocketServer::RequestThread()
 {
+    while(m_requestThreadRunning)
+    {
+        WaitForSignal();
+        while(!IsQueueEmpty())
+        {
+            if(CheckDataFullness())
+            {
+                ProcessRequests();
+            }
+        }
+    }
 
+    return nullptr;
 }
 
 void WebSocketServer::SendSignal()
 {
-
+    Lock lock(m_signalMutex);
+    pthread_cond_signal(&m_signalCondition);
 }
 
 void WebSocketServer::WaitForSignal()
 {
-
+    Lock lock(m_signalMutex);
+    while(IsQueueEmpty() && m_requestThreadRunning)
+    {
+        pthread_cond_wait(& m_signalCondition, &m_signalMutex);
+    }
 }
 
 void WebSocketServer::PutToQueue(int connID, ByteArray &data)
 {
+    Lock lock(m_queueMutex);
 
+    bool alreadyExists = false;
+
+    for(auto &req: m_requestQueue)
+    {
+        if(req.connID == connID)
+        {
+            req.data.insert(req.data.end(), data.begin(), data.end());
+            alreadyExists = true;
+            break;
+        }
+    }
+
+    if(alreadyExists == false)
+    {
+        m_requestQueue.push_back(RequestData(connID, data));
+    }
 }
 
 bool WebSocketServer::IsQueueEmpty()
 {
-
+    Lock lock(m_queueMutex);
+    return m_requestQueue.empty();
 }
 
 bool WebSocketServer::CheckDataFullness()
 {
+    bool retval = false;
+    Lock lock(m_queueMutex);
 
+    for(RequestData& requestData: m_requestQueue)
+    {
+        if(requestData.readyForDispatch == false)
+        {
+            if(requestData.handshake == false)
+            {
+                retval = CheckWsHeader(requestData);
+            }
+            else
+            {
+                retval = CheckWsFrame(requestData);
+            }
+        }
+    }
+
+    return retval;
 }
 
-Request WebSocketServer::GetNextRequest()
+bool WebSocketServer::CheckWsHeader(RequestData& requestData)
 {
+    bool retval = false;
 
+    if(requestData.header.IsComplete() == false)
+    {
+        requestData.header.Parse(requestData.data);
+    }
+
+    if(requestData.header.IsComplete())
+    {
+        size_t size = requestData.header.GetRequestSize();
+        if(requestData.data.size() >= size)
+        {
+            requestData.readyForDispatch = true;
+            retval = true;
+        }
+    }
+
+    return retval;
+}
+bool WebSocketServer::CheckWsFrame(RequestData& requestData)
+{
+    bool retval = false;
+
+    WebSocketHeader header;
+    size_t dataSize = requestData.data.size();
+    size_t headerSize = sizeof(WebSocketHeader);
+
+    if(dataSize >= headerSize)
+    {
+        std::memcpy(&header, requestData.data.data(), headerSize);
+
+        uint64_t payloadSize = 0;
+        size_t sizeHeaderSize = 0;
+        switch(header.flags2.PayloadLen)
+        {
+            case 126:
+                sizeHeaderSize = sizeof(WebSocketHeaderLength2);
+                if(dataSize >= headerSize + sizeHeaderSize)
+                {
+                    WebSocketHeaderLength2 length;
+                    std::memcpy(&length, requestData.data.data() + headerSize, sizeof(WebSocketHeaderLength2));
+                    payloadSize = length.length;
+                }
+                break;
+            case 127:
+                sizeHeaderSize = sizeof(WebSocketHeaderLength3);
+                if(dataSize >= headerSize + sizeHeaderSize)
+                {
+                    WebSocketHeaderLength3 length;
+                    std::memcpy(&length, requestData.data.data() + headerSize, sizeof(WebSocketHeaderLength3));
+                    payloadSize = length.length;
+                }
+                break;
+            default:
+                payloadSize = header.flags2.PayloadLen;
+                break;
+
+        }
+
+        if(payloadSize > 0)
+        {
+            size_t maskHeaderSize = 0;
+            if(header.flags2.Mask == 1)
+            {
+                maskHeaderSize = sizeof(WebSocketHeaderMask);
+                if(dataSize >= headerSize + sizeHeaderSize + maskHeaderSize)
+                {
+                    WebSocketHeaderMask mask;
+                    std::memcpy(&mask, requestData.data.data() + headerSize + sizeHeaderSize, maskHeaderSize);
+                }
+            }
+
+            if(dataSize == (headerSize + sizeHeaderSize + maskHeaderSize + payloadSize))
+            {
+                requestData.readyForDispatch = true;
+                retval = true;
+            }
+        }
+    }
+
+    return retval;
+}
+
+void WebSocketServer::ProcessRequests()
+{
+    Lock lock(m_queueMutex);
+
+    for (auto it = m_requestQueue.begin(); it != m_requestQueue.end(); ++it)
+    {
+        if(it->readyForDispatch)
+        {
+            if(it->handshake == false)
+            {
+                if(ProcessRequest(Request(it->connID, it->data, std::move(it->header), m_config)))
+                {
+                    it->data.clear();
+                    it->handshake = true;
+                    it->readyForDispatch = false;
+                }
+            }
+            else
+            {
+                ProcessWsRequest(it->connID, it->header, it->data);
+                m_requestQueue.erase(it);
+            }
+        }
+    }
 }
 
 void WebSocketServer::RemoveFromQueue(int connID)
 {
+    Lock lock(m_queueMutex);
 
+    for (auto it = m_requestQueue.begin(); it != m_requestQueue.end(); ++it)
+    {
+        if(it->connID == connID)
+        {
+            m_requestQueue.erase(it);
+            break;
+        }
+    }
 }
 
-void WebSocketServer::ProcessRequest(Request &request)
+bool WebSocketServer::ProcessRequest(const Request &request)
 {
+    Response response(request.GetConnectionID(), m_config);
 
+    if(m_webSocketRequest != nullptr)
+    {
+        m_webSocketRequest(request, response);
+    }
+
+    std::string key = request.GetHeader().GetHeader("Sec-WebSocket-Key");
+    key = key + WEBSOCKET_KEY_TOKEN;
+    key = Data::Sha1(key);
+    unsigned char buffer[key.size() / 2];
+    Data::HexString2Array(key, buffer);
+    key = Data::Base64Encode(buffer, key.size() / 2);
+
+    response.SetResponseCode(101);
+    response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
+    response.SetHeader(Response::HeaderType::Upgrade, "websocket");
+    response.SetHeader(Response::HeaderType::Connection, "upgrade");
+    response.SetHeader("Sec-WebSocket-Accept", key);
+    //response.SetHeader("Sec-WebSocket-Protocol", "chat");
+
+    return response.Send(m_server.get());
+}
+
+bool WebSocketServer::ProcessWsRequest(int connID, const HttpHeader& request, const ByteArray &data)
+{
+    if(m_dataFunc != nullptr)
+    {
+        ByteArray response = m_dataFunc(request, data);
+        if(!response.empty())
+        {
+            m_server->Write(connID, response);
+        }
+    }
+
+    return true;
 }
