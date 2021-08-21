@@ -107,7 +107,27 @@ bool CommunicationTcpServer::Connect(const std::string &address)
             throw std::runtime_error(GetLastError());
         }
 
-        memset(m_fds, 0, sizeof(m_fds));
+        return true;
+    }
+    catch(const std::exception &ex)
+    {
+        Print() << "CommunicationTcpServer::Connect error: " << ex.what() << std::endl;
+        CloseConnections();
+        return false;
+    }
+    catch(...)
+    {
+        Print() << "CommunicationTcpServer::Connect unexpected error" << std::endl;
+        CloseConnections();
+        return false;
+    }
+}
+
+bool CommunicationTcpServer::Run()
+{
+    try
+    {
+        std::memset(m_fds, 0, sizeof(m_fds));
         for (int i = 0; i < (MAX_CLIENTS + 1); i++)
         {
             m_fds[i].fd = (-1);
@@ -127,18 +147,16 @@ bool CommunicationTcpServer::Connect(const std::string &address)
 
         return true;
     }
-    catch(const std::exception &ex)
-    {
-        Print() << "CommunicationTcpServer::Connect error: " << ex.what() << std::endl;
-        CloseConnections();
-        return false;
-    }
     catch(...)
     {
-        Print() << "CommunicationTcpServer::Connect unexpected error" << std::endl;
-        CloseConnections();
         return false;
     }
+}
+
+bool CommunicationTcpServer::WaitFor()
+{
+    pthread_join(m_readThread, nullptr);
+    return true;
 }
 
 bool CommunicationTcpServer::Close(bool wait)
@@ -199,12 +217,6 @@ bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, si
     return retval;
 }
 
-bool CommunicationTcpServer::WaitFor()
-{
-    pthread_join(m_readThread, nullptr);
-    return true;
-}
-
 bool CommunicationTcpServer::CloseClient(int connID)
 {
     if(m_fds[connID].fd != (-1))
@@ -224,7 +236,6 @@ bool CommunicationTcpServer::CloseClient(int connID)
 
     return false;
 }
-
 
 void CommunicationTcpServer::CloseConnections()
 {
@@ -306,7 +317,6 @@ void *CommunicationTcpServer::ReadThread()
                         {
                             bool readMore = true;
                             bool isError = false;
-                            int fails = READ_FAIL_COUNT;
 
                             ByteArray data;
                             do
@@ -316,11 +326,7 @@ void *CommunicationTcpServer::ReadThread()
                                 {
                                     if (errno == EWOULDBLOCK)
                                     {
-                                        fails --;
-                                        if(fails <= 0)
-                                        {
-                                            readMore = false;
-                                        }
+                                        readMore = false;
                                     }
                                     else
                                     {
@@ -329,17 +335,15 @@ void *CommunicationTcpServer::ReadThread()
                                         readMore = false;
                                     }
                                 }
-                                else if(retval == 0) // the peer connection probably has closed
+                                else if(retval > 0)
+                                {
+                                    data.insert(data.end(), m_readBuffer, m_readBuffer + retval);
+                                }
+                                else // the peer connection probably has closed
                                 {
                                     readMore = false;
                                     isError = true;
                                     CloseClient(i);
-                                    break;
-                                }
-                                else
-                                {
-                                    data.insert(data.end(), m_readBuffer, m_readBuffer + retval);
-                                    fails = READ_FAIL_COUNT;
                                 }
                             }
                             while(readMore == true);

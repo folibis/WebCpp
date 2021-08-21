@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include "IError.h"
+#include "IRunnable.h"
 
 #define DEFAULT_ADDRESS "0.0.0.0"
 #define DEFAULT_PORT 80
@@ -19,7 +20,7 @@
 namespace WebCpp
 {
 
-class ICommunication : public IError
+class ICommunication : public IError, public IRunnable
 {
 public:
     enum class CommunicationProtocol
@@ -35,9 +36,8 @@ public:
         Client
     };
 
-    virtual bool Init() = 0;
     virtual bool Connect(const std::string &address = "") = 0;
-    virtual bool Close(bool wait = false) = 0;
+
     virtual bool Write(int connID, const std::vector<char> &data) = 0;
     virtual bool Write(int connID, const std::vector<char> &data, size_t size) = 0;
 

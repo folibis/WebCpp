@@ -8,6 +8,7 @@
 #include <memory>
 #include <pthread.h>
 #include "IError.h"
+#include "IRunnable.h"
 #include "Request.h"
 #include "Response.h"
 #include "Route.h"
@@ -18,7 +19,7 @@
 namespace WebCpp
 {
 
-class HttpServer: public IError
+class HttpServer: public IError, public IRunnable
 {
 public:
     enum class Protocol
@@ -35,8 +36,9 @@ public:
     HttpServer& operator=(HttpServer&& other) = delete;
 
     bool Init(WebCpp::HttpConfig config);
-    bool Run();
-    bool Close();
+    bool Run() override;
+    bool Close(bool wait = true) override;
+    bool WaitFor() override;
 
     HttpServer& Get(const std::string &path, const Route::RouteFunc &f);
     HttpServer& Post(const std::string &path, const Route::RouteFunc &f);
@@ -67,7 +69,7 @@ protected:
     bool CheckDataFullness();
     Request GetNextRequest();
     void RemoveFromQueue(int connID);
-    void ProcessHttpRequest(Request &request);
+    void ProcessRequest(Request &request);
     void ProcessKeepAlive(int connID);    
 
 private:

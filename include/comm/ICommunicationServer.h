@@ -11,7 +11,6 @@ namespace WebCpp
 class ICommunicationServer : public ICommunication
 {
 public:
-    virtual bool WaitFor() = 0;
     virtual bool CloseClient(int connID) = 0;
 
     virtual bool SetNewConnectionCallback(const std::function<void(int, const std::string&)> &callback) { m_newConnectionCallback = callback; return true; };
