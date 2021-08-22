@@ -113,6 +113,26 @@ bool CommunicationSslServer::Connect(const std::string &address)
             throw std::runtime_error(GetLastError());
         }
 
+        return true;
+    }
+    catch(const std::exception &ex)
+    {
+        std::cout << "CommunicationTcpServer::Connect error: " << ex.what() << std::endl;
+        CloseConnections();
+        return false;
+    }
+    catch(...)
+    {
+        std::cout << "CommunicationTcpServer::Connect unexpected error" << std::endl;
+        CloseConnections();
+        return false;
+    }
+}
+
+bool CommunicationSslServer::Run()
+{
+    try
+    {
         memset(m_fds, 0, sizeof(m_fds));
         for (int i = 0; i < (MAX_CLIENTS + 1); i++)
         {
@@ -133,16 +153,8 @@ bool CommunicationSslServer::Connect(const std::string &address)
 
         return true;
     }
-    catch(const std::exception &ex)
-    {
-        std::cout << "CommunicationTcpServer::Connect error: " << ex.what() << std::endl;
-        CloseConnections();
-        return false;
-    }
     catch(...)
     {
-        std::cout << "CommunicationTcpServer::Connect unexpected error" << std::endl;
-        CloseConnections();
         return false;
     }
 }

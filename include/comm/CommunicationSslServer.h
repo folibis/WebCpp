@@ -28,7 +28,7 @@ public:
     bool Close(bool wait = false) override;
     bool Write(int connID, const std::vector<char> &data) override;
     bool Write(int connID, const std::vector<char> &data, size_t size) override;
-
+    bool Run() override;
     bool WaitFor() override;
     bool CloseClient(int connID) override;
 
