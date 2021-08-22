@@ -1,7 +1,8 @@
+#include "Sha1.h"
 #include <sstream>
 #include <iomanip>
 #include <fstream>
-#include "Sha1.h"
+#include <cstring>
 
 /* Help macros */
 #define SHA1_ROL(value, bits) (((value) << (bits)) | (((value) & 0xffffffff) >> (32 - (bits))))
@@ -13,7 +14,6 @@
 #define SHA1_R2(v,w,x,y,z,i) z += (w^x^y)           + SHA1_BLK(i) + 0x6ed9eba1 + SHA1_ROL(v,5); w=SHA1_ROL(w,30);
 #define SHA1_R3(v,w,x,y,z,i) z += (((w|x)&y)|(w&x)) + SHA1_BLK(i) + 0x8f1bbcdc + SHA1_ROL(v,5); w=SHA1_ROL(w,30);
 #define SHA1_R4(v,w,x,y,z,i) z += (w^x^y)           + SHA1_BLK(i) + 0xca62c1d6 + SHA1_ROL(v,5); w=SHA1_ROL(w,30);
-
 
 SHA1::SHA1()
 {
@@ -31,38 +31,34 @@ void SHA1::update(const std::string &s)
 void SHA1::update(std::istream &is)
 {
     std::string rest_of_buffer;
-    read(is, rest_of_buffer, BLOCK_BYTES - buffer.size());
-    buffer += rest_of_buffer;
+    read(is, rest_of_buffer, BLOCK_BYTES - m_buffer.size());
+    m_buffer += rest_of_buffer;
 
     while (is)
     {
         uint32 block[BLOCK_INTS];
-        buffer_to_block(buffer, block);
+        buffer_to_block(m_buffer, block);
         transform(block);
-        read(is, buffer, BLOCK_BYTES);
+        read(is, m_buffer, BLOCK_BYTES);
     }
 }
 
 
-/*
- * Add padding and return the message digest.
- */
-
-std::string SHA1::final()
+void SHA1::prepare()
 {
     /* Total number of hashed bits */
-    uint64 total_bits = (transforms*BLOCK_BYTES + buffer.size()) * 8;
+    uint64 total_bits = (m_transforms*BLOCK_BYTES + m_buffer.size()) * 8;
 
     /* Padding */
-    buffer += 0x80;
-    unsigned int orig_size = buffer.size();
-    while (buffer.size() < BLOCK_BYTES)
+    m_buffer += 0x80;
+    unsigned int orig_size = m_buffer.size();
+    while (m_buffer.size() < BLOCK_BYTES)
     {
-        buffer += (char)0x00;
+        m_buffer += (char)0x00;
     }
 
     uint32 block[BLOCK_INTS];
-    buffer_to_block(buffer, block);
+    buffer_to_block(m_buffer, block);
 
     if (orig_size > BLOCK_BYTES - 8)
     {
@@ -77,19 +73,46 @@ std::string SHA1::final()
     block[BLOCK_INTS - 1] = total_bits;
     block[BLOCK_INTS - 2] = (total_bits >> 32);
     transform(block);
+}
+
+std::string SHA1::final()
+{
+    prepare();
 
     /* Hex std::string */
     std::ostringstream result;
+
     for (unsigned int i = 0; i < DIGEST_INTS; i++)
     {
         result << std::hex << std::setfill('0') << std::setw(8);
-        result << (digest[i] & 0xffffffff);
+        result << (m_digest[i] & 0xffffffff);
     }
 
-    /* Reset for next run */
     reset();
 
     return result.str();
+}
+
+uint8_t *SHA1::digest()
+{
+    static uint8_t buffer[20];
+
+    prepare();
+
+    for (size_t i = 0; i < DIGEST_INTS; i++)
+    {
+        uint32_t d = (m_digest[i] & 0xffffffff);
+
+        buffer[i * 4] = (d >> 24) & 0xFF;
+        buffer[i * 4 + 1] = (d >> 16) & 0xFF;
+        buffer[i * 4 + 2] = (d >> 8) & 0xFF;
+        buffer[i * 4 + 3] = d & 0xFF;
+
+    }
+
+    reset();
+
+    return buffer;
 }
 
 
@@ -101,19 +124,18 @@ std::string SHA1::from_file(const std::string &filename)
     return checksum.final();
 }
 
-
 void SHA1::reset()
 {
     /* SHA1 initialization constants */
-    digest[0] = 0x67452301;
-    digest[1] = 0xefcdab89;
-    digest[2] = 0x98badcfe;
-    digest[3] = 0x10325476;
-    digest[4] = 0xc3d2e1f0;
+    m_digest[0] = 0x67452301;
+    m_digest[1] = 0xefcdab89;
+    m_digest[2] = 0x98badcfe;
+    m_digest[3] = 0x10325476;
+    m_digest[4] = 0xc3d2e1f0;
 
     /* Reset counters */
-    transforms = 0;
-    buffer = "";
+    m_transforms = 0;
+    m_buffer = "";
 }
 
 
@@ -124,11 +146,11 @@ void SHA1::reset()
 void SHA1::transform(uint32 block[BLOCK_BYTES])
 {
     /* Copy digest[] to working vars */
-    uint32 a = digest[0];
-    uint32 b = digest[1];
-    uint32 c = digest[2];
-    uint32 d = digest[3];
-    uint32 e = digest[4];
+    uint32 a = m_digest[0];
+    uint32 b = m_digest[1];
+    uint32 c = m_digest[2];
+    uint32 d = m_digest[3];
+    uint32 e = m_digest[4];
 
 
     /* 4 rounds of 20 operations each. Loop unrolled. */
@@ -214,14 +236,14 @@ void SHA1::transform(uint32 block[BLOCK_BYTES])
     SHA1_R4(b,c,d,e,a,79);
 
     /* Add the working vars back into digest[] */
-    digest[0] += a;
-    digest[1] += b;
-    digest[2] += c;
-    digest[3] += d;
-    digest[4] += e;
+    m_digest[0] += a;
+    m_digest[1] += b;
+    m_digest[2] += c;
+    m_digest[3] += d;
+    m_digest[4] += e;
 
     /* Count the number of transformations */
-    transforms++;
+    m_transforms++;
 }
 
 
@@ -230,10 +252,7 @@ void SHA1::buffer_to_block(const std::string &buffer, uint32 block[BLOCK_BYTES])
     /* Convert the std::string (byte buffer) to a uint32 array (MSB) */
     for (unsigned int i = 0; i < BLOCK_INTS; i++)
     {
-        block[i] = (buffer[4*i+3] & 0xff)
-                   | (buffer[4*i+2] & 0xff)<<8
-                   | (buffer[4*i+1] & 0xff)<<16
-                   | (buffer[4*i+0] & 0xff)<<24;
+        block[i] = (buffer[4*i+3] & 0xff) | (buffer[4*i+2] & 0xff)<<8 | (buffer[4*i+1] & 0xff)<<16 | (buffer[4*i+0] & 0xff)<<24;
     }
 }
 

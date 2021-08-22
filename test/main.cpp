@@ -117,7 +117,7 @@ int main()
 
         if(wsServer.Init(config))
         {
-            wsServer.Data([](const WebCpp::HttpHeader &header, const ByteArray &data) -> ByteArray {
+            wsServer.Data([](const WebCpp::HttpHeader &, const ByteArray &) -> ByteArray {
 
                 return ByteArray();
             });

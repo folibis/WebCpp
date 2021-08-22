@@ -395,17 +395,16 @@ bool WebSocketServer::ProcessRequest(const Request &request)
 
     std::string key = request.GetHeader().GetHeader("Sec-WebSocket-Key");
     key = key + WEBSOCKET_KEY_TOKEN;
-    key = Data::Sha1(key);
-    unsigned char buffer[key.size() / 2];
-    Data::HexString2Array(key, buffer);
-    key = Data::Base64Encode(buffer, key.size() / 2);
+
+    uint8_t *buffer = Data::Sha1Digest(key);
+    key = Data::Base64Encode(buffer, 20);
 
     response.SetResponseCode(101);
     response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
     response.SetHeader(Response::HeaderType::Upgrade, "websocket");
     response.SetHeader(Response::HeaderType::Connection, "upgrade");
     response.SetHeader("Sec-WebSocket-Accept", key);
-    //response.SetHeader("Sec-WebSocket-Protocol", "chat");
+    response.SetHeader("Sec-WebSocket-Protocol", "chat");
 
     return response.Send(m_server.get());
 }
