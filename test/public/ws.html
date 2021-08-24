@@ -8,44 +8,43 @@
     </head>
     <body>
 	<h3 style="text-align: center;margin-top:50px;">This is a test page for WebSocket test of the WebCpp server</h3>
-    <div class="box">
-  	  <div><button id="button_connect">Connect</button></div>
+    <div class="box">  	  
+  	  <div><button id="button_send">Send</button></div>
   	  <div>Status: <span id="status_box"></span></div>
     </div>
     </body class="ws">
     <script>
 
-    	var dataToSend = "{ \"message\": \"Hello\" }";
-		var buttonConnect = document.getElementById("button_connect");
-	  	document.getElementById('button_connect').addEventListener('click', function () 
+    	var statusBox = document.getElementById("status_box");
+		function setStatus(str)
 	  	{
-			var socket = new WebSocket("ws://127.0.0.1:8081");
-			socket.onopen = function () {
-		  			setStatus("Sent ...");
-    				socket.send(dataToSend);
-	  			};
-
-	  		// Fired when data is received through a WebSocket
-	  		socket.onmessage = function(event) {
-				setStatus("Received: " + event.data);
-	  		};
-
-	  		// Fired when a connection with a WebSocket is closed
-	  		socket.onclose = function(event) {
-				setStatus("Closed");
-	  		};
-
-	  		// Fired when a connection with a WebSocket has been closed because of an error
-	  		socket.onerror = function(event) {
-				setStatus("Error: " + event);
-	  		};
-  	  	});
-	  		  
-	  	var statusBox = document.getElementById("status_box");
-	  	function setStatus(str)
-	  	{
-	  		statusBox.innerHtml = str;
+	  		statusBox.textContent = str;
 	  	}
 
+    	var socket = new WebSocket("ws://127.0.0.1:8081");
+    	socket.onopen = function () {
+			setStatus("Connected to WebSocket server");    				
+	  	};
+	  		
+	  	socket.onmessage = function(event) {
+			setStatus("Received: " + event.data);
+	  	};
+	  		
+	  	socket.onclose = function(event) {
+			setStatus("Closed");
+	  	};
+	  		
+	  	socket.onerror = function(event) {
+			setStatus("Error: " + event);
+	  	};
+
+    	var dataToSend = "{ \"message\": \"Hello\" }";		
+		var buttonSend = document.getElementById("button_send");				  	
+	  	
+	  	buttonSend.addEventListener('click', function () 
+	  	{	  		
+	  		socket.send(dataToSend);	
+	  	});	  	  
+	  		  	
 	</script>
 <html>
