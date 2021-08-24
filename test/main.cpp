@@ -118,10 +118,11 @@ int main()
 
         if(wsServer.Init(config))
         {
-            wsServer.Data([](const WebCpp::HttpHeader &, WebCpp::ResponseWebSocket &response, const ByteArray &) -> bool {
+            wsServer.Data([](const WebCpp::HttpHeader &, WebCpp::ResponseWebSocket &response, const ByteArray &data) -> bool {
 
+                std::cout << "received from client: " << StringUtil::ByteArray2String(data) << std::endl;
                 response.WriteText("Hello from server!");
-                return true;
+                return true;                
             });
         }
 

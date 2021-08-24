@@ -356,7 +356,8 @@ bool WebSocketServer::CheckWsFrame(RequestData& requestData)
                     requestData.encodedData[i] = requestData.data[headerSize + sizeHeaderSize + maskHeaderSize + i] ^ mask.bytes[i % 4];
                 }
 
-                requestData.data.empty();
+                requestData.data.clear();
+                requestData.data.shrink_to_fit();
                 if(header.flags1.FIN == 1)
                 {
                     requestData.readyForDispatch = true;
