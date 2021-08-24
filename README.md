@@ -17,6 +17,12 @@ Currently supported:
 - Simple settings
 - WebSocket (both ws and wss)
 
+Requirements:
+- Linux (Windows support comming soon)
+- Gcc >= 4.8.3
+- CMake
+- OpenSSL & OpenSSL headers (optionally)
+
 ### Usage: ###
 
 
