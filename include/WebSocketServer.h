@@ -9,6 +9,7 @@
 #include "IRunnable.h"
 #include "Request.h"
 #include "ICommunicationServer.h"
+#include "ResponseWebSocket.h"
 
 
 namespace WebCpp
@@ -24,18 +25,20 @@ public:
         WSS,
     };
     WebSocketServer();
+    virtual ~WebSocketServer();
     WebSocketServer(const WebSocketServer& other) = delete;
     WebSocketServer& operator=(const WebSocketServer& other) = delete;
     WebSocketServer(WebSocketServer&& other) = delete;
     WebSocketServer& operator=(WebSocketServer&& other) = delete;
 
+    bool Init() override;
     bool Init(WebCpp::HttpConfig config);
     bool Run() override;
     bool Close(bool wait = true) override;
     bool WaitFor() override;
 
     void SetWebSocketRequestFunc(const Route::RouteFunc &callback);
-    void Data(const std::function<ByteArray(const HttpHeader& request, const ByteArray &data)>& func);
+    void Data(const std::function<bool(const HttpHeader& header, ResponseWebSocket &response, const ByteArray &data)>& func);
 
     Protocol GetProtocol() const;
 
@@ -47,16 +50,18 @@ public:
 protected:
     struct RequestData
     {
-        RequestData(int connID, ByteArray& data)
+        RequestData(int connID, const std::string &remote)
         {
             this->connID= connID;
-            this->data = std::move(data);
             readyForDispatch = false;
             handshake = false;
+            header.SetRemoteAddress(remote);
         }
+
         int connID;
         HttpHeader header;
         ByteArray data;
+        ByteArray encodedData;
         bool handshake;
         bool readyForDispatch;
     };
@@ -69,7 +74,9 @@ protected:
     void* RequestThread();
     void SendSignal();
     void WaitForSignal();
+    void InitConnection(int connID, const std::string &remote);
     void PutToQueue(int connID, ByteArray &data);
+
     bool IsQueueEmpty();
     bool CheckDataFullness();
     void ProcessRequests();
@@ -77,43 +84,9 @@ protected:
     bool ProcessRequest(const Request &request);
     bool CheckWsHeader(RequestData& requestData);
     bool CheckWsFrame(RequestData &requestData);
-    bool ProcessWsRequest(int connID, const HttpHeader &request, const ByteArray &data);
+    bool ProcessWsRequest(int connID, const HttpHeader &header, const ByteArray &data);
 
 private:
-#pragma pack(push, 1)
-    struct Flag1
-    {
-        uint8_t FIN:  1;
-        uint8_t RSV1: 1;
-        uint8_t RSV2: 1;
-        uint8_t RSV3: 1;
-        uint8_t opcode: 4;
-    };
-    struct Flag2
-    {
-        uint8_t Mask:  1;
-        uint8_t PayloadLen: 7;
-    };
-
-    struct WebSocketHeader
-    {
-        Flag1 flags1;
-        Flag2 flags2;
-    };
-    struct WebSocketHeaderLength2
-    {
-        uint16_t length;
-    };
-    struct WebSocketHeaderLength3
-    {
-        uint64_t length;
-    };
-    struct WebSocketHeaderMask
-    {
-        uint32_t mask;
-    };
-#pragma pack(pop)
-
     std::shared_ptr<ICommunicationServer> m_server = nullptr;
     Protocol m_protocol = Protocol::Undefined;
     pthread_t m_requestThread;
@@ -124,7 +97,7 @@ private:
     std::deque<RequestData> m_requestQueue;
     HttpConfig m_config;
     Route::RouteFunc m_webSocketRequest = nullptr;
-    std::function<ByteArray(const HttpHeader& request, const ByteArray& data)> m_dataFunc;
+    std::function<bool(const HttpHeader& header, ResponseWebSocket &response, const ByteArray& data)> m_dataFunc;
 };
 
 }

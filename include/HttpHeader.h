@@ -95,6 +95,9 @@ public:
     std::string GetUri() const;
     std::string GetVersion() const;
 
+    std::string GetRemoteAddress() const;
+    void SetRemoteAddress(const std::string &address);
+
     std::string GetHeader(HeaderType headerType) const;
     std::string GetHeader(const std::string &headerType) const;
     const std::vector<HttpHeader::Header> &GetHeaders() const;
@@ -119,6 +122,7 @@ private:
     std::string m_version = "";
     size_t m_headerSize = 0;
     std::map<std::string, std::string> m_query;
+    std::string m_remoteAddress;
 };
 
 }

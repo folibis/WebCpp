@@ -7,6 +7,7 @@
 #include <iostream>
 #include "StringUtil.h"
 #include "Data.h"
+#include "ResponseWebSocket.h"
 
 
 static WebCpp::HttpServer httpServer;
@@ -117,9 +118,10 @@ int main()
 
         if(wsServer.Init(config))
         {
-            wsServer.Data([](const WebCpp::HttpHeader &, const ByteArray &) -> ByteArray {
+            wsServer.Data([](const WebCpp::HttpHeader &, WebCpp::ResponseWebSocket &response, const ByteArray &) -> bool {
 
-                return ByteArray();
+                response.WriteText("Hello from server!");
+                return true;
             });
         }
 

@@ -325,3 +325,13 @@ std::string HttpHeader::GetVersion() const
 {
     return m_version;
 }
+
+std::string HttpHeader::GetRemoteAddress() const
+{
+    return m_remoteAddress;
+}
+
+void HttpHeader::SetRemoteAddress(const std::string &address)
+{
+    m_remoteAddress = address;
+}
