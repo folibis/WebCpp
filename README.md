@@ -15,8 +15,10 @@ Currently supported:
 - Pre/post routing handlers
 - Keep-alive
 - Simple settings
+- WebSocket (both ws and wss)
 
 ### Usage: ###
+
 
 **GET handling:**
 
@@ -39,6 +41,8 @@ if(server.Init(config))
     server.Run();
 }   
 ```
+
+
 **POST handling:**
 
 ```cpp
@@ -86,5 +90,28 @@ Placeholder | Notes | Example
 [optional] | optional value | /user/[num] will work for /user, /user/2
 
 
+**WebSocket handling:**
 
+```cpp
+WebCpp::WebSocketServer wsServer;
 
+WebCpp::HttpConfig config;
+config.SetWsEnabled(true);
+config.SetWsProtocol("ws");
+config.SetWsServerPort(8081);    
+    
+if(wsServer.Init(config))
+{
+    wsServer.Data([](const WebCpp::HttpHeader &, WebCpp::ResponseWebSocket &response, const ByteArray &data) -> bool {
+        std::cout << "received from client: " << StringUtil::ByteArray2String(data) << std::endl;
+        response.WriteText("Hello from server!");
+        return true;
+    });
+}
+wsServer.Run();
+wsServer.WaitFor();
+
+// now you can connect to the WebSocket server using ws://127.0.0.1:8081
+// (or use included test page: http://127.0.0.1:8080/ws)
+// !note: currentry routing for WebSocket isn't supported, comming soon
+```
