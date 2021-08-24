@@ -15,6 +15,7 @@ Currently supported:
 - Pre/post routing handlers
 - Keep-alive
 - Simple settings
+- Simple logging
 - WebSocket (both ws and wss)
 
 Requirements:
