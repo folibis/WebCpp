@@ -38,7 +38,7 @@ config.SetServerPort(8080);
 
 if(server.Init(config))
 {
-    server.Get("/hello", [](const WebCpp::Request &, WebCpp::Response &response) -> bool
+    server.Get("/hello", [](const WebCpp::Request& request, WebCpp::Response& response) -> bool
     {
         response.SetHeader("Content-Type","text/html;charset=utf-8");
         response.Write("<div>Hello, world!</div>");
@@ -52,7 +52,7 @@ if(server.Init(config))
 **POST handling:**
 
 ```cpp
-server.Post("/form", [](const WebCpp::Request &, WebCpp::Response &response) -> bool
+server.Post("/form", [](const WebCpp::Request& request, WebCpp::Response& response) -> bool
 {
     auto &body = request.GetRequestBody();
     auto name = body.GetValue("name");
@@ -65,7 +65,7 @@ server.Post("/form", [](const WebCpp::Request &, WebCpp::Response &response) -> 
 
 **Routing**
 ```cpp
-server.Get("/(user|users)/{user:alpha}/[{action:string}/]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+server.Get("/(user|users)/{user:alpha}/[{action:string}/]", [](const WebCpp::Request& request, WebCpp::Response& response) -> bool
 {
     std::string user = request.GetArg("user");
     if(user.empty())
@@ -108,7 +108,7 @@ config.SetWsServerPort(8081);
     
 if(wsServer.Init(config))
 {
-    wsServer.Data([](const WebCpp::HttpHeader &, WebCpp::ResponseWebSocket &response, const ByteArray &data) -> bool {
+    wsServer.Data([](const WebCpp::HttpHeader& header, WebCpp::ResponseWebSocket& response, const ByteArray& data) -> bool {
         std::cout << "received from client: " << StringUtil::ByteArray2String(data) << std::endl;
         response.WriteText("Hello from server!");
         return true;
