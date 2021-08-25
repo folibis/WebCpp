@@ -4,6 +4,11 @@
 
 using namespace WebCpp;
 
+Request::Request()
+{
+
+}
+
 Request::Request(HttpConfig& config):
     m_config(config)
 {
@@ -23,7 +28,27 @@ int Request::GetConnectionID() const
     return m_connID;
 }
 
+void Request::SetConnectionID(int connID)
+{
+    m_connID = connID;
+}
+
+const HttpConfig &Request::GetConfig() const
+{
+    return m_config;
+}
+
+void Request::SetConfig(const HttpConfig &config)
+{
+    m_config = config;
+}
+
 const HttpHeader &Request::GetHeader() const
+{
+    return m_header;
+}
+
+HttpHeader &Request::GetHeader()
 {
     return m_header;
 }
@@ -78,5 +103,3 @@ std::string Request::GetArg(const std::string &name) const
 
     return m_args.at(name);
 }
-
-

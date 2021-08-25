@@ -60,7 +60,12 @@ size_t HttpHeader::GetBodySize() const
 
 size_t HttpHeader::GetRequestSize() const
 {
-    return GetHeaderSize() + GetBodySize() + 4; // header + delimiter + body
+    return GetHeaderSize() + GetBodySize() + 4; // header + delimiter(CRLFCRLF, 4 bytes) + body
+}
+
+void HttpHeader::SetMethod(HttpHeader::Method method)
+{
+    m_method = method;
 }
 
 HttpHeader::Method HttpHeader::GetMethod() const

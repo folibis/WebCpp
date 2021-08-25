@@ -52,7 +52,7 @@ public:
     RequestBody(const RequestBody&other) = delete;
     RequestBody& operator=(const RequestBody& other) = delete;
     RequestBody(RequestBody&& other);
-    RequestBody& operator=(RequestBody&& other) = delete;
+    RequestBody& operator=(RequestBody&& other);
 
     bool Parse(const ByteArray &data, size_t offset, const ByteArray &contentType, bool useTempFile);
 

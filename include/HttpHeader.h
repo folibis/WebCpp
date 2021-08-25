@@ -48,7 +48,8 @@ public:
         PUT,
         DELETE,
         TRACE,
-        CONNECT
+        CONNECT,
+        WEBSOCKET,
     };
 
     enum class HeaderType
@@ -114,6 +115,7 @@ public:
     size_t GetBodySize() const;
     size_t GetRequestSize() const;
 
+    void SetMethod(HttpHeader::Method method);
     HttpHeader::Method GetMethod() const;
     std::string GetPath() const;
     std::string GetUri() const;

@@ -187,6 +187,11 @@ bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, si
     size_t written = 0;
     try
     {
+        if(connID < 0 || connID > MAX_CLIENTS)
+        {
+            throw std::runtime_error("connection ID isn't valid");
+        }
+
         int fd = m_fds[connID].fd;
         if(fd != (-1))
         {

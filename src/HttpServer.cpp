@@ -112,9 +112,9 @@ bool HttpServer::WaitFor()
     return m_server->WaitFor();
 }
 
-HttpServer &HttpServer::Get(const std::string &path, const Route::RouteFunc &f)
+HttpServer &HttpServer::OnGet(const std::string &path, const RouteHttp::RouteFunc &f)
 {
-    Route route(path, HttpHeader::Method::GET);
+    RouteHttp route(path, HttpHeader::Method::GET);
     LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
     route.SetFunction(f);
     m_routes.push_back(std::move(route));
@@ -122,21 +122,21 @@ HttpServer &HttpServer::Get(const std::string &path, const Route::RouteFunc &f)
     return *this;
 }
 
-HttpServer &HttpServer::Post(const std::string &path, const Route::RouteFunc &f)
+HttpServer &HttpServer::OnPost(const std::string &path, const RouteHttp::RouteFunc &f)
 {
-    Route route(path, HttpHeader::Method::POST);
+    RouteHttp route(path, HttpHeader::Method::POST);
     LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
     route.SetFunction(f);
     m_routes.push_back(std::move(route));
     return *this;
 }
 
-void HttpServer::SetPreRouteFunc(const Route::RouteFunc &callback)
+void HttpServer::SetPreRouteFunc(const RouteHttp::RouteFunc &callback)
 {
     m_preRoute = callback;
 }
 
-void HttpServer::SetPostRouteFunc(const Route::RouteFunc &callback)
+void HttpServer::SetPostRouteFunc(const RouteHttp::RouteFunc &callback)
 {
     m_postRoute = callback;
 }

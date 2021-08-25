@@ -58,7 +58,7 @@ public:
     PROPERTY(std::string, SslSertificate, "cert.pem")
     PROPERTY(std::string, SslKey, "key.pem")
     PROPERTY(bool, TempFile, false)
-    PROPERTY(bool, WsEnabled, false)
+    PROPERTY(bool, WsProcessDefault, true)
     PROPERTY(int, WsServerPort, 8081)
     PROPERTY(std::string, WsProtocol, "ws")
 };

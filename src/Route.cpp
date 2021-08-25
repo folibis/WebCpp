@@ -12,15 +12,9 @@ Route::Route(const std::string &path, HttpHeader::Method method)
     m_path = path;
 }
 
-bool Route::SetFunction(const Route::RouteFunc &f)
+const std::string& Route::GetPath() const
 {
-    m_func = f;
-    return true;
-}
-
-const Route::RouteFunc &Route::GetFunction() const
-{
-    return m_func;
+    return m_path;
 }
 
 bool Route::IsMatch(Request &request)

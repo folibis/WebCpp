@@ -38,18 +38,14 @@ namespace WebCpp
 class Route
 {
 public:
-    using RouteFunc = std::function<bool(const Request&request, Response &response)>;
-
     Route(const std::string &path, HttpHeader::Method method);
     Route(const Route& other) = delete;
     Route& operator=(const Route& other) = delete;
     Route(Route&& other) = default;
     Route& operator=(Route&& other) = default;
 
-    bool SetFunction(const RouteFunc& f);
-    const RouteFunc& GetFunction() const;
+    const std::string& GetPath() const;
     bool IsMatch(Request &request);
-
     std::string ToString() const;
 
 protected:
@@ -131,7 +127,6 @@ private:
         OrGroup,
     };
 
-    RouteFunc m_func;
     std::vector<Token> m_tokens;
     HttpHeader::Method m_method;
     std::string m_path;

@@ -35,7 +35,7 @@
 #include "IRunnable.h"
 #include "Request.h"
 #include "Response.h"
-#include "Route.h"
+#include "RouteHttp.h"
 #include "HttpConfig.h"
 #include "HttpHeader.h"
 
@@ -64,11 +64,11 @@ public:
     bool Close(bool wait = true) override;
     bool WaitFor() override;
 
-    HttpServer& Get(const std::string &path, const Route::RouteFunc &f);
-    HttpServer& Post(const std::string &path, const Route::RouteFunc &f);
+    HttpServer& OnGet(const std::string &path, const RouteHttp::RouteFunc &f);
+    HttpServer& OnPost(const std::string &path, const RouteHttp::RouteFunc &f);
 
-    void SetPreRouteFunc(const Route::RouteFunc &callback);
-    void SetPostRouteFunc(const Route::RouteFunc &callback);
+    void SetPreRouteFunc(const RouteHttp::RouteFunc &callback);
+    void SetPostRouteFunc(const RouteHttp::RouteFunc &callback);
 
 
     Protocol GetProtocol() const;
@@ -122,11 +122,11 @@ private:
 
     bool m_requestThreadRunning = false;
     std::deque<RequestData> m_requestQueue;
-    std::vector<Route> m_routes;
+    std::vector<RouteHttp> m_routes;
 
     HttpConfig m_config;
-    Route::RouteFunc m_preRoute = nullptr;
-    Route::RouteFunc m_postRoute = nullptr;
+    RouteHttp::RouteFunc m_preRoute = nullptr;
+    RouteHttp::RouteFunc m_postRoute = nullptr;
 };
 
 }

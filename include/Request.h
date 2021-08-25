@@ -51,8 +51,13 @@ public:
     Request(Request&& other) = default;
     Request& operator=(Request&& other) = default;
 
-    int GetConnectionID() const;        
+
+    int GetConnectionID() const;
+    void SetConnectionID(int connID);
+    const HttpConfig& GetConfig() const;
+    void SetConfig(const HttpConfig& config);
     const HttpHeader& GetHeader() const;
+    HttpHeader& GetHeader();
     const ByteArray &GetData() const;
     const RequestBody& GetRequestBody() const;
     std::string GetArg(const std::string &name) const;
@@ -66,7 +71,7 @@ protected:
 
 private:
     int m_connID;
-    HttpConfig &m_config;
+    HttpConfig m_config;
     HttpHeader m_header;
     ByteArray m_data;
     std::map<std::string, std::string> m_args;    

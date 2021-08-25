@@ -114,14 +114,39 @@ bool WebSocketServer::WaitFor()
     return m_server->WaitFor();
 }
 
-void WebSocketServer::SetWebSocketRequestFunc(const WebCpp::Route::RouteFunc &callback)
+void WebSocketServer::OnRequest(const std::string &path, const WebCpp::RouteHttp::RouteFunc &func)
 {
-    m_webSocketRequest = callback;
+    RouteWebSocket *route = GetRoute(path);
+    if(route == nullptr)
+    {
+        RouteWebSocket route(path);
+        LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
+        route.SetFunctionRequest(func);
+        m_routes.push_back(std::move(route));
+    }
+    else
+    {
+        route->SetFunctionRequest(func);
+        LOG("register request function for route: " + route->ToString(), LogWriter::LogType::Info);
+    }
 }
 
-void WebSocketServer::Data(const std::function<bool(const HttpHeader &, ResponseWebSocket &, const ByteArray &)> &func)
+void WebSocketServer::OnMessage(const std::string &path, const std::function<bool(const Request &, ResponseWebSocket &, const ByteArray &)> &func)
 {
-    m_dataFunc = func;
+
+    RouteWebSocket *route = GetRoute(path);
+    if(route == nullptr)
+    {
+        RouteWebSocket route(path);
+        LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
+        route.SetFunctionMessage(func);
+        m_routes.push_back(std::move(route));
+    }
+    else
+    {
+        route->SetFunctionMessage(func);
+        LOG("register message function for route: " + route->ToString(), LogWriter::LogType::Info);
+    }
 }
 
 WebSocketServer::Protocol WebSocketServer::GetProtocol() const
@@ -197,7 +222,7 @@ void *WebSocketServer::RequestThread()
         WaitForSignal();
         if(CheckDataFullness())
         {
-             ProcessRequests();
+            ProcessRequests();
         }
     }
 
@@ -224,7 +249,7 @@ void WebSocketServer::PutToQueue(int connID, ByteArray &data)
     {
         if(req.connID == connID)
         {
-            req.data.insert(req.data.end(), data.begin(), data.end());            
+            req.data.insert(req.data.end(), data.begin(), data.end());
             break;
         }
     }
@@ -248,7 +273,7 @@ void WebSocketServer::InitConnection(int connID, const std::string &remote)
         }
     }
 
-    m_requestQueue.push_back(RequestData(connID, remote));
+    m_requestQueue.push_back(RequestData(connID, remote, m_config));
 }
 
 bool WebSocketServer::CheckDataFullness()
@@ -278,16 +303,17 @@ bool WebSocketServer::CheckWsHeader(RequestData& requestData)
 {
     bool retval = false;
 
-    if(requestData.header.IsComplete() == false)
+    if(requestData.request.GetHeader().IsComplete() == false)
     {
-        requestData.header.Parse(requestData.data);
+        requestData.request.GetHeader().Parse(requestData.data);
     }
 
-    if(requestData.header.IsComplete())
+    if(requestData.request.GetHeader().IsComplete())
     {
-        size_t size = requestData.header.GetRequestSize();
+        size_t size = requestData.request.GetHeader().GetRequestSize();
         if(requestData.data.size() >= size)
         {
+            requestData.request.GetHeader().SetMethod(HttpHeader::Method::WEBSOCKET);
             requestData.readyForDispatch = true;
             retval = true;
         }
@@ -295,6 +321,7 @@ bool WebSocketServer::CheckWsHeader(RequestData& requestData)
 
     return retval;
 }
+
 bool WebSocketServer::CheckWsFrame(RequestData& requestData)
 {
     bool retval = false;
@@ -332,7 +359,6 @@ bool WebSocketServer::CheckWsFrame(RequestData& requestData)
             default:
                 payloadSize = header.flags2.PayloadLen;
                 break;
-
         }
 
         if(payloadSize > 0)
@@ -343,7 +369,7 @@ bool WebSocketServer::CheckWsFrame(RequestData& requestData)
             {
                 maskHeaderSize = sizeof(WebSocketHeaderMask);
                 if(dataSize >= headerSize + sizeHeaderSize + maskHeaderSize)
-                {                    
+                {
                     std::memcpy(&mask, requestData.data.data() + headerSize + sizeHeaderSize, maskHeaderSize);
                 }
             }
@@ -374,23 +400,23 @@ void WebSocketServer::ProcessRequests()
 {
     Lock lock(m_queueMutex);
 
-    for (auto it = m_requestQueue.begin(); it != m_requestQueue.end(); ++it)
+    for(auto &request: m_requestQueue)
     {
-        if(it->readyForDispatch)
+        if(request.readyForDispatch)
         {
-            if(it->handshake == false)
+            if(request.handshake == false)
             {
-                if(ProcessRequest(Request(it->connID, it->data, std::move(it->header), m_config)))
+                if(ProcessRequest(request.request))
                 {
-                    it->data.clear();
-                    it->handshake = true;
-                    it->readyForDispatch = false;
+                    request.data.clear();
+                    request.handshake = true;
+                    request.readyForDispatch = false;
                 }
             }
             else
             {
-                ProcessWsRequest(it->connID, it->header, it->encodedData);
-                it->readyForDispatch = false;
+                ProcessWsRequest(request.request, request.encodedData);
+                request.readyForDispatch = false;
             }
         }
     }
@@ -410,41 +436,99 @@ void WebSocketServer::RemoveFromQueue(int connID)
     }
 }
 
-bool WebSocketServer::ProcessRequest(const Request &request)
+bool WebSocketServer::ProcessRequest(Request &request)
 {
     Response response(request.GetConnectionID(), m_config);
+    bool processed = false;
+    bool matched = false;
 
-    if(m_webSocketRequest != nullptr)
+    for(auto &route: m_routes)
     {
-        m_webSocketRequest(request, response);
+        if(route.IsMatch(request))
+        {
+            matched = true;
+            auto &f = route.GetFunctionRequest();
+            if(f != nullptr)
+            {
+                try
+                {
+                    if((processed = f(request, response)))
+                    {
+                        break;
+                    }
+                }
+                catch(...) { }
+            }
+        }
     }
 
-    std::string key = request.GetHeader().GetHeader("Sec-WebSocket-Key");
-    key = key + WEBSOCKET_KEY_TOKEN;
+    // the uri is matched but not request handler is provided or request is not processed
+    if(processed == false && matched == true)
+    {
+        if(m_config.GetWsProcessDefault() == true)
+        {
+            std::string key = request.GetHeader().GetHeader("Sec-WebSocket-Key");
+            key = key + WEBSOCKET_KEY_TOKEN;
 
-    uint8_t *buffer = Data::Sha1Digest(key);
-    key = Data::Base64Encode(buffer, 20);
+            uint8_t *buffer = Data::Sha1Digest(key);
+            key = Data::Base64Encode(buffer, 20);
 
-    response.SetResponseCode(101);
-    response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
-    response.SetHeader(Response::HeaderType::Upgrade, "websocket");
-    response.SetHeader(Response::HeaderType::Connection, "upgrade");
-    response.SetHeader("Sec-WebSocket-Accept", key);    
+            response.SetResponseCode(101);
+            response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
+            response.SetHeader(Response::HeaderType::Upgrade, "websocket");
+            response.SetHeader(Response::HeaderType::Connection, "upgrade");
+            response.SetHeader("Sec-WebSocket-Accept", key);
+        }
+        else
+        {
+            response.SendNotFound();
+        }
+    }
 
     return response.Send(m_server.get());
 }
 
-bool WebSocketServer::ProcessWsRequest(int connID, const HttpHeader& header, const ByteArray &data)
+bool WebSocketServer::ProcessWsRequest(Request &request, const ByteArray &data)
 {
-    if(m_dataFunc != nullptr)
+    ResponseWebSocket response(request.GetConnectionID());
+    bool processed = false;
+
+    for(auto &route: m_routes)
     {
-        ResponseWebSocket response(connID);
-        m_dataFunc(header, response, data);
-        if(!response.IsEmpty())
+        if(route.IsMatch(request))
         {
-            response.Send(m_server.get());
+            auto &f = route.GetFunctionMessage();
+            if(f != nullptr)
+            {
+                try
+                {
+                    if((processed = f(request, response, data)))
+                    {
+                        break;
+                    }
+                }
+                catch(...) { }
+            }
         }
     }
 
+    if(!response.IsEmpty())
+    {
+        response.Send(m_server.get());
+    }
+
     return true;
+}
+
+RouteWebSocket *WebSocketServer::GetRoute(const std::string &path)
+{
+    for(size_t i = 0;i < m_routes.size();i ++)
+    {
+        if(m_routes.at(i).GetPath() == path)
+        {
+            return &(m_routes.at(i));
+        }
+    }
+
+    return nullptr;
 }

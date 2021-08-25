@@ -28,7 +28,8 @@
 #include <memory>
 #include <deque>
 #include "HttpConfig.h"
-#include "Route.h"
+#include "RouteHttp.h"
+#include "RouteWebSocket.h"
 #include "IError.h"
 #include "IRunnable.h"
 #include "Request.h"
@@ -61,8 +62,8 @@ public:
     bool Close(bool wait = true) override;
     bool WaitFor() override;
 
-    void SetWebSocketRequestFunc(const Route::RouteFunc &callback);
-    void Data(const std::function<bool(const HttpHeader& header, ResponseWebSocket &response, const ByteArray &data)>& func);
+    void OnRequest(const std::string &path, const RouteHttp::RouteFunc &func);
+    void OnMessage(const std::string &path, const std::function<bool(const Request& request, ResponseWebSocket &response, const ByteArray &data)>& func);
 
     Protocol GetProtocol() const;
 
@@ -74,16 +75,18 @@ public:
 protected:
     struct RequestData
     {
-        RequestData(int connID, const std::string &remote)
+        RequestData(int connID, const std::string &remote, const HttpConfig &config)
         {
             this->connID= connID;
             readyForDispatch = false;
             handshake = false;
-            header.SetRemoteAddress(remote);
+            request.SetConnectionID(connID);
+            request.SetConfig(config);
+            request.GetHeader().SetRemoteAddress(remote);
         }
 
         int connID;
-        HttpHeader header;
+        Request request;
         ByteArray data;
         ByteArray encodedData;
         bool handshake;
@@ -105,10 +108,12 @@ protected:
     bool CheckDataFullness();
     void ProcessRequests();
     void RemoveFromQueue(int connID);
-    bool ProcessRequest(const Request &request);
+    bool ProcessRequest(Request &request);
     bool CheckWsHeader(RequestData& requestData);
     bool CheckWsFrame(RequestData &requestData);
-    bool ProcessWsRequest(int connID, const HttpHeader &header, const ByteArray &data);
+    bool ProcessWsRequest(Request &request, const ByteArray &data);
+    //bool IsRouteExist(const std::string &path);
+    RouteWebSocket* GetRoute(const std::string &path);
 
 private:
     std::shared_ptr<ICommunicationServer> m_server = nullptr;
@@ -120,8 +125,9 @@ private:
     bool m_requestThreadRunning = false;
     std::deque<RequestData> m_requestQueue;
     HttpConfig m_config;
-    Route::RouteFunc m_webSocketRequest = nullptr;
-    std::function<bool(const HttpHeader& header, ResponseWebSocket &response, const ByteArray& data)> m_dataFunc;
+    //RouteHttp::RouteFunc m_webSocketRequest = nullptr;
+    std::vector<RouteWebSocket> m_routes;
+    //std::function<bool(const Request& request, ResponseWebSocket &response, const ByteArray& data)> m_dataFunc;
 };
 
 }
