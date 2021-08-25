@@ -2,7 +2,7 @@
 
 # WebCpp
 
-simple HTTP/HTTPS C++11 library, mainly intended for old CPUs/compilers
+simple HTTP/HTTPS C++11 library, mainly intended for old CPUs/compilers (~420K)
 
 *Note: the code in the midst of development, use it at your own risk*
 
