@@ -103,7 +103,6 @@ Placeholder | Notes | Example
 WebCpp::WebSocketServer wsServer;
 
 WebCpp::HttpConfig config;
-config.SetWsEnabled(true);
 config.SetWsProtocol("ws");
 config.SetWsServerPort(8081);    
     
