@@ -26,7 +26,7 @@
 #define RESPONSEWEBSOCKET_H
 
 #include "common.h"
-#include "ICommunication.h"
+#include "ICommunicationServer.h"
 #include "common_ws.h"
 
 namespace WebCpp
@@ -47,7 +47,7 @@ public:
     void WriteText(const std::string &data);
     void WriteBinary(const ByteArray &data);
 
-    bool Send(ICommunication *communication);
+    bool Send(ICommunicationServer *communication);
 
 
 

@@ -144,7 +144,7 @@ uint16_t Response::GetResponseCode() const
     return m_responseCode;
 }
 
-bool Response::Send(ICommunication *communication)
+bool Response::Send(ICommunicationServer *communication)
 {
     ByteArray header;
 

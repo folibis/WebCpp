@@ -32,7 +32,7 @@ void ResponseWebSocket::WriteBinary(const ByteArray &data)
     m_messageType = MessageType::Binary;
 }
 
-bool ResponseWebSocket::Send(ICommunication *communication)
+bool ResponseWebSocket::Send(ICommunicationServer *communication)
 {
     try
     {

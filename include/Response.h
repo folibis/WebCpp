@@ -27,7 +27,7 @@
 
 #include <string>
 #include <map>
-#include "ICommunication.h"
+#include "ICommunicationServer.h"
 #include "common.h"
 #include "HttpConfig.h"
 
@@ -109,7 +109,7 @@ public:
     void SetResponseCode(uint16_t code, const std::string &phrase);
     uint16_t GetResponseCode() const;
 
-    bool Send(ICommunication *communication);
+    bool Send(ICommunicationServer *communication);
     static std::string HeaderType2String(Response::HeaderType headerType);
     static Response::HeaderType String2HeaderType(const std::string &str);
     static std::string ResponseCode2String(int code);

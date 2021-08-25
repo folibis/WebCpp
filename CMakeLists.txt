@@ -18,14 +18,15 @@ set(CMAKE_CXX_STANDARD 11)
 
 project(webcpp)
 
-file(GLOB SRC . src/*.cpp src/comm/*.cpp src/utils/*.cpp)
-file(GLOB INC . include/*.h include/comm/*.h include/utils/*.h)
+file(GLOB SRC . src/*.cpp src/conn/*.cpp src/utils/*.cpp)
+file(GLOB INC . include/*.h include/common/*.h include/conn/*.h include/utils/*.h)
 
 add_library(${PROJECT_NAME} SHARED ${SRC} ${INC})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/comm
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/common
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/conn
     ${CMAKE_CURRENT_SOURCE_DIR}/include/utils
     )
 

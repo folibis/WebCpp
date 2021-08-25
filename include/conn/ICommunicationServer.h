@@ -36,6 +36,8 @@ class ICommunicationServer : public ICommunication
 {
 public:
     virtual bool CloseClient(int connID) = 0;
+    virtual bool Write(int connID, const std::vector<char> &data) = 0;
+    virtual bool Write(int connID, const std::vector<char> &data, size_t size) = 0;
 
     virtual bool SetNewConnectionCallback(const std::function<void(int, const std::string&)> &callback) { m_newConnectionCallback = callback; return true; };
     virtual bool SetDataReadyCallback(const std::function<void(int, std::vector<char> &data)> &callback) { m_dataReadyCallback = callback; return true; };

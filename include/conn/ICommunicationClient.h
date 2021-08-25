@@ -25,4 +25,26 @@
 #ifndef ICOMMUNICATIONCLIENT_H
 #define ICOMMUNICATIONCLIENT_H
 
+#include "ICommunication.h"
+#include "functional"
+#include "common.h"
+
+
+namespace WebCpp
+{
+
+class ICommunicationClient : public ICommunication
+{
+public:
+    virtual bool Write(const ByteArray &data) = 0;    
+    virtual bool SetDataReadyCallback(const std::function<void(std::vector<char> &data)> &callback) { m_dataReadyCallback = callback; return true; };
+    virtual bool SetCloseConnectionCallback(const std::function<void()> &callback) { m_closeConnectionCallback = callback; return true; };
+
+protected:    
+    std::function<void(std::vector<char> &data)> m_dataReadyCallback = nullptr;
+    std::function<void()> m_closeConnectionCallback = nullptr;
+};
+
+}
+
 #endif // ICOMMUNICATIONCLIENT_H

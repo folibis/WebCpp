@@ -55,9 +55,6 @@ public:
 
     virtual bool Connect(const std::string &address = "") = 0;
 
-    virtual bool Write(int connID, const std::vector<char> &data) = 0;
-    virtual bool Write(int connID, const std::vector<char> &data, size_t size) = 0;
-
     CommunicationProtocol GetProtocol() const { return m_protocol; }
     ComminicationType GetType() const { return m_type; }
 
