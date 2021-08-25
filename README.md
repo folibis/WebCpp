@@ -39,7 +39,7 @@ config.SetServerPort(8080);
 
 if(server.Init(config))
 {
-    server.Get("/hello", [](const WebCpp::Request& request, WebCpp::Response& response) -> bool
+    server.OnGet("/hello", [](const WebCpp::Request& request, WebCpp::Response& response) -> bool
     {
         response.SetHeader("Content-Type","text/html;charset=utf-8");
         response.Write("<div>Hello, world!</div>");
@@ -53,7 +53,7 @@ if(server.Init(config))
 **POST handling:**
 
 ```cpp
-server.Post("/form", [](const WebCpp::Request& request, WebCpp::Response& response) -> bool
+server.OnPost("/form", [](const WebCpp::Request& request, WebCpp::Response& response) -> bool
 {
     auto &body = request.GetRequestBody();
     auto name = body.GetValue("name");
@@ -66,7 +66,7 @@ server.Post("/form", [](const WebCpp::Request& request, WebCpp::Response& respon
 
 **Routing**
 ```cpp
-server.Get("/(user|users)/{user:alpha}/[{action:string}/]", [](const WebCpp::Request& request, WebCpp::Response& response) -> bool
+server.OnGet("/(user|users)/{user:alpha}/[{action:string}/]", [](const WebCpp::Request& request, WebCpp::Response& response) -> bool
 {
     std::string user = request.GetArg("user");
     if(user.empty())
@@ -109,16 +109,19 @@ config.SetWsServerPort(8081);
     
 if(wsServer.Init(config))
 {
-    wsServer.Data([](const WebCpp::HttpHeader& header, WebCpp::ResponseWebSocket& response, const ByteArray& data) -> bool {
-        std::cout << "received from client: " << StringUtil::ByteArray2String(data) << std::endl;
-        response.WriteText("Hello from server!");
+    wsServer.OnMessage("/ws[/{user}/]", [](const WebCpp::Request &request, WebCpp::ResponseWebSocket &response, const ByteArray &data) -> bool {
+        std::string user = request.GetArg("user");
+        if(user.empty())
+        {
+            user = "Unknown";
+        }
+        response.WriteText("Hello from server, " + user + "! You've sent: " + StringUtil::ByteArray2String(data));
         return true;
     });
 }
 wsServer.Run();
 wsServer.WaitFor();
 
-// now you can connect to the WebSocket server using ws://127.0.0.1:8081
+// now you can connect to the WebSocket server using ws://127.0.0.1:8081/ws or ws://127.0.0.1:8081/ws/john
 // (or use included test page: http://127.0.0.1:8080/ws)
-// !note: currentry routing for WebSocket isn't supported, comming soon
 ```
