@@ -43,6 +43,7 @@ if(server.Init(config))
     {
         response.SetHeader("Content-Type","text/html;charset=utf-8");
         response.Write("<div>Hello, world!</div>");
+        return true;
     });
     
     server.Run();
@@ -61,6 +62,7 @@ server.OnPost("/form", [](const WebCpp::Request& request, WebCpp::Response& resp
     
     response.SetHeader("Content-Type","text/html;charset=utf-8");
     response.Write("<p>Hello, " + name + " " + family + "</p>");
+    return true;
 });
 ```
 
