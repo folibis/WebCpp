@@ -29,10 +29,13 @@
 #include <vector>
 #include "common.h"
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
 #define PROPERTY(TYPE,NAME,DEFAULT) \
     public: \
     TYPE Get##NAME() const { return m_##NAME; } \
-    void Set##NAME(const TYPE& value) { m_##NAME = value; } \
+    void Set##NAME(const TYPE& value) { m_##NAME = value; OnChanged(TOSTRING(NAME)); } \
     private: \
     TYPE m_##NAME = DEFAULT; \
 
@@ -46,12 +49,21 @@ public:
     HttpConfig();
     void Init();
     bool Load();
+
+    std::string RootFolder() const;
     std::string ToString() const;
+
+protected:
+    void SetRootFolder();
+    void OnChanged(const std::string &value);
+private:
+    std::string m_rootFolder;
 
     PROPERTY(std::string, ServerName, WEBCPP_CANONICAL_NAME)
     PROPERTY(std::string, Root, "public")
     PROPERTY(std::string, IndexFile, "index.html")
     PROPERTY(bool, HttpEnabled, true)
+    PROPERTY(std::string, HttpServerAddress, "")
     PROPERTY(int, HttpServerPort, 8080)
     PROPERTY(std::string, HttpProtocol, "HTTP")
     PROPERTY(int, KeepAliveTimeout, 2000)
