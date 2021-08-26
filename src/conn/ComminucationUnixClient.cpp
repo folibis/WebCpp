@@ -12,6 +12,7 @@
 #include "ComminucationUnixClient.h"
 
 #define MAX_CLIENTS 10
+#define POLL_TIMEOUT 1000
 
 
 using namespace WebCpp;
@@ -19,6 +20,8 @@ using namespace WebCpp;
 ComminucationUnixClient::ComminucationUnixClient(const std::string& path)
 {
     m_address = path;
+    m_protocol = CommunicationProtocol::UnixDoamin;
+    m_type = ComminicationType::Client;
 }
 
 bool ComminucationUnixClient::Init()
@@ -56,6 +59,9 @@ bool ComminucationUnixClient::Run()
 {
     if(m_initialized)
     {
+        m_poll.fd = m_socket;
+        m_poll.events = POLLIN;
+
         m_running = true;
         if(pthread_create(&m_thread, nullptr, &ComminucationUnixClient::ReadThreadWrapper, this) != 0)
         {
@@ -112,7 +118,7 @@ bool ComminucationUnixClient::Connect(const std::string &address)
         memset(&addr, 0, sizeof(addr));
         addr.sun_family = AF_UNIX;
         strncpy(addr.sun_path, m_address.c_str(), m_address.size());
-        *addr.sun_path = '\0';
+        //*addr.sun_path = '\0';
 
         len = static_cast<socklen_t>(__builtin_offsetof(struct sockaddr_un, sun_path) + m_address.length());
         if(connect(m_socket, reinterpret_cast<struct sockaddr *>(&addr), len) == (-1))
@@ -120,9 +126,6 @@ bool ComminucationUnixClient::Connect(const std::string &address)
             SetLastError(std::string("Socket creating error: ") + strerror(errno), errno);
             throw GetLastError();
         }
-
-        m_poll.fd = m_socket;
-        m_poll.events = POLLIN;
 
         retval = true;
     }
@@ -179,7 +182,7 @@ void *ComminucationUnixClient::ReadThread()
     {
         try
         {
-            int status = poll(&m_poll, 1, 1000);
+            int status = poll(&m_poll, 1, POLL_TIMEOUT);
             if(status > 0 && (m_poll.revents & POLLIN))
             {
                 bool readMore = true;
@@ -207,8 +210,8 @@ void *ComminucationUnixClient::ReadThread()
                     }
                     else // the peer connection probably has closed
                     {
+                        close(m_socket);
                         readMore = false;
-                        isError = true;
                     }
                 }
                 while(readMore == true);
@@ -224,7 +227,7 @@ void *ComminucationUnixClient::ReadThread()
         }
         catch(...)
         {
-
+            SetLastError("read thread unexpected error");
         }
     }
 

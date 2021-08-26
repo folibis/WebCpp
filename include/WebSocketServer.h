@@ -82,7 +82,7 @@ protected:
             handshake = false;
             request.SetConnectionID(connID);
             request.SetConfig(config);
-            request.GetHeader().SetRemoteAddress(remote);
+            request.GetHeader().SetRemote(remote);
         }
 
         int connID;

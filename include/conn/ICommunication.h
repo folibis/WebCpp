@@ -43,7 +43,8 @@ public:
     enum class CommunicationProtocol
     {
         Undefined = 0,        
-        TCP
+        TCP,
+        UnixDoamin,
     };
 
     enum class ComminicationType
