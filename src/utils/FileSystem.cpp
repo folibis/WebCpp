@@ -3,6 +3,7 @@
 #include <linux/limits.h>
 #include <dirent.h>
 #include <iostream>
+#include <cstring>
 #include <ctime>
 #include <vector>
 #include "FileSystem.h"
@@ -17,7 +18,14 @@ using namespace WebCpp;
 std::string FileSystem::GetFullPath(const std::string &path)
 {
     char buffer[PATH_MAX];
-    return realpath(path.c_str(), buffer);
+    char *retval = realpath(path.c_str(), buffer);
+
+    if(retval == nullptr)
+    {
+        return "";
+    }
+
+    return std::string(retval);
 }
 
 std::string FileSystem::GetApplicationFolder()
