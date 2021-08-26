@@ -8,6 +8,7 @@
 #include "StringUtil.h"
 #include "Data.h"
 #include "ResponseWebSocket.h"
+#include "FcgiClient.h"
 
 
 static WebCpp::HttpServer httpServer;
@@ -27,6 +28,7 @@ int main()
     config.SetRoot(PUBLIC_DIR);
     config.SetHttpProtocol("HTTP");
     config.SetHttpServerPort(8080);
+    config.SetRoot("/home/ruslan/source/webcpp/test/public");
     config.SetSslSertificate("/home/ruslan/source/webcpp/test/ssl/server.cert");
     config.SetSslKey("/home/ruslan/source/webcpp/test/ssl/server.key");
     config.SetTempFile(true);
@@ -34,8 +36,41 @@ int main()
     bool httpServerRun = false;
     bool wsServerRun = false;
 
+    WebCpp::FcgiClient fcgi("/run/php/php7.4-fpm.sock", 1);
+    if(fcgi.Connect())
+    {
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::QUERY_STRING, "QUERY_STRING");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::REQUEST_METHOD, "REQUEST_METHOD");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SCRIPT_FILENAME, "SCRIPT_FILENAME");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SCRIPT_NAME, "SCRIPT_NAME");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::PATH_INFO, "PATH_INFO");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::REQUEST_URI, "REQUEST_URI");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::DOCUMENT_ROOT, "DOCUMENT_ROOT");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_PROTOCOL, "SERVER_PROTOCOL");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::GATEWAY_INTERFACE, "GATEWAY_INTERFACE");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::REMOTE_ADDR, "REMOTE_ADDR");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::REMOTE_PORT, "REMOTE_PORT");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_ADDR, "SERVER_ADDR");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_PORT, "SERVER_PORT");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_NAME, "SERVER_NAME");
+    }
+
     if(httpServer.Init(config))
     {
+        httpServer.OnGet("/index.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        {
+            bool retval = false;
+
+            retval = fcgi.SendRequest(request, config);
+
+            if(retval == false)
+            {
+                response.SendNotFound();
+            }
+
+            return retval;
+        });
+
         httpServer.OnGet("/ws", [](const WebCpp::Request &, WebCpp::Response &response) -> bool
         {
             bool retval = false;
@@ -132,7 +167,7 @@ int main()
             {
                 user = "Unknown";
             }
-            std::cout << "received from client " << request.GetHeader().GetRemoteAddress() << ": " << StringUtil::ByteArray2String(data) << std::endl;
+            std::cout << "received from client " << request.GetHeader().GetRemote() << ": " << StringUtil::ByteArray2String(data) << std::endl;
             response.WriteText("Hello from server, " + user + "! You've sent: " + StringUtil::ByteArray2String(data));
             return true;
         });

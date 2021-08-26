@@ -28,6 +28,7 @@
 
 
 #pragma pack(push, 1)
+
     struct Flag1
     {
         uint8_t opcode: 4;
@@ -59,6 +60,7 @@
     {
         uint8_t bytes[4];
     };
+
 #pragma pack(pop)
 
     enum class MessageType
