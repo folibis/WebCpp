@@ -282,8 +282,8 @@ void HttpHeader::ParseQuery()
     if(pos != std::string::npos)
     {
         m_path = std::string(m_uri.begin(), m_uri.begin() + pos);
-        std::string query = std::string(m_uri.begin() + pos + 1, m_uri.end());
-        auto q = StringUtil::Split(query, '&');
+        m_query = std::string(m_uri.begin() + pos + 1, m_uri.end());
+        auto q = StringUtil::Split(m_query, '&');
         for(auto &token: q)
         {
             auto parr = StringUtil::Split(token, '=');
@@ -291,7 +291,7 @@ void HttpHeader::ParseQuery()
             {
                 StringUtil::UrlDecode(parr[0]);
                 StringUtil::UrlDecode(parr[1]);
-                m_query[parr[0]] = parr[1];
+                m_queryValue[parr[0]] = parr[1];
             }
         }
     }
@@ -331,12 +331,51 @@ std::string HttpHeader::GetVersion() const
     return m_version;
 }
 
+std::string HttpHeader::GetQuery() const
+{
+    return m_query;
+}
+
+std::string HttpHeader::GetQueryValue(const std::string &name) const
+{
+    if(m_queryValue.find(name) != m_queryValue.end())
+    {
+        return m_queryValue.at(name);
+    }
+
+    return "";
+}
+
+std::string HttpHeader::GetRemote() const
+{
+    if(m_remotePort != (-1))
+    {
+        return m_remoteAddress + ":" + std::to_string(m_remotePort);
+    }
+
+    return m_remoteAddress;
+}
+
+void HttpHeader::SetRemote(const std::string &address)
+{
+    auto list = StringUtil::Split(address,':');
+    if(list.size() == 2)
+    {
+        m_remoteAddress = list[0];
+        int port;
+        if(StringUtil::String2int(list[0], port))
+        {
+            m_remotePort = port;
+        }
+    }
+}
+
 std::string HttpHeader::GetRemoteAddress() const
 {
     return m_remoteAddress;
 }
 
-void HttpHeader::SetRemoteAddress(const std::string &address)
+int HttpHeader::GetRemotePort() const
 {
-    m_remoteAddress = address;
+    return m_remotePort;
 }

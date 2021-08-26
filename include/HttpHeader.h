@@ -120,9 +120,13 @@ public:
     std::string GetPath() const;
     std::string GetUri() const;
     std::string GetVersion() const;
+    std::string GetQuery() const;
+    std::string GetQueryValue(const std::string &name) const;
 
+    std::string GetRemote() const;
+    void SetRemote(const std::string &remote);
     std::string GetRemoteAddress() const;
-    void SetRemoteAddress(const std::string &address);
+    int GetRemotePort() const;
 
     std::string GetHeader(HeaderType headerType) const;
     std::string GetHeader(const std::string &headerType) const;
@@ -144,11 +148,13 @@ private:
     HttpHeader::Method m_method = HttpHeader::Method::Undefined;
     std::string m_uri = "";
     std::string m_path = "";
+    std::string m_query = "";
     std::vector<Header> m_headers = {};
     std::string m_version = "";
     size_t m_headerSize = 0;
-    std::map<std::string, std::string> m_query;
+    std::map<std::string, std::string> m_queryValue;
     std::string m_remoteAddress;
+    int m_remotePort = (-1);
 };
 
 }
