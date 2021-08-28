@@ -36,10 +36,8 @@ bool ComminucationUnixClient::Init()
             throw GetLastError();
         }
 
-        int opt_value = 1;
-        setsockopt(m_socket, SOL_SOCKET, SO_REUSEADDR, static_cast<void *>(&opt_value), sizeof(int));
-        int on = 1;
-        ioctl(m_socket, FIONBIO, &on);
+        //int on = 1;
+        //ioctl(m_socket, FIONBIO, &on);
 
         m_initialized = true;
     }
@@ -75,9 +73,10 @@ bool ComminucationUnixClient::Run()
 
 bool ComminucationUnixClient::Close(bool wait)
 {
-    if(m_initialized && m_socket != (-1))
+    if(m_initialized && m_isConnected)
     {
         close(m_socket);
+        m_isConnected = false;
         m_socket = (-1);
         m_initialized = false;
     }
@@ -102,9 +101,13 @@ bool ComminucationUnixClient::WaitFor()
 
 bool ComminucationUnixClient::Connect(const std::string &address)
 {
+    if(m_isConnected)
+    {
+        return true;
+    }
+
     socklen_t len;
     struct sockaddr_un addr;
-    bool retval = false;
 
     try
     {
@@ -127,14 +130,14 @@ bool ComminucationUnixClient::Connect(const std::string &address)
             throw GetLastError();
         }
 
-        retval = true;
+        m_isConnected = true;
     }
     catch(...)
     {
 
     }
 
-    return retval;
+    return m_isConnected;
 }
 
 bool ComminucationUnixClient::Write(const ByteArray &data)
@@ -161,6 +164,36 @@ bool ComminucationUnixClient::Write(const ByteArray &data)
     }
 
     return retval;
+}
+
+ByteArray ComminucationUnixClient::Read(size_t length)
+{
+    length = (length == 0 ? BUFFER_SIZE : length);
+    bool readMore = true;
+    ByteArray data;
+
+    try
+    {
+        do
+        {
+            ssize_t readBytes = recv(m_socket, &m_readBuffer, length, MSG_DONTWAIT);
+            if(readBytes > 0)
+            {
+                data.insert(data.end(), m_readBuffer, m_readBuffer + readBytes);
+            }
+            else
+            {
+                readMore = false;
+            }
+        }
+        while(readMore);
+    }
+    catch(...)
+    {
+
+    }
+
+    return data;
 }
 
 void *ComminucationUnixClient::ReadThreadWrapper(void *ptr)
@@ -191,7 +224,7 @@ void *ComminucationUnixClient::ReadThread()
                 ByteArray data;
                 do
                 {
-                    ssize_t readBytes = read(m_poll.fd, &m_readBuffer, BUFFER_SIZE);
+                    ssize_t readBytes = recv(m_poll.fd, &m_readBuffer, BUFFER_SIZE, MSG_DONTWAIT);
                     if (readBytes < 0)
                     {
                         if (errno == EWOULDBLOCK)
@@ -212,6 +245,12 @@ void *ComminucationUnixClient::ReadThread()
                     {
                         close(m_socket);
                         readMore = false;
+                        isError = true;
+                        m_isConnected = false;
+                        if(m_closeConnectionCallback != nullptr)
+                        {
+                            m_closeConnectionCallback();
+                        }
                     }
                 }
                 while(readMore == true);

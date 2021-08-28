@@ -373,8 +373,11 @@ void HttpServer::ProcessRequest(Request &request)
 
     LOG(request.GetHeader().ToString() + (processed ? ", processed" : ", not processed"), LogWriter::LogType::Access);
 
-    response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
-    response.Send(m_server.get());
+    if(response.IsShouldSend())
+    {
+        response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
+        response.Send(m_server.get());
+    }
 }
 
 void HttpServer::ProcessKeepAlive(int connID)

@@ -15,7 +15,7 @@ HttpHeader::HttpHeader()
 bool HttpHeader::Parse(const ByteArray &data)
 {
     m_complete = false;
-    ByteArray delimiter { { CRLFCRLF } };
+    //ByteArray delimiter { { CRLFCRLF } };
 
     size_t pos = StringUtil::SearchPosition(data, { CRLFCRLF });
     if(pos != SIZE_MAX)

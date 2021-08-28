@@ -28,16 +28,16 @@ int main()
     config.SetRoot(PUBLIC_DIR);
     config.SetHttpProtocol("HTTP");
     config.SetHttpServerPort(8080);
-    config.SetRoot("/home/ruslan/source/webcpp/test/public");
-    config.SetSslSertificate("/home/ruslan/source/webcpp/test/ssl/server.cert");
-    config.SetSslKey("/home/ruslan/source/webcpp/test/ssl/server.key");
+    config.SetRoot("/home/ruslan/sources/webcpp/test/public");
+    config.SetSslSertificate("/home/ruslan/sources/webcpp/test/ssl/server.cert");
+    config.SetSslKey("/home/ruslan/sources/webcpp/test/ssl/server.key");
     config.SetTempFile(true);
 
     bool httpServerRun = false;
     bool wsServerRun = false;
 
-    WebCpp::FcgiClient fcgi("/run/php/php7.4-fpm.sock", 1);
-    if(fcgi.Connect())
+    WebCpp::FcgiClient fcgi("/run/php/php7.4-fpm.sock");
+    if(fcgi.Init())
     {
         fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::QUERY_STRING, "QUERY_STRING");
         fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::REQUEST_METHOD, "REQUEST_METHOD");
@@ -60,15 +60,16 @@ int main()
         httpServer.OnGet("/index.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;
-
             retval = fcgi.SendRequest(request, config);
-
             if(retval == false)
             {
                 response.SendNotFound();
             }
-
-            return retval;
+            else
+            {
+                response.SetShouldSend(false);
+            }
+            return true;
         });
 
         httpServer.OnGet("/ws", [](const WebCpp::Request &, WebCpp::Response &response) -> bool

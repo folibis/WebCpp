@@ -62,9 +62,9 @@ void Response::SetHeader(Response::HeaderType header, const std::string &value)
     SetHeader(HeaderType2String(header), value);
 }
 
-void Response::Write(const ByteArray &data)
+void Response::Write(const ByteArray &data, size_t start)
 {
-    m_body.insert(m_body.end(), data.begin(), data.end());
+    m_body.insert(m_body.end(), data.begin() + start, data.end());
     SetHeader(Response::HeaderType::ContentLength, std::to_string(m_body.size()));
 }
 
@@ -142,6 +142,16 @@ void Response::SetResponseCode(uint16_t code, const std::string &phrase)
 uint16_t Response::GetResponseCode() const
 {
     return m_responseCode;
+}
+
+bool Response::IsShouldSend() const
+{
+    return m_shouldSend;
+}
+
+void Response::SetShouldSend(bool value)
+{
+    m_shouldSend = value;
 }
 
 bool Response::Send(ICommunicationServer *communication)

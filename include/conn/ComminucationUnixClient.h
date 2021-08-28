@@ -21,6 +21,7 @@ public:
     bool WaitFor() override;
     bool Connect(const std::string &address = "") override;
     bool Write(const ByteArray &data) override;
+    ByteArray Read(size_t length = 0) override;
 
 protected:
     static void* ReadThreadWrapper(void *ptr);

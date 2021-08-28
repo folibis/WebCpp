@@ -99,7 +99,7 @@ public:
 
     void SetHeader(Response::HeaderType header, const std::string &value);
     void SetHeader(const std::string &name, const std::string &value);
-    void Write(const ByteArray &data);
+    void Write(const ByteArray &data, size_t start = 0);
     void Write(const std::string &data);
     bool AddFile(const std::string &file, const std::string &charset = "utf-8");
     bool SendNotFound();
@@ -109,6 +109,8 @@ public:
     void SetResponseCode(uint16_t code, const std::string &phrase);
     uint16_t GetResponseCode() const;
 
+    bool IsShouldSend() const;
+    void SetShouldSend(bool value);
     bool Send(ICommunicationServer *communication);
     static std::string HeaderType2String(Response::HeaderType headerType);
     static Response::HeaderType String2HeaderType(const std::string &str);
@@ -129,8 +131,8 @@ private:
     uint16_t m_responseCode = 200;
     std::string m_responsePhrase = "";
     std::string m_mimeType = "";   
-
     std::string  m_file;
+    bool m_shouldSend = true;
 };
 
 }

@@ -4,14 +4,16 @@
 #include <string>
 #include <map>
 #include "ComminucationUnixClient.h"
+#include "IError.h"
 #include "Request.h"
+#include "Response.h"
 #include "HttpConfig.h"
 
 
 namespace WebCpp
 {
 
-class FcgiClient
+class FcgiClient : public IError
 {
 public:
     enum class FcgiParam
@@ -35,10 +37,13 @@ public:
         SERVER_NAME,
     };
 
-    FcgiClient(const std::string &address, int version = 1);
+    FcgiClient(const std::string &address, const HttpConfig& config);
+    bool Init();
     bool Connect();
+    void SetKeepConnection(bool keepConnection);
+    bool GetKeepConnection();
     void SetParam(FcgiParam param, std::string name);
-    bool SendRequest(const Request& request, const HttpConfig& config);
+    bool SendRequest(const Request& request);
     std::string GetParam(FcgiParam param, const HttpHeader &header, const HttpConfig &config) const;
 
 protected:
@@ -66,6 +71,14 @@ protected:
         FCGI_FILTER            = 3,
     };
 
+    enum class ProtocolStatus
+    {
+        FCGI_REQUEST_COMPLETE   = 0,
+        FCGI_CANT_MPX_CONN      = 1,
+        FCGI_OVERLOADED         = 2,
+        FCGI_UNKNOWN_ROLE       = 3,
+    };
+
     typedef struct {
         uint8_t version;
         uint8_t type;
@@ -90,6 +103,15 @@ protected:
     } FCGI_BeginRequestRecord;
 
     typedef struct {
+        uint8_t appStatusB3;
+        uint8_t appStatusB2;
+        uint8_t appStatusB1;
+        uint8_t appStatusB0;
+        uint8_t protocolStatus;
+        uint8_t reserved[3];
+    } FCGI_EndRequestBody;
+
+    typedef struct {
         uint8_t nameLengthB0;
     } FCGI_Name1;
 
@@ -112,18 +134,38 @@ protected:
     } FCGI_Value2;
 #pragma pack(pop)
 
-    ByteArray BuildBeginRequestPacket() const;
+    struct ResponseData
+    {
+        ResponseData(int ID, int connID)
+        {
+            this->ID = ID;
+            this->connID = connID;
+        }
+        bool IsEmpty() { return ID == (-1) || connID == (-1); }
+        int ID;
+        int connID;
+        ByteArray data;
+        static ResponseData DefaultResponseData;
+    };
+
+    ByteArray BuildBeginRequestPacket(uint16_t ID) const;
     ByteArray BuildParamPacket(const std::string &name, const std::string &value) const;
-    ByteArray BuildParamsPacket(const ByteArray &params) const;
-    ByteArray BuildStdinPacket(const ByteArray &stdinData) const;
+    ByteArray BuildParamsPacket(uint16_t ID, const ByteArray &params) const;
+    ByteArray BuildStdinPacket(uint16_t ID, const ByteArray &stdinData) const;
     void OnDataReady(ByteArray &data);
+    void OnConnectionClosed();
+    ByteArray ReadData();
+    ResponseData& GetResponseData(int ID);
+    void ProcessResponse(int ID);
 
 private:
     std::string m_address;
-    int m_fcgiVersion;
+    HttpConfig m_config;
     ComminucationUnixClient m_connection;
+    bool m_keepConnection = true;
     static uint16_t RequestID;
     std::map<FcgiParam, std::string> m_fcgiParams;
+    std::vector<ResponseData> m_responseQueue;
 };
 
 }
