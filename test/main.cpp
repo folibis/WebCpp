@@ -24,6 +24,8 @@ int main()
 {
     signal(SIGINT, handle_sigint);        
 
+    StringUtil::Print(ByteArray());
+
     WebCpp::HttpConfig config;
     config.SetRoot(PUBLIC_DIR);
     config.SetHttpProtocol("HTTP");
@@ -36,7 +38,7 @@ int main()
     bool httpServerRun = false;
     bool wsServerRun = false;
 
-    WebCpp::FcgiClient fcgi("/run/php/php7.4-fpm.sock");
+    WebCpp::FcgiClient fcgi("/run/php/php7.4-fpm.sock", config);
     if(fcgi.Init())
     {
         fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::QUERY_STRING, "QUERY_STRING");
@@ -53,6 +55,10 @@ int main()
         fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_ADDR, "SERVER_ADDR");
         fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_PORT, "SERVER_PORT");
         fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_NAME, "SERVER_NAME");
+
+        fcgi.SetOnResponseCallback([](WebCpp::Response &response) {
+            httpServer.SendResponse(response);
+        });
     }
 
     if(httpServer.Init(config))
@@ -60,7 +66,7 @@ int main()
         httpServer.OnGet("/index.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;
-            retval = fcgi.SendRequest(request, config);
+            retval = fcgi.SendRequest(request);
             if(retval == false)
             {
                 response.SendNotFound();

@@ -59,7 +59,8 @@ public:
     HttpServer(HttpServer&& other) = delete;
     HttpServer& operator=(HttpServer&& other) = delete;
 
-    bool Init(WebCpp::HttpConfig config);
+    bool Init() override;
+    bool Init(const WebCpp::HttpConfig& config);
     bool Run() override;
     bool Close(bool wait = true) override;
     bool WaitFor() override;
@@ -70,11 +71,12 @@ public:
     void SetPreRouteFunc(const RouteHttp::RouteFunc &callback);
     void SetPostRouteFunc(const RouteHttp::RouteFunc &callback);
 
-
     Protocol GetProtocol() const;
 
     static Protocol String2Protocol(const std::string &str);
     static std::string Protocol2String(Protocol protocol);
+
+    bool SendResponse(Response &response);
 
     std::string ToString() const;
 

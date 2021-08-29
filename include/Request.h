@@ -64,6 +64,7 @@ public:
     void SetArg(const std::string &name, const std::string &value);
     bool IsKeepAlive() const;
     Protocol GetProtocol() const;
+    std::string ToString() const;
 
 protected:
     void Init(const ByteArray &data);    

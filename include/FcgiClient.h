@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <pthread.h>
 #include "ComminucationUnixClient.h"
 #include "IError.h"
 #include "Request.h"
@@ -44,11 +45,9 @@ public:
     bool GetKeepConnection();
     void SetParam(FcgiParam param, std::string name);
     bool SendRequest(const Request& request);
-    std::string GetParam(FcgiParam param, const HttpHeader &header, const HttpConfig &config) const;
+    void SetOnResponseCallback(const std::function<void(Response &response)> &func);
 
 protected:
-#pragma pack(push, 1)
-
     enum class RequestType
     {
         FCGI_BEGIN_REQUEST     = 1,
@@ -78,6 +77,8 @@ protected:
         FCGI_OVERLOADED         = 2,
         FCGI_UNKNOWN_ROLE       = 3,
     };
+
+#pragma pack(push, 1)
 
     typedef struct {
         uint8_t version;
@@ -132,6 +133,7 @@ protected:
         uint8_t valueLengthB1;
         uint8_t valueLengthB0;
     } FCGI_Value2;
+
 #pragma pack(pop)
 
     struct ResponseData
@@ -145,6 +147,7 @@ protected:
         int ID;
         int connID;
         ByteArray data;
+        ByteArray error;
         static ResponseData DefaultResponseData;
     };
 
@@ -152,10 +155,11 @@ protected:
     ByteArray BuildParamPacket(const std::string &name, const std::string &value) const;
     ByteArray BuildParamsPacket(uint16_t ID, const ByteArray &params) const;
     ByteArray BuildStdinPacket(uint16_t ID, const ByteArray &stdinData) const;
+    std::string GetParam(FcgiParam param, const HttpHeader &header, const HttpConfig &config) const;
     void OnDataReady(ByteArray &data);
     void OnConnectionClosed();
-    ByteArray ReadData();
     ResponseData& GetResponseData(int ID);
+    void RemoveResponseData(int ID);
     void ProcessResponse(int ID);
 
 private:
@@ -166,6 +170,8 @@ private:
     static uint16_t RequestID;
     std::map<FcgiParam, std::string> m_fcgiParams;
     std::vector<ResponseData> m_responseQueue;
+    std::function<void(Response &response)> m_responseCallback;
+    pthread_mutex_t m_queueMutex = PTHREAD_MUTEX_INITIALIZER;
 };
 
 }

@@ -94,6 +94,12 @@ Request::Protocol Request::GetProtocol() const
     return Request::Protocol::HTTP1;
 }
 
+std::string Request::ToString() const
+{
+    return std::string("connID: ") + std::to_string(m_connID) + ", "
+            + std::to_string(m_header.GetCount()) + " headers, data size: " + std::to_string(m_data.size());
+}
+
 std::string Request::GetArg(const std::string &name) const
 {
     if(m_args.find(name) == m_args.end())

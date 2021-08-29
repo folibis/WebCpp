@@ -1,9 +1,13 @@
 #include <cstring>
 #include <iostream>
 #include <iomanip> 
+#include "Lock.h"
+#include "LogWriter.h"
 #include "FcgiClient.h"
+#include "FileSystem.h"
 
 #define FCGI_VERSION_1 1
+
 
 using namespace WebCpp;
 
@@ -11,8 +15,8 @@ uint16_t FcgiClient::RequestID = 1;
 FcgiClient::ResponseData FcgiClient::ResponseData::DefaultResponseData(-1,-1);
 
 FcgiClient::FcgiClient(const std::string &address, const HttpConfig &config):
-    m_connection(address),
-    m_config(config)
+    m_config(config),
+    m_connection(address)
 {
     m_address = address;
 }
@@ -76,6 +80,8 @@ void FcgiClient::SetParam(FcgiClient::FcgiParam param, std::string name)
 
 bool FcgiClient::SendRequest(const Request &request)
 {
+    std::cout << request.ToString() << std::endl;
+
     if(m_connection.IsConnected() == false)
     {
         if(m_connection.Connect() == false)
@@ -87,7 +93,10 @@ bool FcgiClient::SendRequest(const Request &request)
 
     ByteArray requestDataData;
     uint16_t ID = ++FcgiClient::RequestID;
-    m_responseQueue.push_back(ResponseData(ID, request.GetConnectionID()));
+    {
+        Lock lock(m_queueMutex);
+        m_responseQueue.push_back(ResponseData(ID, request.GetConnectionID()));
+    }
 
     ByteArray beginPacket = BuildBeginRequestPacket(ID);
     requestDataData.insert(requestDataData.end(), beginPacket.begin(), beginPacket.end());
@@ -118,6 +127,11 @@ bool FcgiClient::SendRequest(const Request &request)
     }
 
     return true;
+}
+
+void FcgiClient::SetOnResponseCallback(const std::function<void(Response &)> &func)
+{
+    m_responseCallback = func;
 }
 
 std::string FcgiClient::GetParam(FcgiClient::FcgiParam param, const HttpHeader& header, const HttpConfig &config) const
@@ -296,66 +310,24 @@ ByteArray FcgiClient::BuildStdinPacket(uint16_t ID, const ByteArray &stdinData) 
 
 void FcgiClient::OnDataReady(ByteArray &data)
 {
+    Lock lock(m_queueMutex);
+
+    StringUtil::Print(data);
+
     FCGI_Header header;
     size_t headerSize = sizeof(header);
     size_t dataSize = data.size();
     if(dataSize >= headerSize)
     {
         std::memcpy(&header, data.data(), headerSize);
-        uint16_t ID = header.requestIdB0 & 0x00FF & header.requestIdB1 & 0xFF00;
+        uint16_t ID = (header.requestIdB0 & 0x00FF) | (header.requestIdB1 & 0xFF00);
+
         auto &responseData = GetResponseData(ID);
         if(!responseData.IsEmpty())
         {
             responseData.data.insert(responseData.data.end(), data.begin(), data.end());
-            std::memcpy(&header, data.data() + dataSize - headerSize, headerSize);
-            RequestType type = static_cast<RequestType>(header.type);
-            if(type == RequestType::FCGI_END_REQUEST)
-            {
-                ProcessResponse(ID);
-            }
+            ProcessResponse(ID);
         }
-    }
-
-
-    std::cout << "data ready: " << StringUtil::ByteArray2String(data) << std::endl;
-    size_t dataSize = data.size();
-    size_t pos = 0;
-    FCGI_Header header;
-    ProtocolStatus result;
-    uint32_t appResult;
-
-    while((dataSize - pos) >= sizeof(header))
-    {
-        std::memcpy(&header, data.data() + pos, sizeof(header));
-        //uint16_t ID = header.requestIdB0 & 0x00FF | header.requestIdB1 << 8 & 0xFF00;
-        uint16_t contentLength = header.contentLengthB0 & 0x00FF | header.contentLengthB1 << 8 & 0xFF00;
-        RequestType type = static_cast<RequestType>(header.type);
-        pos += sizeof(header);
-
-        switch(type)
-        {
-            case RequestType::FCGI_STDOUT:
-                if((dataSize - pos) >= contentLength)
-                {
-                    m_content.insert(m_content.end(), data.begin() + pos, data.begin() + pos + contentLength);
-                }
-                break;
-            case RequestType::FCGI_END_REQUEST:
-                if((dataSize - pos) >= contentLength)
-                {
-                    FCGI_EndRequestBody endRequest;
-                    std::memcpy(&endRequest, data.data() + pos, sizeof(endRequest));
-                    result = static_cast<ProtocolStatus>(endRequest.protocolStatus);
-                    appResult = endRequest.appStatusB0 & 0x000000FF |
-                            endRequest.appStatusB1 << 8 & 0x0000FF00 |
-                                                      endRequest.appStatusB2 << 16 & 0x00FF0000 |
-                                                      endRequest.appStatusB2 << 24 & 0xFF000000;
-                }
-                break;
-            default: break;
-        }
-        pos += contentLength;
-        pos += header.paddingLength;
     }
 }
 
@@ -364,14 +336,9 @@ void FcgiClient::OnConnectionClosed()
     std::cout << "connection closed" << std::endl;
 }
 
-ByteArray FcgiClient::ReadData()
-{
-
-}
-
 FcgiClient::ResponseData &FcgiClient::GetResponseData(int ID)
 {
-    for(int i = 0;i < m_responseQueue.size(); i++)
+    for(size_t i = 0;i < m_responseQueue.size(); i++)
     {
         if(m_responseQueue[i].ID == ID)
         {
@@ -380,6 +347,18 @@ FcgiClient::ResponseData &FcgiClient::GetResponseData(int ID)
     }
 
     return FcgiClient::ResponseData::DefaultResponseData;
+}
+
+void FcgiClient::RemoveResponseData(int ID)
+{
+    for(auto it = m_responseQueue.begin();it < m_responseQueue.end(); ++it)
+    {
+        if(it->ID == ID)
+        {
+            m_responseQueue.erase(it);
+            break;
+        }
+    }
 }
 
 void FcgiClient::ProcessResponse(int ID)
@@ -393,12 +372,13 @@ void FcgiClient::ProcessResponse(int ID)
     FCGI_Header header;
     ProtocolStatus result;
     uint32_t appResult;
+    bool success = true;
+    bool completed = false;
 
     while((dataSize - pos) >= sizeof(header))
     {
         std::memcpy(&header, data.data() + pos, sizeof(header));
-        //uint16_t ID = header.requestIdB0 & 0x00FF | header.requestIdB1 << 8 & 0xFF00;
-        uint16_t contentLength = header.contentLengthB0 & 0x00FF | header.contentLengthB1 << 8 & 0xFF00;
+        uint16_t contentLength = (header.contentLengthB0 & 0x00FF) | (header.contentLengthB1 << 8 & 0xFF00);
         RequestType type = static_cast<RequestType>(header.type);
         pos += sizeof(header);
 
@@ -416,11 +396,16 @@ void FcgiClient::ProcessResponse(int ID)
                     FCGI_EndRequestBody endRequest;
                     std::memcpy(&endRequest, data.data() + pos, sizeof(endRequest));
                     result = static_cast<ProtocolStatus>(endRequest.protocolStatus);
-                    appResult = endRequest.appStatusB0 & 0x000000FF |
-                            endRequest.appStatusB1 << 8 & 0x0000FF00 |
-                                                      endRequest.appStatusB2 << 16 & 0x00FF0000 |
-                                                      endRequest.appStatusB2 << 24 & 0xFF000000;
+                    appResult = (endRequest.appStatusB0 & 0x000000FF) |
+                            (endRequest.appStatusB1 << 8 & 0x0000FF00) |
+                            (endRequest.appStatusB2 << 16 & 0x00FF0000) |
+                            (endRequest.appStatusB2 << 24 & 0xFF000000);
+                    completed = true;
                 }
+                break;
+            case RequestType::FCGI_STDERR:
+                fcgiResponseData.error.insert(fcgiResponseData.error.end(), data.begin() + pos, data.begin() + pos + contentLength);
+                success = false;
                 break;
             default: break;
         }
@@ -428,15 +413,61 @@ void FcgiClient::ProcessResponse(int ID)
         pos += header.paddingLength;
     }
 
-    HttpHeader httpHeader;
-    httpHeader.Parse(responseData);
+    if(completed)
+    {
+        HttpHeader httpHeader;
+        httpHeader.Parse(responseData, false);
 
-    Response response(fcgiResponseData.connID, m_config);
-    response.Write(responseData);
+        Response response(fcgiResponseData.connID, m_config);
+        const auto &headers = httpHeader.GetHeaders();
+        for(auto &header: headers)
+        {
+            response.SetHeader(header.name, header.value);
+        }
 
-    return m_content;
+        if(success == false)
+        {
+            LogWriter::Instance().Write("Fcgi response error: " + StringUtil::ByteArray2String(fcgiResponseData.error), LogWriter::LogType::Error);
+            bool statusSet = false;
+            auto status = httpHeader.GetHeader("Status");
+            if(!status.empty())
+            {
+                auto statusArr = StringUtil::Split(status, ' ');
+                if(statusArr.size() == 2)
+                {
+                    int s;
+                    if(StringUtil::String2int(statusArr[0], s))
+                    {
+                        response.SetResponseCode(s, statusArr[1]);
+                        statusSet = true;
+                    }
+                }
+            }
+
+            if(statusSet == false)
+            {
+                response.SendNotFound();
+            }
+        }
+        else
+        {
+            size_t start = 0;
+            size_t pos = StringUtil::SearchPosition(responseData, { CRLFCRLF });
+            if(pos != SIZE_MAX)
+            {
+                start = pos + 4;
+            }
+            response.Write(responseData, start);
+            response.SetHeader(Response::HeaderType::ContentLength, std::to_string(responseData.size()));
+        }
+
+        response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
+
+        RemoveResponseData(ID);
+
+        if(m_responseCallback != nullptr)
+        {
+            m_responseCallback(response);
+        }
+    }
 }
-
-
-
-
