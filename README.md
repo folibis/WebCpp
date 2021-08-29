@@ -17,6 +17,7 @@ Currently supported:
 - Simple settings
 - Simple logging
 - WebSocket (both ws and wss)
+- FastCGI basic support (tested with php-fpm)
 
 Requirements:
 - Linux (Windows support comming soon)
@@ -125,4 +126,49 @@ wsServer.WaitFor();
 
 // now you can connect to the WebSocket server using ws://127.0.0.1:8081/ws or ws://127.0.0.1:8081/ws/john
 // (or use included test page: http://127.0.0.1:8080/ws)
+```
+**FastCGI handling:**
+WebCpp::HttpServer httpServer;
+WebCpp::FcgiClient fcgi("/run/php/php7.4-fpm.sock", config);
+    if(fcgi.Init())
+    {
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::QUERY_STRING, "QUERY_STRING");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::REQUEST_METHOD, "REQUEST_METHOD");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SCRIPT_FILENAME, "SCRIPT_FILENAME");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SCRIPT_NAME, "SCRIPT_NAME");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::PATH_INFO, "PATH_INFO");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::REQUEST_URI, "REQUEST_URI");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::DOCUMENT_ROOT, "DOCUMENT_ROOT");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_PROTOCOL, "SERVER_PROTOCOL");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::GATEWAY_INTERFACE, "GATEWAY_INTERFACE");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::REMOTE_ADDR, "REMOTE_ADDR");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::REMOTE_PORT, "REMOTE_PORT");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_ADDR, "SERVER_ADDR");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_PORT, "SERVER_PORT");
+        fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::SERVER_NAME, "SERVER_NAME");
+
+        fcgi.SetOnResponseCallback([](WebCpp::Response &response) {
+            httpServer.SendResponse(response);
+        });
+    }
+    
+    if(httpServer.Init(config))
+    {
+        httpServer.OnGet("/index.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        {
+            bool retval = false;
+
+            retval = fcgi.SendRequest(request);
+            if(retval == false)
+            {
+                response.SendNotFound();
+            }
+            else
+            {
+                response.SetShouldSend(false);
+            }
+            return true;
+        });
+    }
+```cpp
 ```
