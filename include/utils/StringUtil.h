@@ -57,6 +57,7 @@ public:
     static std::string ByteArray2String(const ByteArray &array);
     static ByteArray String2ByteArray(const std::string &string);
     static void UrlDecode(std::string &str);
+    static void Print(const StringUtil::ByteArray &array);
 };
 
 #endif // STRINGUTIL_H

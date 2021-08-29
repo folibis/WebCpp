@@ -1,6 +1,8 @@
 #include <sstream>
 #include <algorithm>
 #include "StringUtil.h"
+#include "iostream"
+#include <iomanip>
 
 
 size_t StringUtil::SearchPosition(const ByteArray &str, const ByteArray&substring, size_t start, size_t end)
@@ -279,3 +281,40 @@ void StringUtil::UrlDecode(std::string &str)
 
     std::replace(str.begin(), str.end(), '+', ' ');
 }
+
+#ifndef NDEBUG
+void StringUtil::Print(const StringUtil::ByteArray &array)
+{
+    size_t pos = 0;
+    size_t size = array.size();
+
+    while(pos < size)
+    {
+        std::string txt = "";
+        std::cout << std::hex << std::setfill('0') << std::setw(6) << pos << " ";
+        for(size_t i = 0;i < 16;i ++)
+        {
+            if(pos + i < size)
+            {
+                uint8_t ch = array[pos + i];
+
+                if(ch >= 32 && ch <= 126)
+                {
+                    txt += static_cast<char>(ch);
+                }
+                else
+                {
+                    txt += ".";
+                }
+                std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(ch) << " ";
+            }
+            else
+            {
+                std::cout << "   ";
+            }
+        }
+        std::cout << "| " << txt << std::endl;
+        pos += 16;
+    }
+}
+#endif
