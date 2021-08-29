@@ -18,7 +18,13 @@ HttpServer::HttpServer()
 
 }
 
-bool WebCpp::HttpServer::Init(WebCpp::HttpConfig config)
+bool HttpServer::Init()
+{
+    WebCpp::HttpConfig config;
+    return Init(config);
+}
+
+bool WebCpp::HttpServer::Init(const WebCpp::HttpConfig& config)
 {
     ClearError();
     m_config = config;
@@ -171,6 +177,17 @@ std::string HttpServer::Protocol2String(HttpServer::Protocol protocol)
     }
 
     return "";
+}
+
+bool HttpServer::SendResponse(Response &response)
+{
+    if(response.IsShouldSend())
+    {
+        response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
+        response.Send(m_server.get());
+    }
+
+    return true;
 }
 
 std::string HttpServer::ToString() const
@@ -373,11 +390,7 @@ void HttpServer::ProcessRequest(Request &request)
 
     LOG(request.GetHeader().ToString() + (processed ? ", processed" : ", not processed"), LogWriter::LogType::Access);
 
-    if(response.IsShouldSend())
-    {
-        response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
-        response.Send(m_server.get());
-    }
+    SendResponse(response);
 }
 
 void HttpServer::ProcessKeepAlive(int connID)
