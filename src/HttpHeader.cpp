@@ -12,7 +12,7 @@ HttpHeader::HttpHeader()
 
 }
 
-bool HttpHeader::Parse(const ByteArray &data)
+bool HttpHeader::Parse(const ByteArray &data, bool withRequestList)
 {
     m_complete = false;
     //ByteArray delimiter { { CRLFCRLF } };
@@ -21,7 +21,7 @@ bool HttpHeader::Parse(const ByteArray &data)
     if(pos != SIZE_MAX)
     {
         auto arr = StringUtil::Split(data, { CRLF }, 0, pos);
-        if(ParseHeaders(data, arr))
+        if(ParseHeaders(data, arr, withRequestList))
         {
             m_headerSize = pos;
             m_complete = true;
@@ -29,6 +29,12 @@ bool HttpHeader::Parse(const ByteArray &data)
     }
 
     return m_complete;
+}
+
+bool HttpHeader::ParseHeader(const ByteArray &data)
+{
+    auto arr = StringUtil::Split(data, { CRLF }, 0, data.size());
+    return ParseHeaders(data, arr, false);
 }
 
 bool HttpHeader::IsComplete() const
@@ -83,11 +89,11 @@ std::string HttpHeader::GetUri() const
     return m_uri;
 }
 
-bool HttpHeader::ParseHeaders(const ByteArray &data, const StringUtil::Ranges &ranges)
+bool HttpHeader::ParseHeaders(const ByteArray &data, const StringUtil::Ranges &ranges, bool requestList)
 {
     for(auto &range: ranges)
     {
-        if(m_method == HttpHeader::Method::Undefined)
+        if(m_method == HttpHeader::Method::Undefined && requestList == true)
         {
             std::string s(data.begin() + range.start, data.begin() + range.end + 1);
             auto methodArr = StringUtil::Split(s, ' ');
@@ -378,4 +384,9 @@ std::string HttpHeader::GetRemoteAddress() const
 int HttpHeader::GetRemotePort() const
 {
     return m_remotePort;
+}
+
+int HttpHeader::GetCount() const
+{
+    return m_headers.size();
 }

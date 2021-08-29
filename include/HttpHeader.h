@@ -109,7 +109,8 @@ public:
     HttpHeader(HttpHeader&& other) = default;
     HttpHeader& operator=(HttpHeader&& other) = default;
 
-    bool Parse(const ByteArray &data);
+    bool Parse(const ByteArray &data, bool withRequestList = true);
+    bool ParseHeader(const ByteArray &data);
     bool IsComplete() const;
     size_t GetHeaderSize() const;
     size_t GetBodySize() const;
@@ -128,6 +129,7 @@ public:
     std::string GetRemoteAddress() const;
     int GetRemotePort() const;
 
+    int GetCount() const;
     std::string GetHeader(HeaderType headerType) const;
     std::string GetHeader(const std::string &headerType) const;
     const std::vector<HttpHeader::Header> &GetHeaders() const;
@@ -140,7 +142,7 @@ public:
     std::string ToString() const;
 
 protected:
-    bool ParseHeaders(const ByteArray &data, const StringUtil::Ranges &ranges);
+    bool ParseHeaders(const ByteArray &data, const StringUtil::Ranges &ranges, bool requestList = true);
     void ParseQuery();
 
 private:
