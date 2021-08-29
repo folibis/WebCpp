@@ -25,8 +25,6 @@ int main()
 {
     signal(SIGINT, handle_sigint);        
 
-    StringUtil::Print(ByteArray());
-
     WebCpp::HttpConfig config;
     config.SetRoot(PUBLIC_DIR);
     config.SetHttpProtocol("HTTP");
