@@ -128,8 +128,9 @@ wsServer.WaitFor();
 // (or use included test page: http://127.0.0.1:8080/ws)
 ```
 **FastCGI handling:**
-WebCpp::HttpServer httpServer;
-WebCpp::FcgiClient fcgi("/run/php/php7.4-fpm.sock", config);
+```cpp
+    WebCpp::HttpServer httpServer;
+    WebCpp::FcgiClient fcgi("/run/php/php7.4-fpm.sock", config);
     if(fcgi.Init())
     {
         fcgi.SetParam(WebCpp::FcgiClient::FcgiParam::QUERY_STRING, "QUERY_STRING");
@@ -170,5 +171,4 @@ WebCpp::FcgiClient fcgi("/run/php/php7.4-fpm.sock", config);
             return true;
         });
     }
-```cpp
 ```
