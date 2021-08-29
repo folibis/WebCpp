@@ -9,6 +9,7 @@
 #include "Data.h"
 #include "ResponseWebSocket.h"
 #include "FcgiClient.h"
+#include "FileSystem.h"
 
 
 static WebCpp::HttpServer httpServer;
@@ -66,6 +67,7 @@ int main()
         httpServer.OnGet("/index.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;
+
             retval = fcgi.SendRequest(request);
             if(retval == false)
             {

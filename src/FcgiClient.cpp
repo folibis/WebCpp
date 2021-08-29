@@ -80,8 +80,6 @@ void FcgiClient::SetParam(FcgiClient::FcgiParam param, std::string name)
 
 bool FcgiClient::SendRequest(const Request &request)
 {
-    std::cout << request.ToString() << std::endl;
-
     if(m_connection.IsConnected() == false)
     {
         if(m_connection.Connect() == false)
@@ -312,8 +310,6 @@ void FcgiClient::OnDataReady(ByteArray &data)
 {
     Lock lock(m_queueMutex);
 
-    StringUtil::Print(data);
-
     FCGI_Header header;
     size_t headerSize = sizeof(header);
     size_t dataSize = data.size();
@@ -458,9 +454,8 @@ void FcgiClient::ProcessResponse(int ID)
                 start = pos + 4;
             }
             response.Write(responseData, start);
-            response.SetHeader(Response::HeaderType::ContentLength, std::to_string(responseData.size()));
+            response.SetHeader(Response::HeaderType::ContentLength, std::to_string(responseData.size() - start));
         }
-
         response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
 
         RemoveResponseData(ID);
