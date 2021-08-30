@@ -98,7 +98,7 @@ Placeholder | Notes | Example
 {variable} | capturing variable | /user/{name} will work for /user/john and the variable can be retrived in a handler using `request.GetArg("name")`
 {variable:xxx} | variable type | xxx is one of [alpha, numeric, string, upper, lower], that allow to narrow down a variable type
 [optional] | optional value | /user/[num] will work for /user, /user/2
-* | any value, any length | /*.php will work for /index.php, /subfolder/index.php and whatever
+\* | any value, any length | /\*.php will work for /index.php, /subfolder/index.php and whatever
 
 
 **WebSocket handling:**
