@@ -5,6 +5,8 @@
 
 option(ZLIB "Add zlib support" OFF)
 option(OPENSSL "Add openssl/https support" OFF)
+option(WEBSOCKET "Add websocket support" ON)
+option(FASTCGI "Add FastCGI support" ON)
 
 set(ZLIB_URL https://zlib.net/)
 set(ZLIB_VERSION zlib-1.2.11)
@@ -12,11 +14,14 @@ set(ZLIB_ARCHIVE zlib-1.2.11.tar.gz)
 set(ZLIB_HASH_METHOD SHA256)
 set(ZLIB_HASH c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1)
 
-
 cmake_minimum_required(VERSION 3.11)
 set(CMAKE_CXX_STANDARD 11)
 
 project(webcpp)
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 file(GLOB SRC . src/*.cpp src/conn/*.cpp src/utils/*.cpp)
 file(GLOB INC . include/*.h include/common/*.h include/conn/*.h include/utils/*.h)
@@ -62,6 +67,19 @@ if(OPENSSL)
     find_package(OpenSSL REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL)
 endif()
+
+if(WEBSOCKET)
+    message(STATUS "Configure with WebSocket support")
+    add_definitions(-DWITH_WEBSOCKET)
+endif()
+
+if(FASTCGI)
+    message(STATUS "Configure with FastCGI support")
+    add_definitions(-DWITH_FASTCGI)
+endif()
+
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 
 add_definitions(-DPUBLIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/public")
 

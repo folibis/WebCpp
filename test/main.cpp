@@ -13,17 +13,21 @@
 
 
 static WebCpp::HttpServer httpServer;
+#ifdef WITH_WEBSOCKET
 static WebCpp::WebSocketServer wsServer;
+#endif
 
 void handle_sigint(int)
 {
     httpServer.Close(false);
+#ifdef WITH_WEBSOCKET
     wsServer.Close(false);
+#endif
 }
 
 int main()
 {
-    signal(SIGINT, handle_sigint);        
+    signal(SIGINT, handle_sigint);
 
     WebCpp::HttpConfig config;
     config.SetRoot(PUBLIC_DIR);
@@ -35,8 +39,9 @@ int main()
     config.SetTempFile(true);
 
     bool httpServerRun = false;
-    bool wsServerRun = false;
 
+#ifdef WITH_FASTCGI
+    bool wsServerRun = false;
     WebCpp::FcgiClient fcgi("/run/php/php7.4-fpm.sock", config);
     if(fcgi.Init())
     {
@@ -59,25 +64,10 @@ int main()
             httpServer.SendResponse(response);
         });
     }
+#endif
 
     if(httpServer.Init(config))
     {
-        httpServer.OnGet("/*.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
-        {
-            bool retval = false;
-
-            retval = fcgi.SendRequest(request);
-            if(retval == false)
-            {
-                response.SendNotFound();
-            }
-            else
-            {
-                response.SetShouldSend(false);
-            }
-            return true;
-        });
-
         httpServer.OnGet("/ws", [](const WebCpp::Request &, WebCpp::Response &response) -> bool
         {
             bool retval = false;
@@ -161,10 +151,29 @@ int main()
             return true;
         });
 
+#ifdef WITH_FASTCGI
+        httpServer.OnGet("/*.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        {
+            bool retval = false;
+
+            retval = fcgi.SendRequest(request);
+            if(retval == false)
+            {
+                response.SendNotFound();
+            }
+            else
+            {
+                response.SetShouldSend(false);
+            }
+            return true;
+        });
+#endif
+
         httpServer.Run();
         httpServerRun = true;
     }
 
+#ifdef WITH_WEBSOCKET
     if(wsServer.Init(config))
     {
         wsServer.OnMessage("/ws[/{user}/]", [](const WebCpp::Request &request, WebCpp::ResponseWebSocket &response, const ByteArray &data) -> bool
@@ -182,15 +191,17 @@ int main()
         wsServer.Run();
         wsServerRun = true;
     }
-
+#endif
     if(httpServerRun)
     {
         httpServer.WaitFor();
     }
+#ifdef WITH_WEBSOCKET
     if(wsServerRun)
     {
         wsServer.WaitFor();
     }
+#endif
 
     return 1;
 }

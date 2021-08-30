@@ -1,3 +1,5 @@
+#ifdef WITH_WEBSOCKET
+
 #include <cstring>
 #include <iostream>
 #include "CommunicationTcpServer.h"
@@ -532,3 +534,5 @@ RouteWebSocket *WebSocketServer::GetRoute(const std::string &path)
 
     return nullptr;
 }
+
+#endif

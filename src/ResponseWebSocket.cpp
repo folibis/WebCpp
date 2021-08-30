@@ -1,3 +1,5 @@
+#ifdef WITH_WEBSOCKET
+
 #include <limits>
 #include "common_ws.h"
 #include "ResponseWebSocket.h"
@@ -92,3 +94,5 @@ bool ResponseWebSocket::Send(ICommunicationServer *communication)
         return false;
     }
 }
+
+#endif

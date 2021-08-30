@@ -1,3 +1,5 @@
+#ifdef WITH_WEBSOCKET
+
 /*
 *
 * Copyright (c) 2021 ruslan@muhlinin.com
@@ -60,3 +62,5 @@ private:
 }
 
 #endif // RESPONSEWEBSOCKET_H
+
+#endif

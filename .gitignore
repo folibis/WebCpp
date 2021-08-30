@@ -1,3 +1,4 @@
 **.user
 external/**
 test/ssl/**
+bin/

@@ -1,3 +1,5 @@
+#ifdef WITH_FASTCGI
+
 #include <cstring>
 #include <iostream>
 #include <iomanip> 
@@ -374,6 +376,12 @@ void FcgiClient::ProcessResponse(int ID)
     while((dataSize - pos) >= sizeof(header))
     {
         std::memcpy(&header, data.data() + pos, sizeof(header));
+        uint16_t blockID = (header.requestIdB0 & 0x00FF) | (header.requestIdB1 & 0xFF00);
+        if(header.version != FCGI_VERSION_1 || blockID != ID) // check the header for validity
+        {
+            break;
+        }
+
         uint16_t contentLength = (header.contentLengthB0 & 0x00FF) | (header.contentLengthB1 << 8 & 0xFF00);
         RequestType type = static_cast<RequestType>(header.type);
         pos += sizeof(header);
@@ -466,3 +474,4 @@ void FcgiClient::ProcessResponse(int ID)
         }
     }
 }
+#endif

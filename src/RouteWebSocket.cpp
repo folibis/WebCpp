@@ -1,3 +1,5 @@
+#ifdef WITH_WEBSOCKET
+
 #include "RouteWebSocket.h"
 
 
@@ -30,3 +32,5 @@ const RouteWebSocket::RouteFuncMessage &RouteWebSocket::GetFunctionMessage() con
 {
     return m_funcMessage;
 }
+
+#endif
