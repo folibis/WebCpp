@@ -57,6 +57,7 @@ protected:
             Default = 0,
             Variable,
             Group,
+            Any,
         };
         enum class View
         {
@@ -65,7 +66,7 @@ protected:
             Numeric,
             String,
             Upper,
-            Lower,
+            Lower,            
         };
 
         std::string text = "";

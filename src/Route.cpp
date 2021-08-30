@@ -30,22 +30,56 @@ bool Route::IsMatch(Request &request)
 
     size_t pos = 0;
     size_t offset = 0;
+    bool any = false;
 
     for(auto &token: m_tokens)
     {
-        if(token.IsMatch(ch + pos, length - pos, offset))
+        if(pos < length)
         {
-            if(token.type == Token::Type::Variable)
+            if(token.type == Token::Type::Any)
             {
-                request.SetArg(token.text, std::string(ch + pos, offset));
+                any = true;
+                continue;
             }
-            pos += offset;
-        }
-        else
-        {
-            if(token.optional == false)
+
+            if(any)
             {
-                return false;
+                if(token.type == Token::Type::Variable)
+                {
+                    break;
+                }
+                size_t tpos = pos;
+                while(tpos < length)
+                {
+                    if(token.IsMatch(ch + tpos, length - tpos, offset))
+                    {
+                        pos = tpos + offset;
+                        any = false;
+                        break;
+                    }
+                    tpos ++;
+                }
+
+                if(any)
+                {
+                    return false;
+                }
+                break;
+            }
+            if(token.IsMatch(ch + pos, length - pos, offset))
+            {
+                if(token.type == Token::Type::Variable)
+                {
+                    request.SetArg(token.text, std::string(ch + pos, offset));
+                }
+                pos += offset;
+            }
+            else
+            {
+                if(token.optional == false)
+                {
+                    return false;
+                }
             }
         }
     }
@@ -74,6 +108,14 @@ bool Route::Parse(const std::string &path)
     {
         switch(ch[i])
         {
+            case '*':
+                AddToken(current, str);
+                str = "";
+                current.text = "*";
+                current.type = Token::Type::Any;
+                AddToken(current, str);
+
+                break;
             case '[':
                 AddToken(current, str);
                 str = "";
@@ -241,6 +283,9 @@ bool Route::Token::IsMatch(const char *ch, size_t length, size_t &pos)
                     break;
                 }
             }
+            break;
+        case Type::Any:
+            return true;
             break;
     }
 

@@ -62,7 +62,7 @@ int main()
 
     if(httpServer.Init(config))
     {
-        httpServer.OnGet("/index.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        httpServer.OnGet("/*.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;
 
@@ -141,7 +141,7 @@ int main()
             }
 
             return retval;
-        });        
+        });
 
         httpServer.OnGet("/(user|users)/{user:alpha}/[{action:string}/]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
