@@ -156,7 +156,7 @@ wsServer.WaitFor();
     
     if(httpServer.Init(config))
     {
-        httpServer.OnGet("/index.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
+        httpServer.OnGet("/*.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;
 
