@@ -85,3 +85,6 @@ add_definitions(-DPUBLIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/public")
 
 add_executable(test test/main.cpp)
 target_link_libraries(test PRIVATE ${PROJECT_NAME})
+
+add_executable(FileServer test/FileServer.cpp)
+target_link_libraries(FileServer PRIVATE ${PROJECT_NAME})
