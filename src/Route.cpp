@@ -84,7 +84,7 @@ bool Route::IsMatch(Request &request)
         }
     }
 
-    if(pos < length)
+    if(pos < length && any == false)
     {
         return false;
     }
