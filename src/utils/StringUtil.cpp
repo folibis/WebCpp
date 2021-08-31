@@ -317,4 +317,21 @@ void StringUtil::Print(const StringUtil::ByteArray &array)
         pos += 16;
     }
 }
+
+void StringUtil::Replace(std::string &str, const std::string &find, const std::string &replace)
+{
+    size_t index = 0;
+    while (true)
+    {
+         index = str.find(find, index);
+         if(index == std::string::npos)
+         {
+             break;
+         }
+
+         str.replace(index, find.size(), replace);
+         index += replace.size();
+    }
+}
+
 #endif

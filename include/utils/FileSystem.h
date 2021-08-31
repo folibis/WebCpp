@@ -26,6 +26,8 @@
 #define FILESYSTEM_H
 
 #include <string>
+#include <map>
+
 
 namespace WebCpp
 {
@@ -49,6 +51,8 @@ public:
     static std::string GetFileModifiedTime(const std::string &file);
     static std::string TempFolder();
     static std::string Root();
+    static bool IsDir(const std::string &path);
+    static std::map<std::string, bool> GetFolder(const std::string &path);
 };
 
 }

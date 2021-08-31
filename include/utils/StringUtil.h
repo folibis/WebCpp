@@ -58,6 +58,7 @@ public:
     static ByteArray String2ByteArray(const std::string &string);
     static void UrlDecode(std::string &str);
     static void Print(const StringUtil::ByteArray &array);
+    static void Replace(std::string &str, const std::string &find, const std::string &replace);
 };
 
 #endif // STRINGUTIL_H

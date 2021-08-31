@@ -50,12 +50,14 @@ bool FileSystem::ChangeDir(const std::string &path)
 
 std::string FileSystem::NormalizePath(const std::string &path)
 {
-    if(path.rfind(FileSystem::PathDelimiter()) != (path.length() - 1))
+    std::string tmp = path;
+    StringUtil::Replace(tmp, "//", "/");
+    if(tmp.rfind(FileSystem::PathDelimiter()) != (tmp.length() - 1))
     {
-        return path + FileSystem::PathDelimiter();
+        return tmp + FileSystem::PathDelimiter();
     }
 
-    return path;
+    return tmp;
 }
 
 std::string FileSystem::ExtractFileName(const std::string& path)
@@ -142,6 +144,38 @@ std::string FileSystem::Root()
 #else
     return "/";
 #endif
+}
+
+bool FileSystem::IsDir(const std::string &path)
+{
+    struct stat result;
+    if(stat(path.c_str(), &result) == 0)
+    {
+        if((result.st_mode & S_IFDIR) != 0)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+std::map<std::string, bool> FileSystem::GetFolder(const std::string &path)
+{
+    std::map<std::string, bool> retval;
+
+    DIR *dir; struct dirent *diread;
+
+    if ((dir = opendir(path.c_str())) != nullptr)
+    {
+        while ((diread = readdir(dir)) != nullptr)
+        {
+            retval.insert(std::pair<std::string,bool>(diread->d_name, diread->d_type == DT_DIR));
+        }
+        closedir (dir);
+    }
+
+    return retval;
 }
 
 bool FileSystem::CreateFolder(const std::string &path)
