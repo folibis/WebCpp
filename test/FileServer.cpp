@@ -10,9 +10,29 @@
 
 static WebCpp::HttpServer *ptr = nullptr;
 
+static std::string pageTpl = "<html> \
+        <head> \
+        <title>File server</title> \
+        <meta content=\"text/html;charset=utf-8\" http-equiv=\"Content-Type\"> \
+        <meta content=\"utf-8\" http-equiv=\"encoding\"> \
+        <style> \
+        .row span { display: inline-block; padding:5px 10px; width:300px; } \
+        </style> \
+        </head> \
+        <body> \
+        [body] \
+        </body> \
+        </html>";
+
+        static std::string tableTpl = "<h4>Index of: [folder]</h4><hr><div><a href='[backlink]'>Go parent</a></div><div>[rows]</div>";
+static std::string rowTpl = "<div class='row'><span><a href='[link]'>[name]</a></span><span>[size]</span><span>[modified]</span></div>";
+
 void handle_sigint(int)
 {
-    ptr->Close(false);
+    if(ptr != nullptr)
+    {
+        ptr->Close(false);
+    }
 }
 
 int main()
@@ -27,7 +47,6 @@ int main()
     config.SetHttpProtocol("HTTP");
     config.SetHttpServerPort(8080);
 
-    bool httpServerRun = false;
 
     if(httpServer.Init(config))
     {
@@ -35,40 +54,57 @@ int main()
         {
             std::string root = WebCpp::FileSystem::NormalizePath(getenv("HOME"));
             std::string url = request.GetHeader().GetPath();
-            std::string local = (url == "/") ? root : WebCpp::FileSystem::NormalizePath(root + url);
+            std::string local = (url == "/") ? root : (root + url);
             std::string parent = "";
-            auto pos = url.rfind(WebCpp::FileSystem::PathDelimiter());
+            auto pos = url.rfind(WebCpp::FileSystem::PathDelimiter(), url.size() - 2);
             if(pos != std::string::npos)
             {
-                parent = std::string(url.begin(), url.begin() + pos);
+                parent = std::string(url.begin(), url.begin() + pos + 1);
             }
             if(WebCpp::FileSystem::IsFileExist(local))
             {
                 if(WebCpp::FileSystem::IsDir(local))
                 {
-                    auto list = WebCpp::FileSystem::GetFolder(local);
-                    std::string content = "<h4>" + request.GetHeader().GetPath() + "</h4><hr>";
+                    std::string table = tableTpl;
+                    StringUtil::Replace(table, "[folder]", request.GetHeader().GetPath());
+
                     if(!parent.empty())
                     {
-                        content += "<p><a href=\"" + WebCpp::FileSystem::NormalizePath(parent) + "\">Go parent</a></div>";
+                        StringUtil::Replace(table, "[backlink]", WebCpp::FileSystem::NormalizePath(parent));
                     }
+                    else
+                    {
+                        StringUtil::Replace(table, "[backlink]", "#");
+                    }
+
+
+                    std::string rows = "";
+                    auto list = WebCpp::FileSystem::GetFolder(local);
                     for(auto &entry: list)
                     {
-                        std::string file = entry.first;
+                        std::string file = entry.name;
                         if(file == "." || file == "..")
                         {
                             continue;
                         }
-                        content += "<div><a href=\"" +
-                                (WebCpp::FileSystem::NormalizePath(request.GetHeader().GetPath()) + file) + "\">" +
-                                (entry.second ? ("<strong>" + file + "/</strong>") : file) + "</a></div>";
+
+                        std::string row = rowTpl;
+                        StringUtil::Replace(row, "[link]", WebCpp::FileSystem::NormalizePath(request.GetHeader().GetPath()) + file);
+                        StringUtil::Replace(row, "[name]", entry.folder ? ("<strong>" + file + "/</strong>") : file);
+                        StringUtil::Replace(row, "[size]", std::to_string(entry.size));
+                        StringUtil::Replace(row, "[modified]", entry.lastModified);
+                        rows += row;
                     }
+                    StringUtil::Replace(table, "[rows]", rows);
+                    std::string page = pageTpl;
+                    StringUtil::Replace(page, "[body]", table);
+
                     response.SetHeader("Content-Type","text/html;charset=utf-8");
-                    response.Write(content);
+                    response.Write(page);
                 }
                 else
                 {
-                    response.AddFile(url);
+                    response.AddFile(local);
                 }
             }
             else

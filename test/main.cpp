@@ -33,7 +33,6 @@ int main()
     config.SetRoot(PUBLIC_DIR);
     config.SetHttpProtocol("HTTP");
     config.SetHttpServerPort(8080);
-    config.SetRoot("/home/ruslan/sources/webcpp/test/public");
     config.SetSslSertificate("/home/ruslan/sources/webcpp/test/ssl/server.cert");
     config.SetSslKey("/home/ruslan/sources/webcpp/test/ssl/server.key");
     config.SetTempFile(true);
