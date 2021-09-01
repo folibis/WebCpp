@@ -317,6 +317,7 @@ void StringUtil::Print(const StringUtil::ByteArray &array)
         pos += 16;
     }
 }
+#endif
 
 void StringUtil::Replace(std::string &str, const std::string &find, const std::string &replace)
 {
@@ -334,4 +335,4 @@ void StringUtil::Replace(std::string &str, const std::string &find, const std::s
     }
 }
 
-#endif
+
