@@ -26,7 +26,7 @@
 #define FILESYSTEM_H
 
 #include <string>
-#include <map>
+#include <vector>
 
 
 namespace WebCpp
@@ -52,7 +52,16 @@ public:
     static std::string TempFolder();
     static std::string Root();
     static bool IsDir(const std::string &path);
-    static std::map<std::string, bool> GetFolder(const std::string &path);
+
+    struct FileInfo
+    {
+        std::string name;
+        bool folder;
+        long size;
+        std::string lastModified;
+    };
+
+    static std::vector<FileInfo> GetFolder(const std::string &path);
 };
 
 }

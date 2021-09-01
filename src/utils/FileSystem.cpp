@@ -160,19 +160,32 @@ bool FileSystem::IsDir(const std::string &path)
     return false;
 }
 
-std::map<std::string, bool> FileSystem::GetFolder(const std::string &path)
+std::vector<FileSystem::FileInfo> FileSystem::GetFolder(const std::string &path)
 {
-    std::map<std::string, bool> retval;
+    std::vector<FileSystem::FileInfo> retval;
 
-    DIR *dir; struct dirent *diread;
+    DIR *dir; struct dirent *diread; struct stat info;
 
     if ((dir = opendir(path.c_str())) != nullptr)
     {
         while ((diread = readdir(dir)) != nullptr)
         {
-            retval.insert(std::pair<std::string,bool>(diread->d_name, diread->d_type == DT_DIR));
+            long size = (-1);
+            std::string mod;
+            if(stat(std::string(NormalizePath(path) + diread->d_name).c_str(), &info) == 0)
+            {
+                auto mod_time = info.st_mtime;
+                const time_t *t = &mod_time;
+                struct tm * timeinfo = gmtime(t);
+                char buffer[30];
+                strftime(buffer, 30, "%a, %d %b %Y %H:%M:%S GMT", timeinfo);
+                mod = buffer;
+                size = info.st_size;
+            }
+
+            retval.push_back(FileInfo { diread->d_name, (diread->d_type == DT_DIR), size, mod });
         }
-        closedir (dir);
+        closedir(dir);
     }
 
     return retval;
