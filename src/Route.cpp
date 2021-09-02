@@ -34,52 +34,49 @@ bool Route::IsMatch(Request &request)
 
     for(auto &token: m_tokens)
     {
-        if(pos < length)
+        if(token.type == Token::Type::Any)
         {
-            if(token.type == Token::Type::Any)
+            any = true;
+            continue;
+        }
+
+        if(any)
+        {
+            if(token.type == Token::Type::Variable)
             {
-                any = true;
-                continue;
+                break;
+            }
+            size_t tpos = pos;
+            while(tpos < length)
+            {
+                if(token.IsMatch(ch + tpos, length - tpos, offset))
+                {
+                    pos = tpos + offset;
+                    any = false;
+                    break;
+                }
+                tpos ++;
             }
 
             if(any)
             {
-                if(token.type == Token::Type::Variable)
-                {
-                    break;
-                }
-                size_t tpos = pos;
-                while(tpos < length)
-                {
-                    if(token.IsMatch(ch + tpos, length - tpos, offset))
-                    {
-                        pos = tpos + offset;
-                        any = false;
-                        break;
-                    }
-                    tpos ++;
-                }
-
-                if(any)
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
-            if(token.IsMatch(ch + pos, length - pos, offset))
+            break;
+        }
+        if(token.IsMatch(ch + pos, length - pos, offset))
+        {
+            if(token.type == Token::Type::Variable)
             {
-                if(token.type == Token::Type::Variable)
-                {
-                    request.SetArg(token.text, std::string(ch + pos, offset));
-                }
-                pos += offset;
+                request.SetArg(token.text, std::string(ch + pos, offset));
             }
-            else
+            pos += offset;
+        }
+        else
+        {
+            if(token.optional == false)
             {
-                if(token.optional == false)
-                {
-                    return false;
-                }
+                return false;
             }
         }
     }
