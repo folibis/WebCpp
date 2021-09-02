@@ -1,0 +1,57 @@
+<html>
+    <head>
+	<title>The WebSocket test page</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta http-equiv="expires" content="0">
+	<link rel="stylesheet" href="style.css" type="text/css" />
+    </head>
+    <body>
+	<h3 style="text-align: center;margin-top:50px;">This is a FastCGI test page of the WebCpp server</h3>
+    <div class="box_wide">  
+    	<div class="center"><p>Note: the php-fpm service should run on /run/php/php7.4-fpm.sock (can be changed)</p></div>
+  	  	<div class='center'>
+  	  		<button id="button_test1">Simple PHP output</button>
+  	  		<button id="button_test2">Requst with params</button>
+  	  		<button id="button_test3">PHP info</button>
+  	  	</div>
+  	  	<div id="output"></div>
+    </div>
+    </body>
+    <script>
+
+    	var buttonTest1 = document.getElementById("button_test1");
+		var buttonTest2 = document.getElementById("button_test2");
+		var buttonTest3 = document.getElementById("button_test3");
+		var outputBox = document.getElementById("output");
+
+    	var req = new XMLHttpRequest();
+		req.onreadystatechange = function() {
+			if(req.readyState == 4) {
+				var content = req.responseText;
+				outputBox.innerHTML = content;
+ 			}
+   		};
+
+    	function load(index, query) {
+   			req.open("GET", "/index" + index + ".php?rnd=" + (Math.floor(Math.random() * 10000000)) + (query == "" ? "" : "&" + query), true);
+   			req.send(null);
+   		}		
+
+	  	buttonTest1.addEventListener('click', function ()
+	  	{	
+	  		load("1","");
+	  	});
+
+	  	buttonTest2.addEventListener('click', function ()
+	  	{	
+	  		load("2","name=John&action=Hello");
+	  	});
+
+	  	buttonTest3.addEventListener('click', function ()
+	  	{	
+	  		load("3","");
+	  	});
+	  		  	
+	</script>
+<html>

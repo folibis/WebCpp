@@ -1,5 +1,6 @@
 <?php
-  header("X-Some-Extra-Header:some extra value");
+$name = isset($_GET['name']) ? $_GET['name'] : 'Unknown name';
+$action = isset($_GET['action']) ? $_GET['action'] : 'Unknown action';
 
-  echo "Hello from PHP script";
+echo("$name, $action");
 ?>

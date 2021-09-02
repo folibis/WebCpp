@@ -18,6 +18,14 @@ form div {
   background-color:#DEDEDE;
 }
 
+.box_wide {
+  margin:50px auto;
+  width: 80%;
+  padding: 20px;
+  border: 1px solid #CCCCCC;
+  background-color:#DEDEDE;
+}
+
 .box div {
   padding: 10px;
 }
@@ -42,4 +50,13 @@ form div {
 
 .center {
   text-align:center;
+}
+
+#output {
+  margin:10px auto;
+  width: 90%;
+  border: 1px solid #CCCCCC;
+}
+.note {
+  font-style:italic;
 }
