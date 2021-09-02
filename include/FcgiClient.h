@@ -188,6 +188,8 @@ protected:
     void RemoveResponseData(int ID);
     void ProcessResponse(int ID);
 
+    static std::string ProtocolStatus2String(ProtocolStatus status);
+
 private:
     std::string m_address;
     HttpConfig m_config;

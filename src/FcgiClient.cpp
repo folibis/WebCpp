@@ -405,6 +405,9 @@ void FcgiClient::ProcessResponse(int ID)
                             (endRequest.appStatusB2 << 16 & 0x00FF0000) |
                             (endRequest.appStatusB2 << 24 & 0xFF000000);
                     completed = true;
+                    LogWriter::Instance().Write("FastCGI end response: " + std::to_string(responseData.size()) +
+                                                " bytes, result: " + ProtocolStatus2String(result) +
+                                                ", app result: " + std::to_string(appResult));
                 }
                 break;
             case RequestType::FCGI_STDERR:
@@ -473,5 +476,19 @@ void FcgiClient::ProcessResponse(int ID)
             m_responseCallback(response);
         }
     }
+}
+
+std::string FcgiClient::ProtocolStatus2String(ProtocolStatus status)
+{
+    switch(status)
+    {
+        case ProtocolStatus::FCGI_REQUEST_COMPLETE: return "REQUEST_COMPLETE";
+        case ProtocolStatus::FCGI_CANT_MPX_CONN: return "CANT_MPX_CONN";
+        case ProtocolStatus::FCGI_OVERLOADED: return "OVERLOADED";
+        case ProtocolStatus::FCGI_UNKNOWN_ROLE: return "UNKNOWN_ROLE";
+        default: break;
+    }
+
+    return "Unknown";
 }
 #endif
