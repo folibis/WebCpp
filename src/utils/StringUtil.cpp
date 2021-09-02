@@ -335,4 +335,12 @@ void StringUtil::Replace(std::string &str, const std::string &find, const std::s
     }
 }
 
+void StringUtil::RandInit()
+{
+    srand(static_cast<unsigned int>(time(nullptr)));
+}
 
+uint32_t StringUtil::GetRand(uint32_t min, uint32_t max)
+{
+    return static_cast<uint32_t>(rand()) % (max - min) + min;
+}

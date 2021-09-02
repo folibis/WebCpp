@@ -59,6 +59,8 @@ public:
     static void UrlDecode(std::string &str);
     static void Print(const StringUtil::ByteArray &array);
     static void Replace(std::string &str, const std::string &find, const std::string &replace);
+    static void RandInit();
+    static uint32_t GetRand(uint32_t min, uint32_t max);
 };
 
 #endif // STRINGUTIL_H
