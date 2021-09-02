@@ -92,6 +92,7 @@ server.OnGet("/(user|users)/{user:alpha}/[{action:string}/]", [](const WebCpp::R
 // /users/children/clap%20your%20hands
 ```
 **Routing placeholders**
+
 Placeholder | Notes | Example
 ------------ | ------------- | -------------
 (value1\|value2) | miltiple values | /(user\|users) will work for /user, /users
