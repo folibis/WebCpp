@@ -49,7 +49,7 @@ public:
     void WriteText(const std::string &data);
     void WriteBinary(const ByteArray &data);
 
-    bool Send(ICommunicationServer *communication);
+    bool Send(ICommunicationServer *communication) const;
 
 
 
