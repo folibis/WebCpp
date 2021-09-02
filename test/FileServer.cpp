@@ -10,7 +10,7 @@
 
 static WebCpp::HttpServer *ptr = nullptr;
 
-static std::string pageTpl = "<html> \
+static const char* pageTpl = "<html> \
         <head> \
         <title>File server</title> \
         <meta content=\"text/html;charset=utf-8\" http-equiv=\"Content-Type\"> \
@@ -24,8 +24,8 @@ static std::string pageTpl = "<html> \
         </body> \
         </html>";
 
-        static std::string tableTpl = "<h4>Index of: [folder]</h4><hr><div><a href='[backlink]'>Go parent</a></div><div>[rows]</div>";
-static std::string rowTpl = "<div class='row'><span><a href='[link]'>[name]</a></span><span>[size]</span><span>[modified]</span></div>";
+static const char* tableTpl = "<h4>Index of: [folder]</h4><hr><div><a href='[backlink]'>Go parent</a></div><div>[rows]</div>";
+static const char* rowTpl = "<div class='row'><span><a href='[link]'>[name]</a></span><span>[size]</span><span>[modified]</span></div>";
 
 void handle_sigint(int)
 {
@@ -43,10 +43,8 @@ int main()
     signal(SIGINT, handle_sigint);
 
     WebCpp::HttpConfig config;
-    config.SetRoot(PUBLIC_DIR);
     config.SetHttpProtocol("HTTP");
     config.SetHttpServerPort(8080);
-
 
     if(httpServer.Init(config))
     {

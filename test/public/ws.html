@@ -1,33 +1,36 @@
 <html>
     <head>
-	<title>The test page</title>
+	<title>The WebSocket test page</title>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta content="utf-8" http-equiv="encoding">
     <meta http-equiv="expires" content="0">
 	<link rel="stylesheet" href="style.css" type="text/css" />
     </head>
     <body>
-	<h3 style="text-align: center;margin-top:50px;">This is a test page for WebSocket test of the WebCpp server</h3>
-    <div class="box">  	  
-  	  <div><button id="button_send">Send</button></div>
-  	  <div>Status: <span id="status_box"></span></div>
+	<h3 style="text-align: center;margin-top:50px;">This is a WebSocket test page of the WebCpp server</h3>
+    <div class="box">  	 
+    	<p>The WebSocket server should send a random number once a second</p>
+    	<p>Click 'Start' to begin the test, click again to stop</p>
+    	<p>Insert min/max limits and click 'Set limit'</p>
+    	<br>
+
+  	  	<div class='center'><button id="button_start">Start</button></div>
+  	  	<div><span>Min: </span><input type="text" value="1" id="min" onkeypress='validate(event)'></div>
+  	  	<div><span>Max: </span><input type="text" value = "100" id="max" onkeypress='validate(event)'></div>
+  	  	<div><button id="button_set">Set limit</button></div>
+  	  	<div id="result_box"></div>
+  	  	<div id="status_box"></div>
     </div>
     </body class="ws">
     <script>
 
-    	var statusBox = document.getElementById("status_box");
-		function setStatus(str)
-	  	{
-	  		statusBox.textContent = str;
-	  	}
-
     	var socket = new WebSocket("ws://127.0.0.1:8081/ws");
     	socket.onopen = function () {
-			setStatus("Connected to WebSocket server");    				
+			setStatus("Connected to WebSocket server");
 	  	};
 	  		
 	  	socket.onmessage = function(event) {
-			setStatus("Received: " + event.data);
+			setResult(event.data);
 	  	};
 	  		
 	  	socket.onclose = function(event) {
@@ -38,13 +41,68 @@
 			setStatus("Error: " + event);
 	  	};
 
-    	var dataToSend = "{ \"message\": \"Hello\" }";		
-		var buttonSend = document.getElementById("button_send");				  	
+    	var statusBox = document.getElementById("status_box");
+		function setStatus(str)
+	  	{
+	  		statusBox.innerHTML = str;
+	  	}
+
+		var resultBox = document.getElementById("result_box");
+		function setResult(str)
+	  	{
+	  		resultBox.innerHTML = str;
+	  	}
+
+		var buttonStart = document.getElementById("button_start");
+		var buttonSet = document.getElementById("button_set");
+		var min = document.getElementById("min");
+	    var max = document.getElementById("max");
+
+	  	buttonStart.addEventListener('click', function ()
+	  	{	
+	  		if(buttonStart.textContent == "Start")
+	  		{  		
+	  			buttonStart.textContent = "Stop";
+	  			socket.send("start");
+	  			button_set.disabled = false;
+	  		}	
+	  		else
+	  		{
+	  			buttonStart.textContent = "Start";
+	  			socket.send("stop");
+	  		}
+	  	});
 	  	
-	  	buttonSend.addEventListener('click', function () 
-	  	{	  		
-	  		socket.send(dataToSend);	
-	  	});	  	  
+	    min.value = "1";
+	    max.value = "100";
+	    button_set.disabled = true;
+
+	  	buttonSet.addEventListener('click', function ()
+	  	{
+	  		var minValue = parseInt(min.value);
+	  		var maxValue = parseInt(max.value);
+	  		socket.send(minValue + "," + maxValue);
+	  	});
+
+	  	function validate(evt) 
+	  	{
+  			var theEvent = evt || window.event;
+  			if (theEvent.type === 'paste') 
+  			{
+      			key = event.clipboardData.getData('text/plain');
+  			} 
+  			else 
+  			{
+      			var key = theEvent.keyCode || theEvent.which;
+      			key = String.fromCharCode(key);
+  			}
+  			var regex = /[0-9]|\./;
+  			if( !regex.test(key) ) 
+  			{
+    			theEvent.returnValue = false;
+    			if(theEvent.preventDefault) theEvent.preventDefault();
+  			}
+		}
 	  		  	
 	</script>
 <html>

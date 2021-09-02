@@ -88,3 +88,6 @@ target_link_libraries(test PRIVATE ${PROJECT_NAME})
 
 add_executable(FileServer test/FileServer.cpp)
 target_link_libraries(FileServer PRIVATE ${PROJECT_NAME})
+
+add_executable(WebSocket test/WebSocket.cpp)
+target_link_libraries(WebSocket PRIVATE ${PROJECT_NAME})

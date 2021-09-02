@@ -151,6 +151,16 @@ void WebSocketServer::OnMessage(const std::string &path, const std::function<boo
     }
 }
 
+bool WebSocketServer::SendResponse(const ResponseWebSocket &response)
+{
+    if(!response.IsEmpty())
+    {
+        return response.Send(m_server.get());
+    }
+
+    return false;
+}
+
 WebSocketServer::Protocol WebSocketServer::GetProtocol() const
 {
     return m_protocol;

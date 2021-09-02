@@ -67,8 +67,9 @@ public:
     void OnRequest(const std::string &path, const RouteHttp::RouteFunc &func);
     void OnMessage(const std::string &path, const std::function<bool(const Request& request, ResponseWebSocket &response, const ByteArray &data)>& func);
 
-    Protocol GetProtocol() const;
+    bool SendResponse(const ResponseWebSocket &response);
 
+    Protocol GetProtocol() const;
     static Protocol String2Protocol(const std::string &str);
     static std::string Protocol2String(Protocol protocol);
 

@@ -9,6 +9,37 @@ body.ws {
 form div {
   padding: 10px;
 }
+
+.box {
+  margin:50px auto;
+  width: 400px;
+  padding: 20px;
+  border: 1px solid #CCCCCC;
+  background-color:#DEDEDE;
+}
+
 .box div {
   padding: 10px;
+}
+
+.box button {
+  padding :5px 10px;
+}
+
+#result_box {
+  border:1px solid #CCCCCC;
+  margin: 10px;
+  padding: 5px;
+  background-color: #FCF3CF;
+  text-align: center;
+}
+
+#status_box {
+  background-color: #D0ECE7;
+  padding:5px;
+  margin: 10px;
+}
+
+.center {
+  text-align:center;
 }
