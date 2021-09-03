@@ -198,7 +198,7 @@ bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, si
             while(size > 0)
             {
                 size_t s = size > WRITE_MAX_SIZE ? WRITE_MAX_SIZE : size;
-                ssize_t sent = send(fd, data.data() + written, s, 0);
+                ssize_t sent = send(fd, data.data() + written, s, MSG_NOSIGNAL);
                 if(sent == ERROR)
                 {
                     CloseClient(connID);
