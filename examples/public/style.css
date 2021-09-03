@@ -18,12 +18,12 @@ form div {
   background-color:#DEDEDE;
 }
 
-.box_wide {
-  margin:50px auto;
+.wide {
   width: 80%;
-  padding: 20px;
-  border: 1px solid #CCCCCC;
-  background-color:#DEDEDE;
+}
+
+.small {
+  width: 400px;
 }
 
 .box div {
@@ -68,3 +68,8 @@ form div {
   background-color: #D6EAF8;
 }
 
+.cell {
+  width: 50%;
+  display: inline-block;
+  overflow: hidden;
+}

@@ -6,26 +6,28 @@
 	<link rel="stylesheet" href="style.css" type="text/css" />
     </head>
     <body>
-	  <form action="/form" method="POST" enctype="multipart/form-data">
-		<div>
-		    <label for="name">First name:</label>
-		    <input type="text" id="name" name="name" />
+        <div class="box">
+            <form action="/form" method="POST" enctype="multipart/form-data">
+                <div>
+                    <label for="name">First name:</label>
+                    <input type="text" id="name" name="name" />
+                </div>
+                <div>
+                    <label for="surname">Last name:</label>
+                    <input type="text" id="surname" name="surname" />
+                </div>
+                <div>
+                    <label for="file1">File 1:</label>
+                    <input type="file" name="file1" id="file1" />
+                </div>
+                <div>
+                    <label for="file2">File 2:</label>
+                    <input type="file" name="file2" id="file2" />
+                </div>
+                <div>
+                    <input type="submit" value="Submit" />
+                </div>
+            </form>
         </div>
-        <div>
-		    <label for="surname">Last name:</label>
-		    <input type="text" id="surname" name="surname" />
-        </div>
-        <div>
-            <label for="file1">File 1:</label>
-            <input type="file" name="file1" id="file1" />
-        </div>
-        <div>
-            <label for="file2">File 2:</label>
-            <input type="file" name="file2" id="file2" />
-        </div>
-		<div>
-            <input type="submit" value="Submit" />
-        </div>
-	  </form>
     </body>
 <html>
