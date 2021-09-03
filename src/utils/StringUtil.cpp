@@ -344,3 +344,21 @@ uint32_t StringUtil::GetRand(uint32_t min, uint32_t max)
 {
     return static_cast<uint32_t>(rand()) % (max - min) + min;
 }
+
+bool StringUtil::Compare(const ByteArray &arr1, const ByteArray &arr2)
+{
+    if(arr1.size() != arr2.size())
+    {
+        return false;
+    }
+
+    for(size_t i = 0;i < arr1.size();i ++)
+    {
+        if(arr1[i] != arr2[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}

@@ -61,6 +61,7 @@ public:
     static void Replace(std::string &str, const std::string &find, const std::string &replace);
     static void RandInit();
     static uint32_t GetRand(uint32_t min, uint32_t max);
+    static bool Compare(const ByteArray &arr1, const ByteArray &arr2);
 };
 
 #endif // STRINGUTIL_H
