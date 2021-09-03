@@ -82,7 +82,7 @@ endif()
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 
-add_definitions(-DPUBLIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/public")
+add_definitions(-DPUBLIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/examples/public")
 
 if(EXAMPLES)
     add_executable(Simple examples/Simple.cpp)
@@ -96,6 +96,9 @@ if(EXAMPLES)
 
     add_executable(Route examples/Route.cpp)
     target_link_libraries(Route PRIVATE ${PROJECT_NAME})
+
+    add_executable(PreRoute examples/PreRoute.cpp)
+    target_link_libraries(PreRoute PRIVATE ${PROJECT_NAME})
 
     if(WEBSOCKET)
         add_executable(WebSocket examples/WebSocket.cpp)

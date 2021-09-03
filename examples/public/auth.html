@@ -1,0 +1,20 @@
+<html>
+    <head>
+	<title>The Preroute test page</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta http-equiv="expires" content="0">
+	<link rel="stylesheet" href="style.css" type="text/css" />
+    </head>
+    <body>
+	<h3 style="text-align: center;margin-top:50px;">This is a preroute test page of the WebCpp server</h3>
+    <div class="box small">
+        <form action="/auth" method="POST" enctype="multipart/form-data">
+            <div class="note">Please use test:test for credentials</div>
+            <div><span class="cell">User</span><span class="cell"><input type="text" name="user"></span></div>
+            <div><span class="cell">Password</span><span class="cell"><input type="text" name="password"></span></div>
+            <div><button type="submit">Login</button></div>
+        </form>
+    </div>
+    </body>
+</html>
