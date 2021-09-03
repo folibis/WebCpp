@@ -15,7 +15,6 @@ HttpHeader::HttpHeader()
 bool HttpHeader::Parse(const ByteArray &data, bool withRequestList)
 {
     m_complete = false;
-    //ByteArray delimiter { { CRLFCRLF } };
 
     size_t pos = StringUtil::SearchPosition(data, { CRLFCRLF });
     if(pos != SIZE_MAX)
@@ -118,7 +117,7 @@ bool HttpHeader::ParseHeaders(const ByteArray &data, const StringUtil::Ranges &r
         }
         else
         {
-            auto headerDelimiter = StringUtil::SearchPosition(data, {':'}, range.start, range.end);
+            auto headerDelimiter = StringUtil::SearchPosition(data, { ':' }, range.start, range.end);
             if(headerDelimiter != SIZE_MAX)
             {
                 std::string name = std::string(data.begin() + range.start, data.begin() + headerDelimiter);
@@ -292,12 +291,12 @@ void HttpHeader::ParseQuery()
         auto q = StringUtil::Split(m_query, '&');
         for(auto &token: q)
         {
-            auto parr = StringUtil::Split(token, '=');
-            if(parr.size() == 2)
+            auto pair = StringUtil::Split(token, '=');
+            if(pair.size() == 2)
             {
-                StringUtil::UrlDecode(parr[0]);
-                StringUtil::UrlDecode(parr[1]);
-                m_queryValue[parr[0]] = parr[1];
+                StringUtil::UrlDecode(pair[0]);
+                StringUtil::UrlDecode(pair[1]);
+                m_queryValue[pair[0]] = pair[1];
             }
         }
     }

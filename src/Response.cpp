@@ -81,16 +81,7 @@ bool Response::AddFile(const std::string &file, const std::string &charset)
     if(FileSystem::IsFileExist(file) == false)
     {
         std::string root = FileSystem::NormalizePath(m_config.GetRoot());
-        std::string root_full = FileSystem::NormalizePath(FileSystem::GetFullPath(root));
-        if(root != root_full)
-        {
-            path = FileSystem::NormalizePath(FileSystem::GetApplicationFolder()) + root;
-        }
-        else
-        {
-            path = root;
-        }
-        path = path + file;
+        path = root + file;
     }
     else
     {
