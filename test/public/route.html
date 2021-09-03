@@ -1,0 +1,75 @@
+<html>
+    <head>
+	<title>The Route test page</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta http-equiv="expires" content="0">
+	<link rel="stylesheet" href="style.css" type="text/css" />
+    </head>
+    <body>
+	<h3 style="text-align: center;margin-top:50px;">This is a Route test page of the WebCpp server</h3>
+    <div class="box">
+  	  	<div><span>param1</span>&nbsp;<input type="text" id="param1">&nbsp;<span class="note">* mandatory, alpha</span></div>
+        <div><span>param2</span>&nbsp;<input type="text" id="param2">&nbsp;<span class="note">* optional, string</span></div>
+        <div><span>param3</span>&nbsp;<input type="text" id="param3">&nbsp;<span class="note">* optional, numeric</span></div>
+        <div class="center"><button id="button_send">Send</button></div>
+        <div class="note">Request</div>
+        <div id="bar"></div>
+        <div class="note">Response</div>
+  	  	<div id="output"></div>
+    </div>
+    </body>
+    <script>
+        var buttonSend = document.getElementById("button_send");
+        var param1Box = document.getElementById("param1");
+        var param2Box = document.getElementById("param2");
+        var param3Box = document.getElementById("param3");
+
+        var barBox = document.getElementById("bar");
+        var outputBox = document.getElementById("output");
+
+        buttonSend.addEventListener('click', function ()
+        {   
+            send();
+        });
+
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function() 
+        {
+            if(req.status == 404)
+            {
+                outputBox.innerHTML = "404. Not found";        
+            }
+            else
+            {
+                if(req.readyState == 4) 
+                {
+                    var content = req.responseText;
+                    outputBox.innerHTML = content;
+                }
+            }
+        };
+
+        function send() 
+        {
+            if(param1Box.value === "")
+            {
+                alert("param1 is mandatory");
+                return;
+            }
+
+            var url = "/route/" + param1Box.value;
+            if(param2Box.value !== "")
+            {
+                url += "/" + param2Box.value;        
+            }
+            if(param3Box.value !== "")
+            {
+                url += "/" + param3Box.value;        
+            }
+            barBox.innerHTML = url;
+            req.open("GET", url + "?rnd=" + (Math.floor(Math.random() * 10000000)), true);
+            req.send(null);
+        }
+    </script>
+</html>

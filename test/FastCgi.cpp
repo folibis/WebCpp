@@ -1,15 +1,7 @@
 #include <signal.h>
 #include "common.h"
 #include "HttpServer.h"
-#include "WebSocketServer.h"
-#include "Request.h"
-#include <string>
-#include <iostream>
-#include "StringUtil.h"
-#include "Data.h"
-#include "ResponseWebSocket.h"
 #include "FcgiClient.h"
-#include "FileSystem.h"
 
 #define FPM "/run/php/php7.4-fpm.sock"
 

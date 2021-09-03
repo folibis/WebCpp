@@ -89,6 +89,12 @@ target_link_libraries(test PRIVATE ${PROJECT_NAME})
 add_executable(FileServer test/FileServer.cpp)
 target_link_libraries(FileServer PRIVATE ${PROJECT_NAME})
 
+add_executable(Form test/Form.cpp)
+target_link_libraries(Form PRIVATE ${PROJECT_NAME})
+
+add_executable(Route test/Route.cpp)
+target_link_libraries(Route PRIVATE ${PROJECT_NAME})
+
 if(WEBSOCKET)
     add_executable(WebSocket test/WebSocket.cpp)
     target_link_libraries(WebSocket PRIVATE ${PROJECT_NAME})

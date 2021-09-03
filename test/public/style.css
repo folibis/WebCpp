@@ -12,7 +12,7 @@ form div {
 
 .box {
   margin:50px auto;
-  width: 400px;
+  width: 500px;
   padding: 20px;
   border: 1px solid #CCCCCC;
   background-color:#DEDEDE;
@@ -60,3 +60,11 @@ form div {
 .note {
   font-style:italic;
 }
+
+#bar {
+  margin:10px auto;
+  width: 90%;
+  border: 1px solid #CCCCCC;
+  background-color: #D6EAF8;
+}
+
