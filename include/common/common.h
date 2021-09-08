@@ -33,7 +33,7 @@
 #define CRLF '\r','\n'
 #define CRLFCRLF '\r','\n','\r','\n'
 
-#define WEBCPP_VERSION "0.1"
+#define WEBCPP_VERSION "0.2"
 #define WEBCPP_NAME "WebCpp"
 #define WEBCPP_CANONICAL_NAME WEBCPP_NAME " " WEBCPP_VERSION
 
