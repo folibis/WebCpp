@@ -51,7 +51,7 @@ int main()
         httpServer.OnGet("/*", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             std::string root = WebCpp::FileSystem::NormalizePath(getenv("HOME"));
-            std::string url = request.GetHeader().GetPath();
+            std::string url = request.GetUrl().GetPath();
             std::string local = (url == "/") ? root : (root + url);
             std::string parent = "";
             auto pos = url.rfind(WebCpp::FileSystem::PathDelimiter(), url.size() - 2);
@@ -64,7 +64,7 @@ int main()
                 if(WebCpp::FileSystem::IsDir(local))
                 {
                     std::string table = tableTpl;
-                    StringUtil::Replace(table, "[folder]", request.GetHeader().GetPath());
+                    StringUtil::Replace(table, "[folder]", request.GetUrl().GetPath());
 
                     if(!parent.empty())
                     {
@@ -87,7 +87,7 @@ int main()
                         }
 
                         std::string row = rowTpl;
-                        StringUtil::Replace(row, "[link]", WebCpp::FileSystem::NormalizePath(request.GetHeader().GetPath()) + file);
+                        StringUtil::Replace(row, "[link]", WebCpp::FileSystem::NormalizePath(request.GetUrl().GetPath()) + file);
                         StringUtil::Replace(row, "[name]", entry.folder ? ("<strong>" + file + "/</strong>") : file);
                         StringUtil::Replace(row, "[size]", std::to_string(entry.size));
                         StringUtil::Replace(row, "[modified]", entry.lastModified);
@@ -97,7 +97,7 @@ int main()
                     std::string page = pageTpl;
                     StringUtil::Replace(page, "[body]", table);
 
-                    response.SetHeader("Content-Type","text/html;charset=utf-8");
+                    response.AddHeader("Content-Type","text/html;charset=utf-8");
                     response.Write(page);
                 }
                 else

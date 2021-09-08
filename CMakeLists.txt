@@ -29,7 +29,7 @@ file(GLOB INC . include/*.h include/common/*.h include/conn/*.h include/utils/*.
 
 add_library(${PROJECT_NAME} SHARED ${SRC} ${INC})
 
-target_include_directories(${PROJECT_NAME} PUBLIC
+include_directories(PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/common
     ${CMAKE_CURRENT_SOURCE_DIR}/include/conn
@@ -82,31 +82,4 @@ endif()
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 
-add_definitions(-DPUBLIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/examples/public")
-
-if(EXAMPLES)
-    add_executable(Simple examples/Simple.cpp)
-    target_link_libraries(Simple PRIVATE ${PROJECT_NAME})
-
-    add_executable(FileServer examples/FileServer.cpp)
-    target_link_libraries(FileServer PRIVATE ${PROJECT_NAME})
-
-    add_executable(Form examples/Form.cpp)
-    target_link_libraries(Form PRIVATE ${PROJECT_NAME})
-
-    add_executable(Route examples/Route.cpp)
-    target_link_libraries(Route PRIVATE ${PROJECT_NAME})
-
-    add_executable(PreRoute examples/PreRoute.cpp)
-    target_link_libraries(PreRoute PRIVATE ${PROJECT_NAME})
-
-    if(WEBSOCKET)
-        add_executable(WebSocket examples/WebSocket.cpp)
-        target_link_libraries(WebSocket PRIVATE ${PROJECT_NAME})
-    endif()
-
-    if(FASTCGI)
-        add_executable(FastCgi examples/FastCgi.cpp)
-        target_link_libraries(FastCgi PRIVATE ${PROJECT_NAME})
-    endif()
-endif()
+add_subdirectory(examples/)

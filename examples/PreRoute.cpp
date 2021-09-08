@@ -31,15 +31,15 @@ int main()
         httpServer.SetPreRouteFunc([&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             // skip the common files
-            auto ext = WebCpp::FileSystem::ExtractFileExtension(request.GetHeader().GetPath());
+            auto ext = WebCpp::FileSystem::ExtractFileExtension(request.GetUrl().GetPath());
             if(ext == "css" || ext == "js")
             {
                 return false;
             }
 
             // skip the form POST
-            if(request.GetHeader().GetMethod() == WebCpp::HttpHeader::Method::POST &&
-                    request.GetHeader().GetPath() == "/auth")
+            if(request.GetMethod() == WebCpp::Http::Method::POST &&
+                    request.GetUrl().GetPath() == "/auth")
             {
                 return false;
             }
@@ -76,7 +76,7 @@ int main()
 
             if(file.empty())
             {
-                response.SetHeader("Content-Type","text/html;charset=utf-8");
+                response.AddHeader("Content-Type","text/html;charset=utf-8");
                 response.Write("<h3>Congratulations! You've accessed the secured area!</h3>");
             }
             else
@@ -88,7 +88,7 @@ int main()
                 }
                 else
                 {
-                    response.SetHeader(WebCpp::Response::HeaderType::CacheControl,"no-cache");
+                    response.AddHeader(WebCpp::HttpHeader::HeaderType::CacheControl,"no-cache");
                 }
             }
 

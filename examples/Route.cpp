@@ -43,7 +43,7 @@ int main()
             }
             else
             {
-                response.SetHeader(WebCpp::Response::HeaderType::CacheControl,"no-cache");
+                response.AddHeader(WebCpp::HttpHeader::HeaderType::CacheControl,"no-cache");
             }
 
             return retval;
@@ -55,7 +55,7 @@ int main()
             std::string param2 = request.GetArg("param2");
             std::string param3 = request.GetArg("param3");
 
-            response.SetHeader("Content-Type","text/plain;charset=utf-8");
+            response.AddHeader("Content-Type","text/plain;charset=utf-8");
             response.Write("param1: " + param1 + ", param2: " + param2 + ",param3: " + param3);
             return true;
         });

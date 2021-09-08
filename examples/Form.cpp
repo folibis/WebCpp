@@ -62,7 +62,7 @@ int main()
             auto file1 = body.GetValue("file1");
             auto file2 = body.GetValue("file2");
 
-            response.SetHeader("Content-Type","text/html;charset=utf-8");
+            response.AddHeader("Content-Type","text/html;charset=utf-8");
             response.Write("<div>Hello, " + body.GetValue("name").GetDataString() + " " + body.GetValue("surname").GetDataString() + "</div>");
             response.Write("<div>file 1 '" + file1.fileName + "'" + " with length: " + std::to_string(file1.data.size()) + " and mimetype: '" + file1.contentType + "' was successfully uploaded</div>");
             response.Write("<div>file 2 '" + file2.fileName + "'" + " with length: " + std::to_string(file2.data.size()) + " and mimetype: '" + file2.contentType + "' was successfully uploaded</div>");

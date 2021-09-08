@@ -3,16 +3,19 @@
 #include "HttpServer.h"
 
 
-static WebCpp::HttpServer httpServer;
+static WebCpp::HttpServer *httpServerPtr;
 
 void handle_sigint(int)
 {
-    httpServer.Close(false);
+    httpServerPtr->Close(false);
 }
 
 int main()
 {
     signal(SIGINT, handle_sigint);
+
+    WebCpp::HttpServer httpServer;
+    httpServerPtr = &httpServer;
 
     WebCpp::HttpConfig config;
     config.SetRoot(PUBLIC_DIR);
@@ -23,7 +26,7 @@ int main()
     {
         httpServer.OnGet("/", [](const WebCpp::Request &, WebCpp::Response &response) -> bool
         {
-            response.SetHeader("Content-Type","text/html;charset=utf-8");
+            response.AddHeader("Content-Type","text/html;charset=utf-8");
             response.Write("<h3>WebCpp works!</h3>");
 
             return true;
