@@ -1,0 +1,80 @@
+#ifndef URL_H
+#define URL_H
+
+#include <string>
+#include <map>
+
+#define DEFAULT_PORT 80
+
+
+namespace WebCpp
+{
+
+class Url
+{
+public:
+    enum class Scheme
+    {
+        Undefined,
+        HTTP,
+        HTTPS,
+        WS,
+        WSS,
+    };
+
+    Url(const std::string &url);
+    Url();
+    bool Parse(const std::string &url, bool full = true);
+    std::string ToString(bool full = true) const;
+    bool IsInitiaized() const;
+    void Clear();
+
+    Scheme GetScheme() const;
+    void SetScheme(Scheme scheme);
+
+    std::string GetUser() const;
+    void SetUser(const std::string &value);
+
+    std::string GetHost() const;
+    void SetHost(const std::string &value);
+
+    int GetPort() const;
+    void SetPort(int value);
+
+    std::string GetPath() const;
+    std::string GetNormalizedPath() const;
+    void SetPath(const std::string &value);
+
+    std::string GetQueryValue(const std::string &name) const;
+    void SetQueryValue(const std::string &name, const std::string &value);
+    std::string Query2String() const;
+
+    std::string GetFragment() const;
+    void SetFragment(const std::string &value);
+
+    size_t GetOriginalSize() const;
+
+    static Scheme String2Scheme(const std::string &str);
+    static std::string Scheme2String(Scheme scheme);
+
+protected:
+    bool ParseAuthority(const std::string &authority);
+    bool ParsePath(const std::string &path);
+    bool ParseQuery(const std::string &query);
+    bool IsValid() const;
+
+private:
+    bool m_initiaized = false;
+    Scheme m_scheme = Scheme::Undefined;
+    std::string m_user;
+    std::string m_host;
+    int m_port = DEFAULT_PORT;
+    std::string m_path;
+    std::map<std::string,std::string> m_query;
+    std::string m_fragment;
+    size_t m_originalSize = 0;
+};
+
+}
+
+#endif // URL_H
