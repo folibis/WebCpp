@@ -42,7 +42,7 @@ class ICommunication : public IError, public IRunnable
 public:
     enum class CommunicationProtocol
     {
-        Undefined = 0,        
+        Undefined = 0,
         TCP,
         UnixDoamin,
     };
@@ -62,7 +62,7 @@ public:
     void SetPort(int port) { m_port = port; }
     int GetPort() const { return m_port; }
     void SetAddress(const std::string &address) { m_address = address; };
-    std::string GetAddress() const { return m_address; }       
+    std::string GetAddress() const { return m_address; }
 
 protected:
     int m_socket = (-1);
@@ -70,6 +70,8 @@ protected:
     ComminicationType m_type = ComminicationType::Undefined;
     int m_port = DEFAULT_PORT;
     std::string m_address = DEFAULT_ADDRESS;
+
+    void ParseAddress(const std::string &address);
 };
 
 }

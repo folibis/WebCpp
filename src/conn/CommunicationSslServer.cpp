@@ -76,20 +76,7 @@ bool CommunicationSslServer::Connect(const std::string &address)
 {
     try
     {
-        if(!address.empty())
-        {
-            auto addr_arr = StringUtil::Split(address, ':');
-            if(addr_arr.size() == 2)
-            {
-                m_address = addr_arr[0];
-                int port;
-                if(StringUtil::String2int(addr_arr[1], port))
-                {
-                    m_port = port;
-                }
-            }
-        }
-
+        ParseAddress(address);
         struct sockaddr_in server_sockaddr;
         server_sockaddr.sin_family = AF_INET;
         server_sockaddr.sin_port = htons(m_port);

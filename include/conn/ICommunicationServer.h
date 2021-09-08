@@ -27,6 +27,7 @@
 
 #include "ICommunication.h"
 #include "functional"
+#include "common.h"
 
 
 namespace WebCpp
@@ -36,16 +37,16 @@ class ICommunicationServer : public ICommunication
 {
 public:
     virtual bool CloseClient(int connID) = 0;
-    virtual bool Write(int connID, const std::vector<char> &data) = 0;
-    virtual bool Write(int connID, const std::vector<char> &data, size_t size) = 0;
+    virtual bool Write(int connID, ByteArray &data) = 0;
+    virtual bool Write(int connID, ByteArray &data, size_t size) = 0;
 
     virtual bool SetNewConnectionCallback(const std::function<void(int, const std::string&)> &callback) { m_newConnectionCallback = callback; return true; };
-    virtual bool SetDataReadyCallback(const std::function<void(int, std::vector<char> &data)> &callback) { m_dataReadyCallback = callback; return true; };
+    virtual bool SetDataReadyCallback(const std::function<void(int, ByteArray &data)> &callback) { m_dataReadyCallback = callback; return true; };
     virtual bool SetCloseConnectionCallback(const std::function<void(int)> &callback) { m_closeConnectionCallback = callback; return true; };
 
 protected:
     std::function<void(int, const std::string&)> m_newConnectionCallback = nullptr;
-    std::function<void(int, std::vector<char> &data)> m_dataReadyCallback = nullptr;
+    std::function<void(int, ByteArray &data)> m_dataReadyCallback = nullptr;
     std::function<void(int)> m_closeConnectionCallback = nullptr;
 
 };

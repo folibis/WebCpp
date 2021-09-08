@@ -73,7 +73,7 @@ bool ComminucationUnixClient::Run()
 
 bool ComminucationUnixClient::Close(bool wait)
 {
-    if(m_initialized && m_isConnected)
+    if(m_initialized)
     {
         close(m_socket);
         m_isConnected = false;

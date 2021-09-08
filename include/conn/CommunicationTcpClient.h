@@ -25,11 +25,40 @@
 #ifndef COMMUNICATIONTCPCLIENT_H
 #define COMMUNICATIONTCPCLIENT_H
 
+#include <poll.h>
+#include "ICommunicationClient.h"
 
-class CommunicationTcpClient
+#define BUFFER_SIZE 1024
+
+
+namespace WebCpp {
+
+class CommunicationTcpClient: public ICommunicationClient
 {
 public:
     CommunicationTcpClient();
+
+    bool Init() override;
+    bool Run() override;
+    bool Close(bool wait = true) override;
+    bool WaitFor() override;
+
+    bool Connect(const std::string &address = "") override;
+    bool Write(const ByteArray &data) override;
+    ByteArray Read(size_t length) override;
+
+protected:
+    static void* ReadThreadWrapper(void *ptr);
+    void* ReadThread();
+
+private:
+    bool m_initialized = false;
+    pollfd m_poll;
+    bool m_running = false;
+    pthread_t m_thread;
+    char m_readBuffer[BUFFER_SIZE];
 };
+
+}
 
 #endif // COMMUNICATIONTCPCLIENT_H

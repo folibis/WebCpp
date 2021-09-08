@@ -48,8 +48,8 @@ public:
     bool Run() override;
     bool WaitFor() override;
     bool Close(bool wait = true) override;
-    bool Write(int connID, const std::vector<char> &data) override;
-    bool Write(int connID, const std::vector<char> &data, size_t size) override;
+    bool Write(int connID, ByteArray &data) override;
+    bool Write(int connID, ByteArray &data, size_t size) override;
 
     bool CloseClient(int connID) override;
 

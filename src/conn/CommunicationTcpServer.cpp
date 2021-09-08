@@ -69,20 +69,7 @@ bool CommunicationTcpServer::Connect(const std::string &address)
 {
     try
     {
-        if(!address.empty())
-        {
-            auto addr_arr = StringUtil::Split(address, ':');
-            if(addr_arr.size() == 2)
-            {
-                m_address = addr_arr[0];
-                int port;
-                if(StringUtil::String2int(addr_arr[1], port))
-                {
-                    m_port = port;
-                }
-            }
-        }
-
+        ParseAddress(address);
         struct sockaddr_in server_sockaddr;
         server_sockaddr.sin_family = AF_INET;
         server_sockaddr.sin_port = htons(m_port);
@@ -175,12 +162,12 @@ bool CommunicationTcpServer::Close(bool wait)
     return true;
 }
 
-bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data)
+bool CommunicationTcpServer::Write(int connID, ByteArray &data)
 {
     return Write(connID, data, data.size());
 }
 
-bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, size_t size)
+bool CommunicationTcpServer::Write(int connID, ByteArray &data, size_t size)
 {
     bool retval = false;
     Lock lock(m_writeMutex);
@@ -224,6 +211,11 @@ bool CommunicationTcpServer::Write(int connID, const std::vector<char> &data, si
 
 bool CommunicationTcpServer::CloseClient(int connID)
 {
+    if(connID < 0 || connID > (MAX_CLIENTS + 1))
+    {
+        return false;
+    }
+
     if(m_fds[connID].fd != (-1))
     {
         close(m_fds[connID].fd);
