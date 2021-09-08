@@ -5,7 +5,7 @@
 
 using namespace WebCpp;
 
-Route::Route(const std::string &path, HttpHeader::Method method)
+Route::Route(const std::string &path, Http::Method method)
 {
     m_method = method;
     Parse(path);
@@ -19,12 +19,12 @@ const std::string& Route::GetPath() const
 
 bool Route::IsMatch(Request &request)
 {
-    if(request.GetHeader().GetMethod() != m_method)
+    if(request.GetMethod() != m_method)
     {
         return false;
     }
 
-    const std::string path = request.GetHeader().GetPath();
+    const std::string path = request.GetUrl().GetPath();
     const char *ch = path.data();
     size_t length = path.length();
 
@@ -91,7 +91,7 @@ bool Route::IsMatch(Request &request)
 
 std::string Route::ToString() const
 {
-    return "Route (method: " + HttpHeader::Method2String(m_method) + ", path: " + m_path + ")";
+    return "Route (method: " + Http::Method2String(m_method) + ", path: " + m_path + ")";
 }
 
 bool Route::Parse(const std::string &path)

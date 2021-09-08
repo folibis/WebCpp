@@ -97,7 +97,7 @@ protected:
     };
 
     void OnConnected(int connID, const std::string& remote);
-    void OnDataReady(int connID, std::vector<char> &data);
+    void OnDataReady(int connID, ByteArray &data);
     void OnClosed(int connID);
 
     static void* RequestThreadWrapper(void *ptr);

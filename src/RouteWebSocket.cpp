@@ -6,7 +6,7 @@
 using namespace WebCpp;
 
 RouteWebSocket::RouteWebSocket(const std::string &path) :
-    Route(path, HttpHeader::Method::WEBSOCKET)
+    Route(path, Http::Method::WEBSOCKET)
 {
 
 }

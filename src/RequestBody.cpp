@@ -2,7 +2,9 @@
 #include <fstream>
 #include "StringUtil.h"
 #include "RequestBody.h"
-#include  "FileSystem.h"
+#include "FileSystem.h"
+
+#define WRITE_BIFFER_SIZE 1024
 
 
 using namespace WebCpp;
@@ -48,19 +50,20 @@ RequestBody &RequestBody::operator=(RequestBody &&other)
 
 bool RequestBody::Parse(const ByteArray &data, size_t offset, const ByteArray &contentType, bool useTempFile)
 {
-    bool retval = false;    
+    ClearError();
+    bool retval = false;
 
     if(useTempFile)
     {
         m_tempFolder = FileSystem::TempFolder();
-        FileSystem::CreateFolder(m_tempFolder);
+        if(FileSystem::CreateFolder(m_tempFolder) == false)
+        {
+            SetLastError("error creating temporary folder");
+            return false;
+        }
     }
 
     auto type = ParseContentType(contentType);
-
-    //std::ofstream f("/home/ruslan/html.output", std::ofstream::binary | std::ofstream::trunc);
-    //f.write(data.data(), data.size());
-    //f.close();
 
     switch(type)
     {
@@ -72,7 +75,9 @@ bool RequestBody::Parse(const ByteArray &data, size_t offset, const ByteArray &c
             break;
         case ContentType::Text:
             retval = ParseText(data, offset, contentType);
-        default: break;
+        default:
+            SetLastError("undefined content type");
+            break;
 
     }
 
@@ -120,7 +125,7 @@ bool RequestBody::ParseFormData(const ByteArray &data, size_t offset, const Byte
                         if(useTempFile && !filename.empty())
                         {
                             std::ofstream f(m_tempFolder + "/" + filename, std::ofstream::binary | std::ofstream::trunc);
-                            f.write(data.data() + chunkHeaderPos + 4, range.end - 1 - (chunkHeaderPos + 4));
+                            f.write(reinterpret_cast<const char*>(data.data() + chunkHeaderPos + 4), range.end - 1 - (chunkHeaderPos + 4));
                             f.close();
                             m_values.push_back(ContentValue {
                                                    name,
@@ -140,6 +145,10 @@ bool RequestBody::ParseFormData(const ByteArray &data, size_t offset, const Byte
                 }
             }
         }
+    }
+    else
+    {
+        SetLastError("boundary not defined");
     }
 
     return retval;
@@ -191,6 +200,11 @@ RequestBody::ContentType RequestBody::GetContentType() const
     return m_contentType;
 }
 
+void RequestBody::SetContentType(ContentType type)
+{
+    m_contentType = type;
+}
+
 const std::vector<RequestBody::ContentValue> &RequestBody::GetValues() const
 {
     return m_values;
@@ -209,9 +223,155 @@ const RequestBody::ContentValue& RequestBody::GetValue(const std::string &name) 
     return RequestBody::ContentValue::defaultValue;
 }
 
+void RequestBody::SetValue(const std::string &name, const ByteArray &data, const std::string &contentType)
+{
+    m_values.push_back({ name, contentType, "", data });
+}
+
+void RequestBody::SetValue(const std::string &name, const std::string &fileName, const std::string &contentType)
+{
+    m_values.push_back({ name, contentType, fileName, {} });
+}
+
 std::string RequestBody::GetTempFolder() const
 {
     return m_tempFolder;
+}
+
+ByteArray RequestBody::ToByteArray()
+{
+    ClearError();
+    ByteArray data;
+
+    switch(m_contentType)
+    {
+        case ContentType::UrlEncoded:
+            data = GetDataUrlUncoded();
+            break;
+        case ContentType::FormData:
+            data = GetDataMultipart();
+            break;
+        case ContentType::Text:
+            data = GetDataText();
+            break;
+        default: break;
+    }
+
+    return data;
+}
+
+std::string RequestBody::BuildContentType() const
+{
+    std::string str = "";
+    switch(m_contentType)
+    {
+        case ContentType::UrlEncoded:
+            str += "application/x-www-form-urlencoded;";
+            break;
+        case ContentType::FormData:
+            str += "multipart/form-data;";
+            break;
+        case ContentType::Text:
+            str += "text/plain;";
+            break;
+        default: break;
+    }
+    str += "boundary=\"" + m_boundary + "\"";
+
+    return str;
+}
+
+ByteArray RequestBody::GetDataUrlUncoded() const
+{
+    std::string data;
+    for(const auto &entity: m_values)
+    {
+        std::string name = entity.name;
+        StringUtil::UrlDecode(name);
+        std::string value = StringUtil::ByteArray2String(entity.data);
+        StringUtil::UrlDecode(value);
+        data += (data.empty() ? "" : "&") + name + "=" + value;
+    }
+
+    return StringUtil::String2ByteArray(data);
+}
+
+ByteArray RequestBody::GetDataMultipart()
+{
+    ByteArray data;
+    CreateBoundary();
+    for(const auto &entity: m_values)
+    {
+        std::string header = "Content-Disposition: form-data; name=" + entity.name;
+        if(!entity.fileName.empty())
+        {
+            header += "; filename=\"" + entity.fileName + "\"";
+        }
+        header += CR + LF;
+        if(!entity.contentType.empty())
+        {
+            header += "Content-Type: " + entity.contentType + CR + LF;
+        }
+        header += (CR + LF);
+
+        data.insert(data.end(), m_boundary.begin(), m_boundary.end());
+        data.insert(data.end(), {CR, LF});
+        data.insert(data.end(), header.begin(), header.end());
+        if(!entity.fileName.empty())
+        {
+            if(FileSystem::IsFileExist(entity.fileName))
+            {
+                ByteArray buffer(WRITE_BIFFER_SIZE);
+                std::ifstream stream(entity.fileName, std::ios::binary);
+                do
+                {
+                    stream.read(reinterpret_cast<char*>(buffer.data()), WRITE_BIFFER_SIZE);
+                    if(stream)
+                    {
+                        data.insert(data.end(), buffer.begin(), buffer.begin() + stream.gcount());
+                    }
+                }
+                while(stream);
+            }
+            else
+            {
+                SetLastError("file not exist");
+                break;
+            }
+        }
+        else if(!entity.data.empty())
+        {
+            data.insert(data.end(), entity.data.begin(), entity.data.end());
+        }
+
+        data.insert(data.end(), {CR, LF});
+    }
+    data.insert(data.end(), m_boundary.begin(), m_boundary.end());
+    data.insert(data.end(), { '-','-',CR, LF });
+
+    return data;
+}
+
+ByteArray RequestBody::GetDataText() const
+{
+    if(m_values.size() > 0)
+    {
+        return m_values.at(0).data;
+    }
+
+    return ByteArray();
+}
+
+void RequestBody::CreateBoundary()
+{
+    StringUtil::RandInit();
+    std::string b = "----------";
+    int len = StringUtil::GetRand(30, 40);
+    for(int i = 0;i < len;i ++)
+    {
+        b += static_cast<char>(StringUtil::GetRand('a','z'));
+    }
+    m_boundary = b;
 }
 
 std::map<std::string, std::string> RequestBody::ParseHeaders(const ByteArray &header) const

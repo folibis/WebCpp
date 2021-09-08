@@ -1,8 +1,9 @@
 #include "RouteHttp.h"
 
+
 using namespace WebCpp;
 
-RouteHttp::RouteHttp(const std::string &path, HttpHeader::Method method) :
+RouteHttp::RouteHttp(const std::string &path, Http::Method method) :
     Route(path, method)
 {
 

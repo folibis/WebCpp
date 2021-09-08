@@ -7,8 +7,13 @@
 
 size_t StringUtil::SearchPosition(const ByteArray &str, const ByteArray&substring, size_t start, size_t end)
 {
-    const char* pstr = str.data();
-    const char* psubstring = substring.data();
+    if(str.size() <= 0 || substring.size() <= 0)
+    {
+        return SIZE_MAX;
+    }
+
+    const uint8_t* pstr = str.data();
+    const uint8_t* psubstring = substring.data();
     size_t substringLen = substring.size();
     if(end == SIZE_MAX)
     {
@@ -69,8 +74,8 @@ StringUtil::Ranges StringUtil::Split(const ByteArray &str, const ByteArray &deli
 
 size_t StringUtil::SearchPositionReverse(const ByteArray &str, const ByteArray &substring, size_t start, size_t end)
 {
-    const char* pstr = str.data();
-    const char* psubstring = substring.data();
+    const uint8_t* pstr = str.data();
+    const uint8_t* psubstring = substring.data();
     size_t substringLen = substring.size();
     if(end == SIZE_MAX)
     {
@@ -255,12 +260,12 @@ void StringUtil::ToUpper(std::string &str)
     });
 }
 
-std::string StringUtil::ByteArray2String(const StringUtil::ByteArray &array)
+std::string StringUtil::ByteArray2String(const ByteArray &array)
 {
     return std::string(array.begin(), array.end());
 }
 
-StringUtil::ByteArray StringUtil::String2ByteArray(const std::string &string)
+ByteArray StringUtil::String2ByteArray(const std::string &string)
 {
     return ByteArray(string.begin(), string.end());
 }
@@ -282,8 +287,56 @@ void StringUtil::UrlDecode(std::string &str)
     std::replace(str.begin(), str.end(), '+', ' ');
 }
 
+void StringUtil::UrlEncode(std::string &str)
+{
+    for(size_t i = 0;i < str.length();i ++)
+    {
+        char ch = str.at(i);
+        if(!IsCharAllowed(ch))
+        {
+            str.replace(i, 1, Int2Hex(ch, 2, "%"));
+            i+= 3;
+        }
+    }
+}
+
+bool StringUtil::IsCharAllowed(char ch)
+{
+    if((ch >= 'a' && ch <= 'z') ||
+            (ch >= 'A' && ch <= 'Z') ||
+            (ch >= '0' && ch <= '9') ||
+            ch == '-' || ch =='_' || ch == '.' || ch == '~')
+    {
+        return true;
+    }
+
+    return false;
+}
+
+std::string StringUtil::Int2Hex(int number, size_t len, const std::string &prefix)
+{
+    static char digits[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+    std::string retval = "";
+    do
+    {
+        int dig = (number & 0xF);
+        retval = digits[dig] + retval;
+        number >>= 4;
+    }while(number > 0);
+
+    if(len > retval.size())
+    {
+        for(size_t i = 0;i < retval.size() - len;i ++)
+        {
+            retval = "0" + retval;
+        }
+    }
+
+    return (prefix + retval);
+}
+
 #ifndef NDEBUG
-void StringUtil::Print(const StringUtil::ByteArray &array)
+void StringUtil::Print(const ByteArray &array)
 {
     size_t pos = 0;
     size_t size = array.size();

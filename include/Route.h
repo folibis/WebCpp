@@ -30,6 +30,7 @@
 #include <algorithm>
 #include "Request.h"
 #include "Response.h"
+#include "IHttp.h"
 
 
 namespace WebCpp
@@ -38,7 +39,7 @@ namespace WebCpp
 class Route
 {
 public:
-    Route(const std::string &path, HttpHeader::Method method);
+    Route(const std::string &path, Http::Method method);
     Route(const Route& other) = delete;
     Route& operator=(const Route& other) = delete;
     Route(Route&& other) = default;
@@ -129,7 +130,7 @@ private:
     };
 
     std::vector<Token> m_tokens;
-    HttpHeader::Method m_method;
+    Http::Method m_method;
     std::string m_path;
 };
 

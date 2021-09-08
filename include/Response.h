@@ -30,65 +30,20 @@
 #include "ICommunicationServer.h"
 #include "common.h"
 #include "HttpConfig.h"
+#include "HttpHeader.h"
+#include "IError.h"
 
 
 namespace WebCpp
 {
 
-class Response
+class Response: public IError
 {
 public:
     enum class HeaderType
     {
         Undefined = 0,
-        AcceptCH,
-        AccessControlAllowOrigin,
-        AccessControlAllowCredentials,
-        AccessControlExposeHeaders,
-        AccessControlMaxAge,
-        AccessControlAllowMethods,
-        AccessControlAllowHeaders,
-        AcceptPatch,
-        AcceptRanges,
-        Age,
-        Allow,
-        AltSvc,
-        CacheControl,
-        Connection,
-        ContentDisposition,
-        ContentEncoding,
-        ContentLanguage,
-        ContentLength,
-        ContentLocation,
-        ContentMD5,
-        ContentRange,
-        ContentType,
-        Date,
-        DeltaBase,
-        ETag,
-        Expires,
-        IM,
-        LastModified,
-        Link,
-        Location,
-        P3P,
-        Pragma,
-        PreferenceApplied,
-        ProxyAuthenticate,
-        PublicKeyPins,
-        RetryAfter,
-        Server,
-        SetCookie,
-        StrictTransportSecurity,
-        Trailer,
-        TransferEncoding,
-        Tk,
-        Upgrade,
-        Vary,
-        Via,
-        Warning,
-        WWWAuthenticate,
-        XFrameOptions,
+
     };
 
     Response(int connID, const HttpConfig& config);
@@ -97,21 +52,27 @@ public:
     Response(Response&& other) = delete;
     Response& operator=(Response&& other) = delete;
 
-    void SetHeader(Response::HeaderType header, const std::string &value);
-    void SetHeader(const std::string &name, const std::string &value);
+    HttpHeader& GetHeader();
+    void AddHeader(HttpHeader::HeaderType header, const std::string &value);
+    void AddHeader(const std::string &name, const std::string &value);
     void Write(const ByteArray &data, size_t start = 0);
     void Write(const std::string &data);
     bool AddFile(const std::string &file, const std::string &charset = "utf-8");
     bool SendNotFound();
     bool SendRedirect(const std::string &url);
-
     void SetResponseCode(uint16_t code);
     void SetResponseCode(uint16_t code, const std::string &phrase);
     uint16_t GetResponseCode() const;
+    std::string GetResponsePhrase() const;
+    const ByteArray& GetBody() const;
+    const HttpHeader& GetHeader() const;
+    std::string GetHttpVersion() const;
 
     bool IsShouldSend() const;
     void SetShouldSend(bool value);
     bool Send(ICommunicationServer *communication);
+    bool Parse(const ByteArray &data);
+
     static std::string HeaderType2String(Response::HeaderType headerType);
     static Response::HeaderType String2HeaderType(const std::string &str);
     static std::string ResponseCode2String(int code);
@@ -120,13 +81,14 @@ public:
 protected:
     void InitDefault();
     ByteArray BuildStatusLine() const;
-    ByteArray BuildHeaders() const;
+    ByteArray BuildHeaders() const;    
+    bool ParseStatusLine(const ByteArray &data, size_t &pos);
 
 private:
     int m_connID;
     const HttpConfig &m_config;
     std::string m_version;
-    std::map<std::string, std::string> m_headers;
+    HttpHeader m_header;
     ByteArray m_body;
     uint16_t m_responseCode = 200;
     std::string m_responsePhrase = "";

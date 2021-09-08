@@ -29,12 +29,13 @@
 #include <vector>
 #include <map>
 #include <string>
+#include "IError.h"
 
 
 namespace WebCpp
 {
 
-class RequestBody
+class RequestBody: public IError
 {
 public:
 
@@ -57,6 +58,7 @@ public:
     bool Parse(const ByteArray &data, size_t offset, const ByteArray &contentType, bool useTempFile);
 
     ContentType GetContentType() const;
+    void SetContentType(ContentType type);
 
     struct ContentValue
     {
@@ -71,7 +73,11 @@ public:
 
     const std::vector<ContentValue>& GetValues() const;
     const ContentValue& GetValue(const std::string &name) const;
+    void SetValue(const std::string &name, const ByteArray &data, const std::string &contentType = "");
+    void SetValue(const std::string &name, const std::string &fileName, const std::string &contentType = "");
     std::string GetTempFolder() const;
+    ByteArray ToByteArray();
+    std::string BuildContentType() const;
 
 protected:
     std::map<std::string, std::string> ParseHeaders(const ByteArray &header) const;
@@ -83,10 +89,16 @@ protected:
     bool ParseUrlEncoded(const ByteArray &data, size_t offset, const ByteArray &contentType);
     bool ParseText(const ByteArray &data, size_t offset, const ByteArray &contentType);
 
+    ByteArray GetDataUrlUncoded() const;
+    ByteArray GetDataMultipart();
+    ByteArray GetDataText() const;
+    void CreateBoundary();
+
 private:
     std::vector<ContentValue> m_values;
     ContentType m_contentType = ContentType::Undefined;
     std::string m_tempFolder;
+    std::string m_boundary;
 };
 
 }

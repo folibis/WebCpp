@@ -10,6 +10,8 @@
 #include "KeepAliveTimer.h"
 #include "Data.h"
 #include "HttpServer.h"
+#include "IHttp.h"
+
 
 using namespace WebCpp;
 
@@ -29,15 +31,15 @@ bool WebCpp::HttpServer::Init(const WebCpp::HttpConfig& config)
     ClearError();
     m_config = config;
 
-    m_protocol = HttpServer::String2Protocol(m_config.GetHttpProtocol());
+    m_protocol = Http::String2Protocol(m_config.GetHttpProtocol());
 
     switch(m_protocol)
     {
-        case Protocol::HTTP:
+        case Http::Protocol::HTTP:
             m_server.reset(new CommunicationTcpServer());
             break;
 #ifdef WITH_OPENSSL
-        case Protocol::HTTPS:
+        case Http::Protocol::HTTPS:
             m_server.reset(new CommunicationSslServer(m_config.GetSslSertificate(), m_config.GetSslKey()));
             break;
 #endif
@@ -120,7 +122,7 @@ bool HttpServer::WaitFor()
 
 HttpServer &HttpServer::OnGet(const std::string &path, const RouteHttp::RouteFunc &f)
 {
-    RouteHttp route(path, HttpHeader::Method::GET);
+    RouteHttp route(path, Http::Method::GET);
     LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
     route.SetFunction(f);
     m_routes.push_back(std::move(route));
@@ -130,7 +132,7 @@ HttpServer &HttpServer::OnGet(const std::string &path, const RouteHttp::RouteFun
 
 HttpServer &HttpServer::OnPost(const std::string &path, const RouteHttp::RouteFunc &f)
 {
-    RouteHttp route(path, HttpHeader::Method::POST);
+    RouteHttp route(path, Http::Method::POST);
     LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
     route.SetFunction(f);
     m_routes.push_back(std::move(route));
@@ -147,43 +149,11 @@ void HttpServer::SetPostRouteFunc(const RouteHttp::RouteFunc &callback)
     m_postRoute = callback;
 }
 
-HttpServer::Protocol HttpServer::GetProtocol() const
-{
-    return m_protocol;
-}
-
-HttpServer::Protocol HttpServer::String2Protocol(const std::string &str)
-{
-    std::string s = str;
-    StringUtil::ToUpper(s);
-
-    switch(_(s.c_str()))
-    {
-        case _("HTTP"): return HttpServer::Protocol::HTTP;
-        case _("HTTPS"): return HttpServer::Protocol::HTTPS;
-        default: break;
-    }
-
-    return HttpServer::Protocol::Undefined;
-}
-
-std::string HttpServer::Protocol2String(HttpServer::Protocol protocol)
-{
-    switch(protocol)
-    {
-        case HttpServer::Protocol::HTTP: return "HTTP";
-        case HttpServer::Protocol::HTTPS: return "HTTPS";
-        default: break;
-    }
-
-    return "";
-}
-
 bool HttpServer::SendResponse(Response &response)
 {
     if(response.IsShouldSend())
     {
-        response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
+        response.AddHeader(HttpHeader::HeaderType::Date, FileSystem::GetDateTime());
         response.Send(m_server.get());
     }
 
@@ -198,11 +168,12 @@ std::string HttpServer::ToString() const
 void HttpServer::OnConnected(int connID, const std::string &remote)
 {
     LOG(std::string("client connected: #") + std::to_string(connID) + ", " + remote, LogWriter::LogType::Access);
+    PutToQueue(connID, remote);
 }
 
 void HttpServer::OnDataReady(int connID, ByteArray &data)
 {
-    PutToQueue(connID, data);
+    AppendData(connID, data);
     SendSignal();
 }
 
@@ -255,25 +226,22 @@ void HttpServer::WaitForSignal()
     }
 }
 
-void HttpServer::PutToQueue(int connID, ByteArray &data)
+void HttpServer::PutToQueue(int connID, const std::string &remote)
 {
     Lock lock(m_queueMutex);
 
-    bool alreadyExists = false;
+    m_requestQueue.push_back(RequestData(connID, remote));
+}
 
+void HttpServer::AppendData(int connID, const ByteArray &data)
+{
     for(auto &req: m_requestQueue)
     {
         if(req.connID == connID)
         {
             req.data.insert(req.data.end(), data.begin(), data.end());
-            alreadyExists = true;
             break;
         }
-    }
-
-    if(alreadyExists == false)
-    {
-        m_requestQueue.push_back(RequestData(connID, data));
     }
 }
 
@@ -290,14 +258,9 @@ bool HttpServer::CheckDataFullness()
 
     for(RequestData& requestData: m_requestQueue)
     {
-        if(requestData.header.IsComplete() == false)
+        if(requestData.request.Parse(requestData.data))
         {
-            requestData.header.Parse(requestData.data);
-        }
-
-        if(requestData.header.IsComplete())
-        {
-            size_t size = requestData.header.GetRequestSize();
+            size_t size = requestData.request.GetRequestSize();
             if(requestData.data.size() >= size)
             {
                 requestData.readyForDispatch = true;
@@ -320,11 +283,11 @@ Request HttpServer::GetNextRequest()
         {
             RequestData data = std::move(*it);
             m_requestQueue.erase(it);
-            return Request(data.connID, data.data, std::move(data.header), m_config);
+            return std::move(data.request);
         }
     }
 
-    return Request(m_config); // should never be called
+    return Request(); // should never be called
 }
 
 void HttpServer::RemoveFromQueue(int connID)

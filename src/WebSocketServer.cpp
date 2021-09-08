@@ -10,6 +10,7 @@
 #include "Data.h"
 #include "common_ws.h"
 #include "WebSocketServer.h"
+#include "IHttp.h"
 
 #define WEBSOCKET_KEY_TOKEN "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -204,7 +205,7 @@ void WebSocketServer::OnConnected(int connID, const std::string &remote)
     InitConnection(connID, remote);
 }
 
-void WebSocketServer::OnDataReady(int connID, std::vector<char> &data)
+void WebSocketServer::OnDataReady(int connID, ByteArray &data)
 {
     PutToQueue(connID, data);
     SendSignal();
@@ -325,7 +326,7 @@ bool WebSocketServer::CheckWsHeader(RequestData& requestData)
         size_t size = requestData.request.GetHeader().GetRequestSize();
         if(requestData.data.size() >= size)
         {
-            requestData.request.GetHeader().SetMethod(HttpHeader::Method::WEBSOCKET);
+            requestData.request.SetMethod(Http::Method::WEBSOCKET);
             requestData.readyForDispatch = true;
             retval = true;
         }
@@ -486,10 +487,10 @@ bool WebSocketServer::ProcessRequest(Request &request)
             key = Data::Base64Encode(buffer, 20);
 
             response.SetResponseCode(101);
-            response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
-            response.SetHeader(Response::HeaderType::Upgrade, "websocket");
-            response.SetHeader(Response::HeaderType::Connection, "upgrade");
-            response.SetHeader("Sec-WebSocket-Accept", key);
+            response.AddHeader(HttpHeader::HeaderType::Date, FileSystem::GetDateTime());
+            response.AddHeader(HttpHeader::HeaderType::Upgrade, "websocket");
+            response.AddHeader(HttpHeader::HeaderType::Connection, "upgrade");
+            response.AddHeader("Sec-WebSocket-Accept", key);
         }
         else
         {

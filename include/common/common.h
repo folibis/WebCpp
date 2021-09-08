@@ -53,7 +53,7 @@ constexpr uint64_t operator "" _(const char* str)
     return _(str);
 }
 
-using ByteArray = std::vector<char>;
+using ByteArray = std::vector<uint8_t>;
 
 struct point
 {

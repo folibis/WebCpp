@@ -30,53 +30,68 @@
 #include "HttpConfig.h"
 #include "RequestBody.h"
 #include "HttpHeader.h"
+#include "ICommunicationClient.h"
+#include "Url.h"
+#include "IHttp.h"
+#include "IError.h"
+
 
 namespace WebCpp
 {
 
-class Request
+class Request: public IError
 {
 public:
-    enum class Protocol
-    {
-        Undefined,
-        HTTP1,
-        WebSocket,
-    };
     Request();
-    Request(HttpConfig &config);
-    Request(int connID, const ByteArray &request, HttpHeader &&header, HttpConfig &config);
+    Request(const HttpConfig &config);
+    Request(int connID, HttpConfig &config, const std::string &remote);
     Request(const Request& other) = delete;
     Request& operator=(const Request& other) = delete;
     Request(Request&& other) = default;
     Request& operator=(Request&& other) = default;
 
-
+    bool Parse(const ByteArray &data);
     int GetConnectionID() const;
     void SetConnectionID(int connID);
     const HttpConfig& GetConfig() const;
     void SetConfig(const HttpConfig& config);
+    const Url& GetUrl() const;
+    Url& GetUrl();
     const HttpHeader& GetHeader() const;
     HttpHeader& GetHeader();
-    const ByteArray &GetData() const;
+    Http::Method GetMethod() const;
+    void SetMethod(Http::Method method);
+    std::string GetHttpVersion() const;
     const RequestBody& GetRequestBody() const;
+    RequestBody& GetRequestBody();
     std::string GetArg(const std::string &name) const;
     void SetArg(const std::string &name, const std::string &value);
     bool IsKeepAlive() const;
-    Protocol GetProtocol() const;
+    Http::Protocol GetProtocol() const;
+    size_t GetRequestLineLength() const;
+    size_t GetRequestSize() const;
+    std::string GetRemote() const;
+    void SetRemote(const std::string &remote);
+    bool Send(ICommunicationClient *comm);
     std::string ToString() const;
 
 protected:
-    void Init(const ByteArray &data);    
-    void ParseBody(const ByteArray &data, size_t headerSize);
-
+    bool Init(const ByteArray &data);
+    bool ParseRequestLine(const ByteArray &data, size_t &pos);
+    bool ParseBody(const ByteArray &data, size_t headerSize);
+    ByteArray BuildRequestLine() const;
+    ByteArray BuildHeaders() const;
 private:
     int m_connID;
+    Url m_url;
     HttpConfig m_config;
     HttpHeader m_header;
-    ByteArray m_data;
+    Http::Method m_method = Http::Method::Undefined;
+    std::string m_httpVersion = "HTTP/1.1";
+    size_t m_requestLineLength = 0;
     std::map<std::string, std::string> m_args;    
     RequestBody m_requestBody;
+    std::string m_remote;
 };
 
 }

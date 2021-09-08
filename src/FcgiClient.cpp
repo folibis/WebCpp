@@ -107,7 +107,7 @@ bool FcgiClient::SendRequest(const Request &request)
     {
         FcgiClient::FcgiParam param = pair.first;
         std::string name = pair.second;
-        std::string value = GetParam(param, header, m_config);
+        std::string value = GetParam(param, request, m_config);
         ByteArray paramBytes = BuildParamPacket(name, value);
         paramsData.insert(paramsData.end(), paramBytes.begin(), paramBytes.end());
     }
@@ -134,14 +134,17 @@ void FcgiClient::SetOnResponseCallback(const std::function<void(Response &)> &fu
     m_responseCallback = func;
 }
 
-std::string FcgiClient::GetParam(FcgiClient::FcgiParam param, const HttpHeader& header, const HttpConfig &config) const
+std::string FcgiClient::GetParam(FcgiClient::FcgiParam param, const Request &request, const HttpConfig &config) const
 {
+    const Url &url = request.GetUrl();
+    const HttpHeader &header = request.GetHeader();
+
     switch(param)
     {
         case FcgiParam::QUERY_STRING:
-            return header.GetQuery();
+            return url.Query2String();
         case FcgiParam::REQUEST_METHOD:
-            return HttpHeader::Method2String(header.GetMethod());
+            return Http::Method2String(request.GetMethod());
             break;
         case FcgiParam::PATH_INFO:
             return "";
@@ -153,12 +156,12 @@ std::string FcgiClient::GetParam(FcgiClient::FcgiParam param, const HttpHeader& 
             return header.GetHeader(HttpHeader::HeaderType::ContentLength);
             break;
         case FcgiParam::SCRIPT_FILENAME:
-            return config.RootFolder() + header.GetPath();
+            return config.RootFolder() + url.GetPath();
             break;
         case FcgiParam::SCRIPT_NAME:
-            return header.GetPath();
+            return url.GetPath();
         case FcgiParam::REQUEST_URI:
-            return header.GetUri();
+            return url.ToString();
         case FcgiParam::DOCUMENT_URI:
             return "";
             break;
@@ -422,14 +425,14 @@ void FcgiClient::ProcessResponse(int ID)
 
     if(completed)
     {
-        HttpHeader httpHeader;
+        HttpHeader httpHeader(HttpHeader::HeaderRole::Response);
         httpHeader.Parse(responseData, false);
 
         Response response(fcgiResponseData.connID, m_config);
         const auto &headers = httpHeader.GetHeaders();
         for(auto &header: headers)
         {
-            response.SetHeader(header.name, header.value);
+            response.AddHeader(header.name, header.value);
         }
 
         if(success == false)
@@ -465,9 +468,9 @@ void FcgiClient::ProcessResponse(int ID)
                 start = pos + 4;
             }
             response.Write(responseData, start);
-            response.SetHeader(Response::HeaderType::ContentLength, std::to_string(responseData.size() - start));
+            response.AddHeader(HttpHeader::HeaderType::ContentLength, std::to_string(responseData.size() - start));
         }
-        response.SetHeader(Response::HeaderType::Date, FileSystem::GetDateTime());
+        response.AddHeader(HttpHeader::HeaderType::Date, FileSystem::GetDateTime());
 
         RemoveResponseData(ID);
 

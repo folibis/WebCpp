@@ -38,18 +38,13 @@ namespace WebCpp
 class HttpHeader
 {
 public:
-    enum class Method
+
+
+    enum class HeaderRole
     {
         Undefined = 0,
-        OPTIONS,
-        GET,
-        HEAD,
-        POST,
-        PUT,
-        DELETE,
-        TRACE,
-        CONNECT,
-        WEBSOCKET,
+        Request,
+        Response,
     };
 
     enum class HeaderType
@@ -93,6 +88,42 @@ public:
         Upgrade,
         Via,
         Warning,
+
+        AcceptCH,
+        AccessControlAllowOrigin,
+        AccessControlAllowCredentials,
+        AccessControlExposeHeaders,
+        AccessControlMaxAge,
+        AccessControlAllowMethods,
+        AccessControlAllowHeaders,
+        AcceptPatch,
+        AcceptRanges,
+        Age,
+        Allow,
+        AltSvc,
+        ContentDisposition,
+        ContentLanguage,
+        ContentLocation,
+        ContentRange,
+        DeltaBase,
+        ETag,
+        Expires,
+        IM,
+        LastModified,
+        Link,
+        Location,
+        P3P,
+        PreferenceApplied,
+        ProxyAuthenticate,
+        PublicKeyPins,
+        RetryAfter,
+        Server,
+        SetCookie,
+        StrictTransportSecurity,
+        Tk,
+        Vary,
+        WWWAuthenticate,
+        XFrameOptions,
     };
 
     struct Header
@@ -103,26 +134,24 @@ public:
         static HttpHeader::Header defaultHeader;
     };
 
-    HttpHeader();
+    explicit HttpHeader(HeaderRole role);
     HttpHeader(const HttpHeader& other) = delete;
     HttpHeader& operator=(const HttpHeader& other) = delete;
     HttpHeader(HttpHeader&& other) = default;
     HttpHeader& operator=(HttpHeader&& other) = default;
 
-    bool Parse(const ByteArray &data, bool withRequestList = true);
+    bool Parse(const ByteArray &data, size_t start = 0);
     bool ParseHeader(const ByteArray &data);
+    ByteArray ToByteArray() const;
     bool IsComplete() const;
     size_t GetHeaderSize() const;
     size_t GetBodySize() const;
     size_t GetRequestSize() const;
 
-    void SetMethod(HttpHeader::Method method);
-    HttpHeader::Method GetMethod() const;
-    std::string GetPath() const;
-    std::string GetUri() const;
+    HeaderRole GetRole() const;
+
+    void SetVersion(const std::string &version);
     std::string GetVersion() const;
-    std::string GetQuery() const;
-    std::string GetQueryValue(const std::string &name) const;
 
     std::string GetRemote() const;
     void SetRemote(const std::string &remote);
@@ -133,28 +162,24 @@ public:
     std::string GetHeader(HeaderType headerType) const;
     std::string GetHeader(const std::string &headerType) const;
     const std::vector<HttpHeader::Header> &GetHeaders() const;
+    void SetHeader(HeaderType type, const std::string &value);
+    void SetHeader(const std::string &name, const std::string &value);
 
-    static HttpHeader::Method String2Method(const std::string &str);
-    static std::string Method2String(HttpHeader::Method method);
+
     static HttpHeader::HeaderType String2HeaderType(const std::string &str);
     static std::string HeaderType2String(HttpHeader::HeaderType headerType);
 
     std::string ToString() const;
 
 protected:
-    bool ParseHeaders(const ByteArray &data, const StringUtil::Ranges &ranges, bool requestList = true);
-    void ParseQuery();
+    bool ParseHeaders(const ByteArray &data, const StringUtil::Ranges &ranges);
 
 private:
+    HeaderRole m_role;
     bool m_complete = false;
-    HttpHeader::Method m_method = HttpHeader::Method::Undefined;
-    std::string m_uri = "";
-    std::string m_path = "";
-    std::string m_query = "";
     std::vector<Header> m_headers = {};
-    std::string m_version = "";
+    std::string m_version = "HTTP/1.1";
     size_t m_headerSize = 0;
-    std::map<std::string, std::string> m_queryValue;
     std::string m_remoteAddress;
     int m_remotePort = (-1);
 };

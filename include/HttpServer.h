@@ -46,15 +46,8 @@ namespace WebCpp
 class HttpServer: public IError, public IRunnable
 {
 public:
-    enum class Protocol
-    {
-        Undefined = 0,
-        HTTP,
-        HTTPS,
-    };
-
     HttpServer();
-    HttpServer(const HttpServer&other) = delete;
+    HttpServer(const HttpServer& other) = delete;
     HttpServer& operator=(const HttpServer& other) = delete;
     HttpServer(HttpServer&& other) = delete;
     HttpServer& operator=(HttpServer&& other) = delete;
@@ -71,10 +64,7 @@ public:
     void SetPreRouteFunc(const RouteHttp::RouteFunc &callback);
     void SetPostRouteFunc(const RouteHttp::RouteFunc &callback);
 
-    Protocol GetProtocol() const;
-
-    static Protocol String2Protocol(const std::string &str);
-    static std::string Protocol2String(Protocol protocol);
+    Http::Protocol GetProtocol() const;
 
     bool SendResponse(Response &response);
 
@@ -82,7 +72,7 @@ public:
 
 protected:
     void OnConnected(int connID, const std::string& remote);
-    void OnDataReady(int connID, std::vector<char> &data);
+    void OnDataReady(int connID, ByteArray &data);
     void OnClosed(int connID);
 
     static void* RequestThreadWrapper(void *ptr);
@@ -90,7 +80,8 @@ protected:
 
     void SendSignal();
     void WaitForSignal();
-    void PutToQueue(int connID, ByteArray &data);
+    void PutToQueue(int connID, const std::string &remote);
+    void AppendData(int connID, const ByteArray &data);
     bool IsQueueEmpty();
     bool CheckDataFullness();
     Request GetNextRequest();
@@ -101,20 +92,21 @@ protected:
 private:
     struct RequestData
     {
-        RequestData(int connID, ByteArray& data)
+        RequestData(int connID, const std::string &remote)
         {
-            this->connID= connID;
-            this->data = std::move(data);
+            this->connID = connID;
+            request.SetConnectionID(connID);
+            request.SetRemote(remote);
             readyForDispatch = false;
         }
         int connID;
         ByteArray data;
-        HttpHeader header;
+        Request request;
         bool readyForDispatch;
     };
 
     std::shared_ptr<ICommunicationServer> m_server = nullptr;
-    Protocol m_protocol = Protocol::Undefined;
+    Http::Protocol m_protocol = Http::Protocol::Undefined;
 
     pthread_t m_requestThread;
 

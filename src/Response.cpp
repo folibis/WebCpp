@@ -2,6 +2,7 @@
 #include "common.h"
 #include "FileSystem.h"
 #include "Response.h"
+#include "IHttp.h"
 
 #define WRITE_BIFFER_SIZE 1024
 
@@ -47,25 +48,31 @@ using namespace WebCpp;
 
 Response::Response(int connID, const HttpConfig& config) :
     m_connID(connID),
-    m_config(config)
+    m_config(config),
+    m_header(HttpHeader::HeaderRole::Response)
 {
     InitDefault();
 }
 
-void Response::SetHeader(const std::string &name, const std::string &value)
+HttpHeader &Response::GetHeader()
 {
-    m_headers[name] = value;
+    return m_header;
 }
 
-void Response::SetHeader(Response::HeaderType header, const std::string &value)
+void Response::AddHeader(const std::string &name, const std::string &value)
 {
-    SetHeader(HeaderType2String(header), value);
+    m_header.SetHeader(name, value);
+}
+
+void Response::AddHeader(HttpHeader::HeaderType header, const std::string &value)
+{
+    AddHeader(HttpHeader::HeaderType2String(header), value);
 }
 
 void Response::Write(const ByteArray &data, size_t start)
 {
     m_body.insert(m_body.end(), data.begin() + start, data.end());
-    SetHeader(Response::HeaderType::ContentLength, std::to_string(m_body.size()));
+    AddHeader(HttpHeader::HeaderType::ContentLength, std::to_string(m_body.size()));
 }
 
 void Response::Write(const std::string &data)
@@ -91,11 +98,15 @@ bool Response::AddFile(const std::string &file, const std::string &charset)
     if(FileSystem::IsFileExist(path))
     {
         std::string ext = FileSystem::ExtractFileExtension(path);
-        SetHeader(Response::HeaderType::ContentType, Response::Extension2MimeType(ext) + ";charset=" + charset);
-        SetHeader(Response::HeaderType::ContentLength, std::to_string(FileSystem::GetFileSize(path)));
-        SetHeader(Response::HeaderType::LastModified, FileSystem::GetFileModifiedTime(path));
+        AddHeader(HttpHeader::HeaderType::ContentType, Response::Extension2MimeType(ext) + ";charset=" + charset);
+        AddHeader(HttpHeader::HeaderType::ContentLength, std::to_string(FileSystem::GetFileSize(path)));
+        AddHeader(HttpHeader::HeaderType::LastModified, FileSystem::GetFileModifiedTime(path));
         m_file = path;
         retval = true;
+    }
+    else
+    {
+        SetLastError("file not exist");
     }
 
     return retval;
@@ -105,7 +116,7 @@ bool Response::SendNotFound()
 {
     m_responseCode = 404;
     m_responsePhrase = Response::ResponseCode2String(m_responseCode);
-    SetHeader(Response::HeaderType::ContentLength, "0");
+    AddHeader(HttpHeader::HeaderType::ContentLength, "0");
     return true;
 }
 
@@ -113,8 +124,8 @@ bool Response::SendRedirect(const std::string &url)
 {
     m_responseCode = 301;
     m_responsePhrase = Response::ResponseCode2String(m_responseCode);
-    SetHeader(Response::HeaderType::Location, url);
-    SetHeader(Response::HeaderType::ContentLength, "0");
+    AddHeader(HttpHeader::HeaderType::Location, url);
+    AddHeader(HttpHeader::HeaderType::ContentLength, "0");
     return true;
 }
 
@@ -133,6 +144,26 @@ void Response::SetResponseCode(uint16_t code, const std::string &phrase)
 uint16_t Response::GetResponseCode() const
 {
     return m_responseCode;
+}
+
+std::string Response::GetResponsePhrase() const
+{
+    return m_responsePhrase;
+}
+
+const ByteArray &Response::GetBody() const
+{
+    return m_body;
+}
+
+const HttpHeader &Response::GetHeader() const
+{
+    return m_header;
+}
+
+std::string Response::GetHttpVersion() const
+{
+    return m_version;
 }
 
 bool Response::IsShouldSend() const
@@ -157,7 +188,11 @@ bool Response::Send(ICommunicationServer *communication)
     header.push_back(CR);
     header.push_back(LF);
 
-    communication->Write(m_connID, header);
+    if(communication->Write(m_connID, header) == false)
+    {
+        SetLastError("error sending header: " + communication->GetLastError());
+        return false;
+    }
 
     if(!m_file.empty())
     {
@@ -165,133 +200,135 @@ bool Response::Send(ICommunicationServer *communication)
         std::ifstream stream(m_file, std::ios::binary);
         do
         {
-            stream.read(buffer.data(), WRITE_BIFFER_SIZE);
-            communication->Write(m_connID, buffer, stream.gcount());
+            stream.read(reinterpret_cast<char *>(buffer.data()), WRITE_BIFFER_SIZE);
+            if(communication->Write(m_connID, buffer, stream.gcount()) == false)
+            {
+                SetLastError("error sending file: " + communication->GetLastError());
+                return false;
+            }
         }
         while(stream);
     }
     else if(m_body.size() > 0)
     {
-        communication->Write(m_connID, m_body);
+        if(communication->Write(m_connID, m_body) == false)
+        {
+            SetLastError("error sending body: " + communication->GetLastError());
+            return false;
+        }
     }
 
     return true;
 }
 
-std::string Response::HeaderType2String(Response::HeaderType headerType)
+bool Response::Parse(const ByteArray &data)
 {
-    switch(headerType)
+    ClearError();
+    size_t pos;
+
+    if(ParseStatusLine(data, pos) == false)
     {
-        case HeaderType::AcceptCH :                     return "Accept-CH";
-        case HeaderType::AccessControlAllowOrigin:      return "Access-Control-Allow-Origin";
-        case HeaderType::AccessControlAllowCredentials: return "Access-Control-Allow-Credential";
-        case HeaderType::AccessControlExposeHeaders:    return "Access-Control-Expose-Headers";
-        case HeaderType::AccessControlMaxAge:           return "Access-Control-Max-Age";
-        case HeaderType::AccessControlAllowMethods:     return "Access-Control-Allow-Methods";
-        case HeaderType::AccessControlAllowHeaders:     return "Access-Control-Allow-Headers";
-        case HeaderType::AcceptPatch:                   return "Accept-Patch";
-        case HeaderType::AcceptRanges:                  return "Accept-Ranges";
-        case HeaderType::Age :                          return "Age";
-        case HeaderType::Allow:                         return "Allow";
-        case HeaderType::AltSvc:                        return "Alt-Svc";
-        case HeaderType::CacheControl:                  return "Cache-Control";
-        case HeaderType::Connection:                    return "Connection";
-        case HeaderType::ContentDisposition:            return "Content-Disposition";
-        case HeaderType::ContentEncoding:               return "Content-Encoding";
-        case HeaderType::ContentLanguage:               return "Content-Language";
-        case HeaderType::ContentLength:                 return "Content-Length";
-        case HeaderType::ContentLocation:               return "Content-Location";
-        case HeaderType::ContentMD5:                    return "Content-MD5";
-        case HeaderType::ContentRange:                  return "Content-Range";
-        case HeaderType::ContentType:                   return "Content-Type";
-        case HeaderType::Date:                          return "Date";
-        case HeaderType::DeltaBase:                     return "Delta-Base";
-        case HeaderType::ETag:                          return "ETag";
-        case HeaderType::Expires:                       return "Expires";
-        case HeaderType::IM:                            return "IM";
-        case HeaderType::LastModified:                  return "Last-Modified";
-        case HeaderType::Link:                          return "Link";
-        case HeaderType::Location:                      return "Location";
-        case HeaderType::P3P:                           return "P3P";
-        case HeaderType::Pragma:                        return "Pragma";
-        case HeaderType::PreferenceApplied:             return "Preference-Applied";
-        case HeaderType::ProxyAuthenticate:             return "Proxy-Authenticate";
-        case HeaderType::PublicKeyPins:                 return "Public-Key-Pins";
-        case HeaderType::RetryAfter:                    return "Retry-After";
-        case HeaderType::Server:                        return "Server";
-        case HeaderType::SetCookie:                     return "Set-Cookie";
-        case HeaderType::StrictTransportSecurity:       return "Strict-Transport-Security";
-        case HeaderType::Trailer:                       return "Trailer";
-        case HeaderType::TransferEncoding:              return "Transfer-Encoding";
-        case HeaderType::Tk:                            return "Tk";
-        case HeaderType::Upgrade:                       return "Upgrade";
-        case HeaderType::Vary:                          return "Vary";
-        case HeaderType::Via:                           return "Via";
-        case HeaderType::Warning:                       return "Warning";
-        case HeaderType::WWWAuthenticate:               return "WWW-Authenticate";
-        case HeaderType::XFrameOptions:                 return "X-Frame-Options";
-        default: break;
+        SetLastError("error parsing status line: " + GetLastError());
+        return false;
     }
 
-    return "";
+    if(m_header.IsComplete() == false)
+    {
+        if(m_header.Parse(data, pos + 2) == false)
+        {
+            SetLastError("error parsing headers");
+            return false;
+        }
+        auto encoding = m_header.GetHeader(HttpHeader::HeaderType::TransferEncoding);
+        if(encoding == "chunked")
+        {
+            try
+            {
+                ByteArray tail(data.end() - 5, data.end());
+                if(StringUtil::Compare(tail, { '0', CR, LF, CR, LF}))
+                {
+                    size_t dataStart = pos + 2 + m_header.GetHeaderSize() + 4; // status line + CRLF (2 bytes) + headers + CRLFCRLF (4 bytes)
+                    size_t dataLength = data.size() - 5; // data - trailing chunk
+                    while(dataStart < dataLength)
+                    {
+                        auto pos = StringUtil::SearchPosition(data, {CR, LF}, dataStart);
+                        std::string temp(data.begin() + dataStart,data.begin() + pos);
+                        int n = std::stoi(temp, nullptr, 16);
+                        size_t chunkEnd = pos + 2 + n;
+                        if(chunkEnd <= dataLength)
+                        {
+                            m_body.insert(m_body.end(), data.begin() + pos + 2, data.begin() + chunkEnd);
+                            dataStart = chunkEnd + 2;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            }
+            catch(...)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if(pos + 2 + m_header.GetRequestSize() == data.size())
+            {
+                size_t dataStart = pos + 2 + m_header.GetHeaderSize() + 4;
+                if(data.size() > dataStart)
+                {
+                    m_body.insert(m_body.end(), data.begin() + dataStart, data.end());
+                }
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
-Response::HeaderType Response::String2HeaderType(const std::string &str)
+bool Response::ParseStatusLine(const ByteArray &data, size_t &pos)
 {
-    switch(_(str.c_str()))
+    pos = StringUtil::SearchPosition(data, { CR, LF });
+    if(pos != SIZE_MAX) // status line presents
     {
-        case _("Accept-CH"):                       return HeaderType::AcceptCH;
-        case _("Access-Control-Allow-Origin"):     return HeaderType::AccessControlAllowOrigin;
-        case _("Access-Control-Allow-Credential"): return HeaderType::AccessControlAllowCredentials;
-        case _("Access-Control-Expose-Headers"):   return HeaderType::AccessControlExposeHeaders;
-        case _("Access-Control-Max-Age"):          return HeaderType::AccessControlMaxAge;
-        case _("Access-Control-Allow-Methods"):    return HeaderType::AccessControlAllowMethods;
-        case _("Access-Control-Allow-Headers"):    return HeaderType::AccessControlAllowHeaders;
-        case _("Accept-Patch"):                    return HeaderType::AcceptPatch;
-        case _("Accept-Ranges"):                   return HeaderType::AcceptRanges;
-        case _("Age"):                             return HeaderType::Age;
-        case _("Allow"):                           return HeaderType::Allow;
-        case _("Alt-Svc"):                         return HeaderType::AltSvc;
-        case _("Cache-Control"):                   return HeaderType::CacheControl;
-        case _("Connection"):                      return HeaderType::Connection;
-        case _("Content-Disposition"):             return HeaderType::ContentDisposition;
-        case _("Content-Encoding"):                return HeaderType::ContentEncoding;
-        case _("Content-Language"):                return HeaderType::ContentLanguage;
-        case _("Content-Length"):                  return HeaderType::ContentLength;
-        case _("Content-Location"):                return HeaderType::ContentLocation;
-        case _("Content-MD5"):                     return HeaderType::ContentMD5;
-        case _("Content-Range"):                   return HeaderType::ContentRange;
-        case _("Content-Type"):                    return HeaderType::ContentType;
-        case _("Date"):                            return HeaderType::Date;
-        case _("Delta-Base"):                      return HeaderType::DeltaBase;
-        case _("ETag"):                            return HeaderType::ETag;
-        case _("Expires"):                         return HeaderType::Expires;
-        case _("IM"):                              return HeaderType::IM;
-        case _("Last-Modified"):                   return HeaderType::LastModified;
-        case _("Link"):                            return HeaderType::Link;
-        case _("Location"):                        return HeaderType::Location;
-        case _("P3P"):                             return HeaderType::P3P;
-        case _("Pragma"):                          return HeaderType::Pragma;
-        case _("Preference-Applied"):              return HeaderType::PreferenceApplied;
-        case _("Proxy-Authenticate"):              return HeaderType::ProxyAuthenticate;
-        case _("Public-Key-Pins"):                 return HeaderType::PublicKeyPins;
-        case _("Retry-After"):                     return HeaderType::RetryAfter;
-        case _("Server"):                          return HeaderType::Server;
-        case _("Set-Cookie"):                      return HeaderType::SetCookie;
-        case _("Strict-Transport-Security"):       return HeaderType::StrictTransportSecurity;
-        case _("Trailer"):                         return HeaderType::Trailer;
-        case _("Transfer-Encoding"):               return HeaderType::TransferEncoding;
-        case _("Tk"):                              return HeaderType::Tk;
-        case _("Upgrade"):                         return HeaderType::Upgrade;
-        case _("Vary"):                            return HeaderType::Vary;
-        case _("Via"):                             return HeaderType::Via;
-        case _("Warning"):                         return HeaderType::Warning;
-        case _("WWW-Authenticate"):                return HeaderType::WWWAuthenticate;
-        case _("X-Frame-Options"):                 return HeaderType::XFrameOptions;
-        default: break;
+        auto ranges = StringUtil::Split(data, { ' ' }, 0, pos);
+        if(ranges.size() >= 3)
+        {
+            m_version = std::string(data.begin() + ranges[0].start, data.begin() + ranges[0].end + 1);
+            StringUtil::Trim(m_version);
+
+            std::string temp = std::string(data.begin() + ranges[1].start, data.begin() + ranges[1].end + 1);
+            int i;
+            if(StringUtil::String2int(temp, i))
+            {
+                m_responseCode = i;
+            }
+            else
+            {
+                SetLastError("response code parsing error");
+                return false;
+            }
+
+            for(int i = 2;i < ranges.size();i ++)
+            {
+                m_responsePhrase += (m_responsePhrase.empty() ? "" : " ") + std::string(data.begin() + ranges[i].start, data.begin() + ranges[i].end + 1);
+            }
+
+            StringUtil::Trim(m_responsePhrase);
+
+            return true;
+        }
+    }
+    else
+    {
+        SetLastError("status line not found");
     }
 
-    return HeaderType::Undefined;
+    return false;
 }
 
 std::string Response::ResponseCode2String(int code)
@@ -429,7 +466,7 @@ void Response::InitDefault()
     m_version = "HTTP/1.1";
     m_responseCode = 200;
     m_mimeType = "text/plain";
-    SetHeader(Response::HeaderType::Server, m_config.GetServerName());
+    AddHeader(HttpHeader::HeaderType::Server, m_config.GetServerName());
 }
 
 ByteArray Response::BuildStatusLine() const
@@ -440,11 +477,5 @@ ByteArray Response::BuildStatusLine() const
 
 ByteArray Response::BuildHeaders() const
 {
-    std::string headers;
-    for(auto &pair: m_headers)
-    {
-        headers += pair.first + ": " + pair.second + CR + LF;
-    }
-
-    return ByteArray(headers.begin(), headers.end());
+    return m_header.ToByteArray();
 }
