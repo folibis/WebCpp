@@ -2,7 +2,6 @@
 #include "Sha1.h"
 #include "Data.h"
 
-
 static const std::string base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz"
@@ -117,3 +116,29 @@ uint8_t * Data::Sha1Digest(const std::string &string)
     checksum.update(string);
     return checksum.digest();
 }
+
+
+#ifdef WITH_ZLIB
+#include "zlib.h"
+
+ByteArray Data::Compress(const ByteArray &data)
+{
+    return data;
+}
+
+ByteArray Data::Uncompress(const ByteArray &data)
+{
+    return data;
+}
+
+ByteArray Data::Zip(const ByteArray &data)
+{
+    return data;
+}
+
+ByteArray Data::Unzip(const ByteArray &data)
+{
+    return data;
+}
+
+#endif

@@ -26,6 +26,8 @@
 #define DATA_H
 
 #include <string>
+#include "common.h"
+
 
 class Data
 {
@@ -35,6 +37,13 @@ public:
     static std::string Base64Decode(const std::string& str);
     static std::string Sha1(const std::string &string);
     static uint8_t *Sha1Digest(const std::string &string);
+
+#ifdef WITH_ZLIB
+    ByteArray Compress(const ByteArray &data);
+    ByteArray Uncompress(const ByteArray &data);
+    ByteArray Zip(const ByteArray &data);
+    ByteArray Unzip(const ByteArray &data);
+#endif
 
 private:
     static unsigned int pos_of_char(const unsigned char chr);

@@ -29,37 +29,33 @@ file(GLOB INC . include/*.h include/common/*.h include/conn/*.h include/utils/*.
 
 add_library(${PROJECT_NAME} SHARED ${SRC} ${INC})
 
-include_directories(PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/common
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/conn
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/utils
-    )
-
-target_link_libraries(${PROJECT_NAME} PRIVATE -pthread)
-
 if(ZLIB)
     add_definitions(-DWITH_ZLIB)
-    if(NOT EXISTS ${CMAKE_BINARY_DIR}/${ZLIB_ARCHIVE})
+    if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${ZLIB_ARCHIVE})
         message(STATUS "Downloading zlib archive")
         file(DOWNLOAD ${ZLIB_URL}${ZLIB_ARCHIVE}
-            ${CMAKE_BINARY_DIR}/${ZLIB_ARCHIVE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/${ZLIB_ARCHIVE}
             TIMEOUT 10
             EXPECTED_HASH ${ZLIB_HASH_METHOD}=${ZLIB_HASH}
             SHOW_PROGRESS)
     endif()
 
-    if(NOT ${CMAKE_BINARY_DIR}/${ZLIB_ARCHIVE})
+    if((EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${ZLIB_ARCHIVE}) AND (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/${ZLIB_VERSION}))
     message(STATUS "Unzipping the zlib archive")
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/external)
     execute_process(
-        COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_BINARY_DIR}/${ZLIB_ARCHIVE}
+        COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_SOURCE_DIR}/${ZLIB_ARCHIVE}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/external
         )
     endif()
 
     message(STATUS "Configure with zlib support")
-    add_subdirectory(external/${ZLIB_VERSION})
-    target_link_libraries(${PROJECT_NAME} PRIVATE zlib)
+    include_directories(PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/${ZLIB_VERSION}
+            ${CMAKE_CURRENT_BINARY_DIR}/external/${ZLIB_VERSION}
+    )
+    add_subdirectory(external/${ZLIB_VERSION} ${CMAKE_CURRENT_BINARY_DIR}/external/${ZLIB_VERSION})
+    target_link_libraries(${PROJECT_NAME} PRIVATE zlibstatic)
 endif()
 
 if(OPENSSL)
@@ -81,5 +77,14 @@ endif()
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+
+include_directories(PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/common
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/conn
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/utils
+    )
+
+target_link_libraries(${PROJECT_NAME} PRIVATE -pthread)
 
 add_subdirectory(examples/)
