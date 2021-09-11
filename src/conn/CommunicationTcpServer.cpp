@@ -171,6 +171,7 @@ bool CommunicationTcpServer::Write(int connID, ByteArray &data, size_t size)
 {
     bool retval = false;
     Lock lock(m_writeMutex);
+
     size_t written = 0;
     try
     {
@@ -180,21 +181,27 @@ bool CommunicationTcpServer::Write(int connID, ByteArray &data, size_t size)
         }
 
         int fd = m_fds[connID].fd;
+        bool finished = false;
         if(fd != (-1))
         {
-            while(size > 0)
+            while(!finished)
             {
-                size_t s = size > WRITE_MAX_SIZE ? WRITE_MAX_SIZE : size;
+                size_t s = (size - written) > WRITE_MAX_SIZE ? WRITE_MAX_SIZE : size;
                 ssize_t sent = send(fd, data.data() + written, s, MSG_NOSIGNAL);
+                std::cout << "write " << sent << " bytes" << std::endl;
                 if(sent == ERROR)
                 {
                     CloseClient(connID);
                     retval = false;
+                    finished = true;
                 }
                 else
                 {
                     written += sent;
-                    size -= sent;
+                    if(written >= size)
+                    {
+                        finished = true;
+                    }
                     retval = true;
                 }
             }

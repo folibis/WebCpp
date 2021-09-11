@@ -84,7 +84,7 @@ protected:
     void AppendData(int connID, const ByteArray &data);
     bool IsQueueEmpty();
     bool CheckDataFullness();
-    Request GetNextRequest();
+    std::unique_ptr<Request> GetNextRequest();
     void RemoveFromQueue(int connID);
     void ProcessRequest(Request &request);
     void ProcessKeepAlive(int connID);    
@@ -92,17 +92,20 @@ protected:
 private:
     struct RequestData
     {
-        RequestData(int connID, const std::string &remote)
+        RequestData(int connID, const std::string &remote):
+            request(new Request())
         {
             this->connID = connID;
-            request.SetConnectionID(connID);
-            request.SetRemote(remote);
+            this->remote = remote;
+            request->SetConnectionID(connID);
+            request->SetRemote(remote);
             readyForDispatch = false;
         }
         int connID;
         ByteArray data;
-        Request request;
+        std::unique_ptr<Request> request;
         bool readyForDispatch;
+        std::string remote;
     };
 
     std::shared_ptr<ICommunicationServer> m_server = nullptr;

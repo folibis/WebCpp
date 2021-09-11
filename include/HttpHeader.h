@@ -165,7 +165,6 @@ public:
     void SetHeader(HeaderType type, const std::string &value);
     void SetHeader(const std::string &name, const std::string &value);
 
-
     static HttpHeader::HeaderType String2HeaderType(const std::string &str);
     static std::string HeaderType2String(HttpHeader::HeaderType headerType);
 

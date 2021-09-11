@@ -198,14 +198,12 @@ void *HttpServer::RequestThread()
     while(m_requestThreadRunning)
     {
         WaitForSignal();
-        while(!IsQueueEmpty())
+        if(CheckDataFullness())
         {
-            if(CheckDataFullness())
-            {
-                Request request = GetNextRequest();
-                ProcessRequest(request);
-            }
+            auto request = GetNextRequest();
+            ProcessRequest(*request);
         }
+
     }
 
     return nullptr;
@@ -220,16 +218,12 @@ void HttpServer::SendSignal()
 void HttpServer::WaitForSignal()
 {
     Lock lock(m_signalMutex);
-    while(IsQueueEmpty() && m_requestThreadRunning)
-    {
-        pthread_cond_wait(& m_signalCondition, &m_signalMutex);
-    }
+    pthread_cond_wait(& m_signalCondition, &m_signalMutex);
 }
 
 void HttpServer::PutToQueue(int connID, const std::string &remote)
 {
     Lock lock(m_queueMutex);
-
     m_requestQueue.push_back(RequestData(connID, remote));
 }
 
@@ -240,6 +234,10 @@ void HttpServer::AppendData(int connID, const ByteArray &data)
         if(req.connID == connID)
         {
             req.data.insert(req.data.end(), data.begin(), data.end());
+            if(req.request == nullptr)
+            {
+                req.request.reset(new Request(req.connID, m_config, req.remote));
+            }
             break;
         }
     }
@@ -248,7 +246,15 @@ void HttpServer::AppendData(int connID, const ByteArray &data)
 bool HttpServer::IsQueueEmpty()
 {
     Lock lock(m_queueMutex);
-    return m_requestQueue.empty();
+    bool retval = false;
+    for(RequestData& requestData: m_requestQueue)
+    {
+        if(requestData.readyForDispatch == true)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool HttpServer::CheckDataFullness()
@@ -258,12 +264,13 @@ bool HttpServer::CheckDataFullness()
 
     for(RequestData& requestData: m_requestQueue)
     {
-        if(requestData.request.Parse(requestData.data))
+        if(requestData.request->Parse(requestData.data))
         {
-            size_t size = requestData.request.GetRequestSize();
+            size_t size = requestData.request->GetRequestSize();
             if(requestData.data.size() >= size)
             {
                 requestData.readyForDispatch = true;
+                requestData.data.erase(requestData.data.begin(), requestData.data.begin() + size);
                 retval = true;
                 break;
             }
@@ -273,7 +280,7 @@ bool HttpServer::CheckDataFullness()
     return retval;
 }
 
-Request HttpServer::GetNextRequest()
+std::unique_ptr<Request> HttpServer::GetNextRequest()
 {
     Lock lock(m_queueMutex);
 
@@ -281,13 +288,13 @@ Request HttpServer::GetNextRequest()
     {
         if(it->readyForDispatch == true)
         {
-            RequestData data = std::move(*it);
-            m_requestQueue.erase(it);
-            return std::move(data.request);
+            RequestData &data = (*it);
+            data.readyForDispatch = false;
+            return std::unique_ptr<Request>(std::move(it->request));
         }
     }
 
-    return Request(); // should never be called
+    return nullptr; // should never be called
 }
 
 void HttpServer::RemoveFromQueue(int connID)

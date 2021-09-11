@@ -38,6 +38,11 @@ bool Request::Parse(const ByteArray &data)
         }
     }
 
+    if(m_header.GetBodySize() > 0)
+    {
+        return ParseBody(data, m_requestLineLength + 2 + m_header.GetHeaderSize() + 4);
+    }
+
     return true;
 }
 
@@ -133,17 +138,6 @@ std::string Request::GetHttpVersion() const
     return m_httpVersion;
 }
 
-bool Request::Init(const ByteArray &data)
-{    
-    ByteArray delimiter { { CRLFCRLF } };
-
-    if(m_header.GetBodySize() > 0)
-    {
-        return ParseBody(data, m_header.GetHeaderSize() + 2);
-    }
-
-    return true;
-}
 
 bool Request::ParseBody(const ByteArray &data, size_t headerSize)
 {

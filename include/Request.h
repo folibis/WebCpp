@@ -76,7 +76,6 @@ public:
     std::string ToString() const;
 
 protected:
-    bool Init(const ByteArray &data);
     bool ParseRequestLine(const ByteArray &data, size_t &pos);
     bool ParseBody(const ByteArray &data, size_t headerSize);
     ByteArray BuildRequestLine() const;
