@@ -217,6 +217,15 @@ bool Request::Send(ICommunicationClient *comm)
     GetHeader().SetHeader(HttpHeader::HeaderType::Host, m_url.GetHost());
     GetHeader().SetHeader(HttpHeader::HeaderType::Accept, "*/*");
 
+    std::string encoding = "";
+#ifdef WITH_ZLIB
+    encoding += "gzip, deflate";
+#endif
+    if(!encoding.empty())
+    {
+        GetHeader().SetHeader(HttpHeader::HeaderType::AcceptEncoding, encoding);
+    }
+
     const ByteArray &h = m_header.ToByteArray();
     header.insert(header.end(), h.begin(), h.end());
 
@@ -243,7 +252,7 @@ bool Request::Send(ICommunicationClient *comm)
 ByteArray Request::BuildRequestLine() const
 {
     const HttpHeader &header = GetHeader();
-    std::string line = Http::Method2String(m_method) + " " + m_url.GetNormalizedPath() + " " + m_httpVersion + CR + LF;
+    std::string line = Http::Method2String(m_method) + " " + m_url.GetNormalizedPath() + (m_url.HasQuery() ? ("?" + m_url.Query2String()) : "") + " " + m_httpVersion + CR + LF;
     return StringUtil::String2ByteArray(line);
 }
 
