@@ -28,6 +28,7 @@ file(GLOB SRC . src/*.cpp src/conn/*.cpp src/utils/*.cpp)
 file(GLOB INC . include/*.h include/common/*.h include/conn/*.h include/utils/*.h)
 
 add_library(${PROJECT_NAME} SHARED ${SRC} ${INC})
+set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if(ZLIB)
     add_definitions(-DWITH_ZLIB)
@@ -55,7 +56,7 @@ if(ZLIB)
             ${CMAKE_CURRENT_BINARY_DIR}/external/${ZLIB_VERSION}
     )
     add_subdirectory(external/${ZLIB_VERSION} ${CMAKE_CURRENT_BINARY_DIR}/external/${ZLIB_VERSION})
-    target_link_libraries(${PROJECT_NAME} PRIVATE zlibstatic)
+    target_link_libraries(${PROJECT_NAME} PRIVATE zlib)
 endif()
 
 if(OPENSSL)
