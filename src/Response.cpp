@@ -252,6 +252,7 @@ bool Response::Parse(const ByteArray &data)
                     {
                         switch(_(contentEncoding.c_str()))
                         {
+#ifdef WITH_ZLIB
                             case _("gzip"):
                                 {
                                     ByteArray encoded(data.begin() + dataStart, data.end());
@@ -266,6 +267,7 @@ bool Response::Parse(const ByteArray &data)
                                     m_body.insert(m_body.end(), decoded.begin(), decoded.end());
                                 }
                                 break;
+#endif
                             default:
                                 m_body.insert(m_body.end(), data.begin() + dataStart, data.end());
                                 break;
