@@ -48,6 +48,7 @@ public:
     std::string GetQueryValue(const std::string &name) const;
     void SetQueryValue(const std::string &name, const std::string &value);
     std::string Query2String() const;
+    bool HasQuery() const;
 
     std::string GetFragment() const;
     void SetFragment(const std::string &value);

@@ -166,6 +166,11 @@ std::string Url::Query2String() const
     return retval;
 }
 
+bool Url::HasQuery() const
+{
+    return (!m_query.empty());
+}
+
 bool Url::IsValid() const
 {
     return (m_scheme != Url::Scheme::Undefined);
