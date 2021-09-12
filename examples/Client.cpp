@@ -7,6 +7,8 @@
 #include "StringUtil.h"
 #include "FileSystem.h"
 #include "Url.h"
+#include "fstream"
+#include "Data.h"
 
 
 static WebCpp::HttpClient *ptr = nullptr;
@@ -34,6 +36,7 @@ int main()
     httpCient.SetResponseCallback([](const WebCpp::Response &response) -> bool
     {
         std::cout << "response code: " << response.GetResponseCode() << " " << response.GetResponsePhrase() << std::endl;
+
         auto str = StringUtil::ByteArray2String(response.GetBody());
         std::cout << str << std::endl;
         return true;
@@ -43,7 +46,7 @@ int main()
 
     if(httpCient.Init(config))
     {
-        httpCient.Open(WebCpp::Http::Method::GET, "http://www.google.com"); // httpbin.org/html
+        httpCient.Open(WebCpp::Http::Method::GET, "http://www.google.com");
     }
 
     httpCient.WaitFor();
