@@ -120,6 +120,7 @@ uint8_t * Data::Sha1Digest(const std::string &string)
 
 #ifdef WITH_ZLIB
 #include "zlib.h"
+#define CHUNK 0x4000
 
 ByteArray Data::Compress(const ByteArray &data)
 {
@@ -128,7 +129,65 @@ ByteArray Data::Compress(const ByteArray &data)
 
 ByteArray Data::Uncompress(const ByteArray &data)
 {
-    return data;
+    ByteArray retval;
+
+    try
+    {
+        z_stream strm = {0};
+        unsigned char out[CHUNK];
+
+        strm.zalloc = Z_NULL;
+        strm.zfree = Z_NULL;
+        strm.opaque = Z_NULL;
+        strm.next_in = nullptr;
+        strm.avail_in = 0;
+
+        if(inflateInit2(&strm, -MAX_WBITS) != Z_OK)
+        {
+            throw std::runtime_error("");
+        }
+
+        bool done = false;
+        size_t pos = 0;
+        size_t sizeIn;
+        size_t sizeOut = 0;
+        uint8_t *ptr = const_cast<uint8_t *>(data.data());
+        size_t size = data.size();
+
+        while(!done)
+        {
+            sizeIn = ((size - pos) > CHUNK ? CHUNK : (size - pos));
+            strm.avail_in = sizeIn;
+            strm.next_in = ptr + pos;
+            strm.avail_out = CHUNK;
+            strm.next_out = out;
+            int err = inflate(&strm, Z_NO_FLUSH);
+            if (err == Z_STREAM_END)
+            {
+                done = true;
+            }
+            else if (err != Z_OK)
+            {
+                throw std::runtime_error("");
+            }
+            size_t chunkSize = strm.total_out - sizeOut;
+            sizeOut = strm.total_out;
+            retval.insert(retval.end(), out, out + chunkSize);
+            pos = strm.total_in;
+            if(pos >= size)
+            {
+                done = true;
+            }
+        }
+
+        inflateEnd(&strm);
+    }
+    catch(...)
+    {
+        return ByteArray();
+    }
+
+    return retval;
 }
 
 ByteArray Data::Zip(const ByteArray &data)
@@ -138,7 +197,65 @@ ByteArray Data::Zip(const ByteArray &data)
 
 ByteArray Data::Unzip(const ByteArray &data)
 {
-    return data;
+    ByteArray retval;
+
+    try
+    {
+        z_stream strm = {0};
+        unsigned char out[CHUNK];
+
+        strm.zalloc = Z_NULL;
+        strm.zfree = Z_NULL;
+        strm.opaque = Z_NULL;
+        strm.next_in = nullptr;
+        strm.avail_in = 0;
+
+        if(inflateInit2(&strm, 16 + MAX_WBITS) != Z_OK)
+        {
+            throw std::runtime_error("");
+        }
+
+        bool done = false;
+        size_t pos = 0;
+        size_t sizeIn;
+        size_t sizeOut = 0;
+        uint8_t *ptr = const_cast<uint8_t *>(data.data());
+        size_t size = data.size();
+
+        while(!done)
+        {
+            sizeIn = ((size - pos) > CHUNK ? CHUNK : (size - pos));
+            strm.avail_in = sizeIn;
+            strm.next_in = ptr + pos;
+            strm.avail_out = CHUNK;
+            strm.next_out = out;
+            int err = inflate(&strm, Z_SYNC_FLUSH);
+            if (err == Z_STREAM_END)
+            {
+                done = true;
+            }
+            else if (err != Z_OK)
+            {
+                throw std::runtime_error("");
+            }
+            size_t chunkSize = strm.total_out - sizeOut;
+            sizeOut = strm.total_out;
+            retval.insert(retval.end(), out, out + chunkSize);
+            pos = strm.total_in;
+            if(pos >= size)
+            {
+                done = true;
+            }
+        }
+
+        inflateEnd(&strm);
+    }
+    catch(...)
+    {
+        return ByteArray();
+    }
+
+    return retval;
 }
 
 #endif

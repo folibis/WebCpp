@@ -39,10 +39,10 @@ public:
     static uint8_t *Sha1Digest(const std::string &string);
 
 #ifdef WITH_ZLIB
-    ByteArray Compress(const ByteArray &data);
-    ByteArray Uncompress(const ByteArray &data);
-    ByteArray Zip(const ByteArray &data);
-    ByteArray Unzip(const ByteArray &data);
+    static ByteArray Compress(const ByteArray &data);
+    static ByteArray Uncompress(const ByteArray &data);
+    static ByteArray Zip(const ByteArray &data);
+    static ByteArray Unzip(const ByteArray &data);
 #endif
 
 private:
