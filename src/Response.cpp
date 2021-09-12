@@ -3,6 +3,7 @@
 #include "FileSystem.h"
 #include "Response.h"
 #include "IHttp.h"
+#include "Data.h"
 
 #define WRITE_BIFFER_SIZE 1024
 
@@ -201,50 +202,77 @@ bool Response::Parse(const ByteArray &data)
             SetLastError("error parsing headers");
             return false;
         }
-        auto encoding = m_header.GetHeader(HttpHeader::HeaderType::TransferEncoding);
-        if(encoding == "chunked")
+
+        size_t allSize = pos + 2 + m_header.GetRequestSize();
+        if(data.size() >= allSize)
         {
-            try
+
+            auto transferEncoding = m_header.GetHeader(HttpHeader::HeaderType::TransferEncoding);
+            auto contentEncoding = m_header.GetHeader(HttpHeader::HeaderType::ContentEncoding);
+
+            if(transferEncoding == "chunked")
             {
-                ByteArray tail(data.end() - 5, data.end());
-                if(StringUtil::Compare(tail, { '0', CR, LF, CR, LF}))
+                try
                 {
-                    size_t dataStart = pos + 2 + m_header.GetHeaderSize() + 4; // status line + CRLF (2 bytes) + headers + CRLFCRLF (4 bytes)
-                    size_t dataLength = data.size() - 5; // data - trailing chunk
-                    while(dataStart < dataLength)
+                    ByteArray tail(data.end() - 5, data.end());
+                    if(StringUtil::Compare(tail, { '0', CR, LF, CR, LF})) // all data received
                     {
-                        auto pos = StringUtil::SearchPosition(data, {CR, LF}, dataStart);
-                        std::string temp(data.begin() + dataStart,data.begin() + pos);
-                        int n = std::stoi(temp, nullptr, 16);
-                        size_t chunkEnd = pos + 2 + n;
-                        if(chunkEnd <= dataLength)
+                        size_t dataStart = pos + 2 + m_header.GetHeaderSize() + 4; // status line + CRLF (2 bytes) + headers + CRLFCRLF (4 bytes)
+                        size_t dataLength = data.size() - 5; // data w/o trailing chunk
+                        while(dataStart < dataLength)
                         {
-                            m_body.insert(m_body.end(), data.begin() + pos + 2, data.begin() + chunkEnd);
-                            dataStart = chunkEnd + 2;
+                            auto pos = StringUtil::SearchPosition(data, {CR, LF}, dataStart); // end of length string
+                            std::string temp(data.begin() + dataStart,data.begin() + pos);
+                            int n = std::stoi(temp, nullptr, 16);
+                            size_t chunkEnd = pos + 2 + n; // end of lenght string + 2 bytes(CRLF) + data length
+                            if(chunkEnd <= dataLength)
+                            {
+                                m_body.insert(m_body.end(), data.begin() + pos + 2, data.begin() + chunkEnd);
+                                dataStart = chunkEnd + 2; // end of data + 2 bytes (CRLF)
+                            }
+                            else
+                            {
+                                return false;
+                            }
                         }
-                        else
+                        return true;
+                    }
+                }
+                catch(...)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if(pos + 2 + m_header.GetRequestSize() == data.size())
+                {
+                    size_t dataStart = pos + 2 + m_header.GetHeaderSize() + 4;
+                    if(data.size() > dataStart)
+                    {
+                        switch(_(contentEncoding.c_str()))
                         {
-                            return false;
+                            case _("gzip"):
+                                {
+                                    ByteArray encoded(data.begin() + dataStart, data.end());
+                                    ByteArray decoded = Data::Unzip(encoded);
+                                    m_body.insert(m_body.end(), decoded.begin(), decoded.end());
+                                }
+                                break;
+                            case _("deflate"):
+                                {
+                                    ByteArray encoded(data.begin() + dataStart, data.end());
+                                    ByteArray decoded = Data::Uncompress(encoded);
+                                    m_body.insert(m_body.end(), decoded.begin(), decoded.end());
+                                }
+                                break;
+                            default:
+                                m_body.insert(m_body.end(), data.begin() + dataStart, data.end());
+                                break;
                         }
                     }
                     return true;
                 }
-            }
-            catch(...)
-            {
-                return false;
-            }
-        }
-        else
-        {
-            if(pos + 2 + m_header.GetRequestSize() == data.size())
-            {
-                size_t dataStart = pos + 2 + m_header.GetHeaderSize() + 4;
-                if(data.size() > dataStart)
-                {
-                    m_body.insert(m_body.end(), data.begin() + dataStart, data.end());
-                }
-                return true;
             }
         }
     }
@@ -423,6 +451,7 @@ std::string Response::Extension2MimeType(const std::string &extension)
 
     return "application/octet-stream";
 }
+
 void Response::InitDefault()
 {
     m_version = "HTTP/1.1";
