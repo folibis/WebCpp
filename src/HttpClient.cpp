@@ -44,38 +44,33 @@ bool HttpClient::WaitFor()
 
 bool HttpClient::Open(Request &request)
 {
-    std::cout << "6.1" << std::endl;
     if(request.Send(m_connection.get()) == false)
     {
         SetLastError("request sending error: " + request.GetLastError());
         LOG(GetLastError(), LogWriter::LogType::Error);
         return false;
     }
-    std::cout << "6.2" << std::endl;
     return true;
 }
 
-bool HttpClient::Open(Http::Method method, const std::string &address)
+bool HttpClient::Open(Http::Method method, const std::string &address, const std::map<std::string, std::string> &headers)
 {
     ClearError();
 
     Request request;
     auto &url = request.GetUrl();
-    std::cout << "1" << std::endl;
     url.Parse(address);
-    std::cout << "2" << std::endl;
     if(url.IsInitiaized())
     {
-        std::cout << "3" << std::endl;
         if(InitConnection(url))
         {
-            std::cout << "4" << std::endl;
             m_connection->Connect();
-            std::cout << "5" << std::endl;
             request.SetMethod(method);
-            std::cout << "6" << std::endl;
+            for(auto &header: headers)
+            {
+                request.GetHeader().SetHeader(header.first, header.second);
+            }
             return Open(request);
-            std::cout << "7" << std::endl;
         }
     }
     else

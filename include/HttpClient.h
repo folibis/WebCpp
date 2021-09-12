@@ -30,7 +30,7 @@ public:
     bool WaitFor() override;
 
     bool Open(Request &request);
-    bool Open(Http::Method method, const std::string &address);
+    bool Open(Http::Method method, const std::string &address, const std::map<std::string, std::string> &headers = {});
     void SetResponseCallback(const std::function<bool(const Response&)> &func);
 
 protected:
