@@ -26,6 +26,7 @@
 #define REQUEST_H
 
 #include <map>
+#include <memory>
 #include "common.h"
 #include "HttpConfig.h"
 #include "RequestBody.h"
@@ -72,7 +73,7 @@ public:
     size_t GetRequestSize() const;
     std::string GetRemote() const;
     void SetRemote(const std::string &remote);
-    bool Send(ICommunicationClient *comm);
+    bool Send(const std::shared_ptr<ICommunicationClient> &communication);
     std::string ToString() const;
 
 protected:

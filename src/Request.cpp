@@ -197,9 +197,16 @@ void Request::SetRemote(const std::string &remote)
     m_remote = remote;
 }
 
-bool Request::Send(ICommunicationClient *comm)
+bool Request::Send(const std::shared_ptr<ICommunicationClient> &communication)
 {
     ClearError();
+
+    if(communication == nullptr)
+    {
+        SetLastError("connection not set");
+        return false;
+    }
+
     ByteArray header;
 
     const ByteArray &body = m_requestBody.ToByteArray();
@@ -232,16 +239,16 @@ bool Request::Send(ICommunicationClient *comm)
     header.push_back(CR);
     header.push_back(LF);
 
-    if(comm->Write(header) == false)
+    if(communication->Write(header) == false)
     {
-        SetLastError("error sending header: " + comm->GetLastError());
+        SetLastError("error sending header: " + communication->GetLastError());
         return false;
     }
     if(body.size() > 0)
     {
-        if(comm->Write(body))
+        if(communication->Write(body))
         {
-            SetLastError("error sending body: " + comm->GetLastError());
+            SetLastError("error sending body: " + communication->GetLastError());
             return false;
         }
     }
