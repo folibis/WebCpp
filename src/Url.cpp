@@ -34,6 +34,17 @@ bool Url::Parse(const std::string &url, bool full)
         {
             return false;
         }
+
+        switch(m_scheme)
+        {
+            case Scheme::HTTPS:
+            case Scheme::WSS:
+                m_port = DEFAULT_SECURED_PORT;
+                break;
+            default:
+                m_port = DEFAULT_PORT;
+        }
+
         prev = pos + 1;
         pos = url.find("//", prev);
         if(pos != std::string::npos) // authority presents

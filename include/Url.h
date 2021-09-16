@@ -5,6 +5,7 @@
 #include <map>
 
 #define DEFAULT_PORT 80
+#define DEFAULT_SECURED_PORT 443
 
 
 namespace WebCpp
