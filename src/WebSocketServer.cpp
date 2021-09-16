@@ -42,11 +42,11 @@ bool WebSocketServer::Init(WebCpp::HttpConfig config)
     switch(m_protocol)
     {
         case Protocol::WS:
-            m_server.reset(new CommunicationTcpServer());
+            m_server = std::make_shared<CommunicationTcpServer>();
             break;
 #ifdef WITH_OPENSSL
         case Protocol::WSS:
-            m_server.reset(new CommunicationSslServer(m_config.GetSslSertificate(), m_config.GetSslKey()));
+            m_server = std::make_shared<CommunicationSslServer>(m_config.GetSslSertificate(), m_config.GetSslKey());
             break;
 #endif
         default:
@@ -316,14 +316,9 @@ bool WebSocketServer::CheckWsHeader(RequestData& requestData)
 {
     bool retval = false;
 
-    if(requestData.request.GetHeader().IsComplete() == false)
+    if(requestData.request.Parse(requestData.data))
     {
-        requestData.request.GetHeader().Parse(requestData.data);
-    }
-
-    if(requestData.request.GetHeader().IsComplete())
-    {
-        size_t size = requestData.request.GetHeader().GetRequestSize();
+        size_t size = requestData.request.GetRequestSize();
         if(requestData.data.size() >= size)
         {
             requestData.request.SetMethod(Http::Method::WEBSOCKET);
