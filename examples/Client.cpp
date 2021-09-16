@@ -29,24 +29,25 @@ int main()
 
     signal(SIGINT, handle_sigint);
 
-    WebCpp::HttpConfig config;
-    config.SetHttpProtocol("HTTP");
-    config.SetHttpServerPort(8080);
-
-    httpCient.SetResponseCallback([](const WebCpp::Response &response) -> bool
+    httpCient.SetResponseCallback([&httpCient](const WebCpp::Response &response) -> bool
     {
         std::cout << "response code: " << response.GetResponseCode() << " " << response.GetResponsePhrase() << std::endl;
 
-        auto str = StringUtil::ByteArray2String(response.GetBody());
-        std::cout << str << std::endl;
+        StringUtil::Print(response.GetBody());
+        httpCient.Close(false);
         return true;
     });
 
     httpCient.Run();
 
-    if(httpCient.Init(config))
+    if(httpCient.Init())
     {
-        httpCient.Open(WebCpp::Http::Method::GET, "http://www.google.com");
+#ifdef WITH_OPENSSL
+        std::string address("https://www.google.com");
+#else
+        std::string address("http://www.google.com");
+#endif
+        httpCient.Open(WebCpp::Http::Method::GET, address);
     }
 
     httpCient.WaitFor();
