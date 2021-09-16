@@ -71,7 +71,7 @@ public:
     bool IsShouldSend() const;
     void SetShouldSend(bool value);
     bool Send(ICommunicationServer *communication);
-    bool Parse(const ByteArray &data);
+    bool Parse(const ByteArray &data, size_t *all = nullptr, size_t *downoaded = nullptr);
 
     static std::string HeaderType2String(Response::HeaderType headerType);
     static Response::HeaderType String2HeaderType(const std::string &str);

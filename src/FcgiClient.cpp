@@ -311,7 +311,7 @@ ByteArray FcgiClient::BuildStdinPacket(uint16_t ID, const ByteArray &stdinData) 
     return data;
 }
 
-void FcgiClient::OnDataReady(ByteArray &data)
+void FcgiClient::OnDataReady(const ByteArray &data)
 {
     Lock lock(m_queueMutex);
 

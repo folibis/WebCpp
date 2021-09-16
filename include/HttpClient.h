@@ -43,11 +43,12 @@ public:
     bool Open(Http::Method method, const std::string &url, const std::map<std::string, std::string> &headers = {});
     void SetResponseCallback(const std::function<bool(const Response&)> &func);
     void SetStateCallback(const std::function<void(State)> &func);
+    void SetProgressCallback(const std::function<void(size_t,size_t)> &func);
     State GetState() const;
     void FireStateChanged() const;
 
 protected:
-    void OnDataReady(ByteArray &data);
+    void OnDataReady(const ByteArray &data);
     void OnClosed();
     bool InitConnection(const Url &url);
 
@@ -58,6 +59,7 @@ private:
     ByteArray m_buffer;
     std::function<void(State)> m_stateCallback = nullptr;
     std::function<bool(const Response&)> m_responseCallback = nullptr;
+    std::function<void(size_t,size_t)> m_progressCallback = nullptr;
 
 };
 

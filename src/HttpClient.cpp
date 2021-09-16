@@ -137,17 +137,23 @@ void HttpClient::SetStateCallback(const std::function<void (State)> &func)
     m_stateCallback = func;
 }
 
+void HttpClient::SetProgressCallback(const std::function<void (size_t, size_t)> &func)
+{
+    m_progressCallback = func;
+}
+
 HttpClient::State HttpClient::GetState() const
 {
     return m_state;
 }
 
-void HttpClient::OnDataReady(ByteArray &data)
+void HttpClient::OnDataReady(const ByteArray &data)
 {
     m_buffer.insert(m_buffer.end(), data.begin(), data.end());
 
     Response response(0, m_config);
-    if(response.Parse(m_buffer))
+    size_t all, downloaded;
+    if(response.Parse(m_buffer, &all, &downloaded))
     {
         m_state = State::DataReady;
         FireStateChanged();
@@ -158,6 +164,11 @@ void HttpClient::OnDataReady(ByteArray &data)
         }
 
         m_buffer.clear();
+    }
+
+    if(m_progressCallback)
+    {
+        m_progressCallback(all, downloaded);
     }
 }
 

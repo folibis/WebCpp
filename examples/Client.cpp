@@ -38,12 +38,18 @@ int main()
         return true;
     });
 
-    httpCient.Run();
+    httpCient.SetProgressCallback([](size_t all, size_t downoaded) {
+        std::cout << "downloaded :" << downoaded << " of " <<all << "\r";
+    });
 
-    if(httpCient.Init())
+    WebCpp::HttpConfig config;
+    config.SetTempFile(true);
+    config.SetMaxBodyFileSize(120_Mb);
+
+    if(httpCient.Init(config))
     {
 #ifdef WITH_OPENSSL
-        std::string address("https://www.google.com");
+        std::string address("https://speed.hetzner.de/100MB.bin");
 #else
         std::string address("http://www.google.com");
 #endif

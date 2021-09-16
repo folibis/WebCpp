@@ -230,7 +230,6 @@ void *CommunicationTcpClient::ReadThread()
             if(status > 0 && (m_poll.revents & POLLIN))
             {
                 bool readMore = true;
-                bool isError = false;
 
                 ByteArray data;
                 do
@@ -244,19 +243,20 @@ void *CommunicationTcpClient::ReadThread()
                         }
                         else
                         {
-                            isError = true;
                             readMore = false;
                         }
                     }
                     else if(readBytes > 0)
                     {
-                        data.insert(data.end(), m_readBuffer, m_readBuffer + readBytes);
+                        if(m_dataReadyCallback != nullptr)
+                        {
+                            m_dataReadyCallback(ByteArray(m_readBuffer, m_readBuffer + readBytes));
+                        }
                     }
                     else // the peer connection probably has closed
                     {
                         close(m_socket);
                         readMore = false;
-                        isError = true;
                         m_connected = false;
                         if(m_closeConnectionCallback != nullptr)
                         {
@@ -265,14 +265,6 @@ void *CommunicationTcpClient::ReadThread()
                     }
                 }
                 while(readMore == true);
-
-                if(isError == false)
-                {
-                    if(m_dataReadyCallback != nullptr)
-                    {
-                        m_dataReadyCallback(data);
-                    }
-                }
             }
         }
         catch(...)

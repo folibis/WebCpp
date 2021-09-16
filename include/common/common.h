@@ -62,5 +62,17 @@ struct point
 };
 using PointArray = std::vector<point>;
 
+constexpr unsigned long long operator"" _Kb(unsigned long long num)
+{
+    return num * 1024LL;
+}
+constexpr unsigned long long operator"" _Mb(unsigned long long num)
+{
+    return num * 1024LL * 1024LL;
+}
+constexpr unsigned long long operator"" _Gb(unsigned long long num)
+{
+    return num * 1024LL * 1024LL * 1024LL;
+}
 
 #endif // COMMON_H

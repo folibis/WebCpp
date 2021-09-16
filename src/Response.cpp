@@ -184,7 +184,7 @@ bool Response::Send(ICommunicationServer *communication)
     return true;
 }
 
-bool Response::Parse(const ByteArray &data)
+bool Response::Parse(const ByteArray &data, size_t* all, size_t* downoaded)
 {
     ClearError();
     size_t pos;
@@ -204,6 +204,15 @@ bool Response::Parse(const ByteArray &data)
         }
 
         size_t allSize = pos + 2 + m_header.GetRequestSize();
+        if(all != nullptr)
+        {
+            *all = m_header.GetBodySize();
+        }
+        if(downoaded != nullptr)
+        {
+            *downoaded = data.size() - (m_header.GetHeaderSize() + pos + 2);
+        }
+
         if(data.size() >= allSize)
         {
             auto transferEncoding = m_header.GetHeader(HttpHeader::HeaderType::TransferEncoding);

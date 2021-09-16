@@ -199,6 +199,11 @@ bool CommunicationSslClient::Write(const ByteArray &data)
             Close();
             retval = false;
         }
+        else
+        {
+            retval = true;
+        }
+
     }
     catch(const std::exception &ex)
     {
@@ -273,7 +278,6 @@ void *CommunicationSslClient::ReadThread()
             if(status > 0 && (m_poll.revents & POLLIN))
             {
                 bool readMore = true;
-                bool isError = false;
 
                 ByteArray data;
                 do
@@ -285,12 +289,10 @@ void *CommunicationSslClient::ReadThread()
                         if (errorCode == SSL_ERROR_WANT_READ)
                         {
                             readMore = false;
-                            isError = false;
                         }
                         else
                         {
                             readMore = false;
-                            isError = true;
                             Close();
                             if(m_closeConnectionCallback != nullptr)
                             {
@@ -300,7 +302,10 @@ void *CommunicationSslClient::ReadThread()
                     }
                     else
                     {
-                        data.insert(data.end(), m_readBuffer, m_readBuffer + retval);
+                        if(m_dataReadyCallback != nullptr)
+                        {
+                            m_dataReadyCallback(ByteArray(m_readBuffer, m_readBuffer + retval));
+                        }
                         if(retval < BUFFER_SIZE)
                         {
                             readMore = false;
@@ -308,14 +313,6 @@ void *CommunicationSslClient::ReadThread()
                     }
                 }
                 while(readMore == true);
-
-                if(isError == false)
-                {
-                    if(m_dataReadyCallback != nullptr)
-                    {
-                        m_dataReadyCallback(data);
-                    }
-                }
             }
         }
         catch(...)

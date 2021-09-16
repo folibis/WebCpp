@@ -73,6 +73,8 @@ private:
     PROPERTY(bool, WsProcessDefault, true)
     PROPERTY(int, WsServerPort, 8081)
     PROPERTY(std::string, WsProtocol, "ws")
+    PROPERTY(size_t, MaxBodySize, 2097152) // 2M
+    PROPERTY(size_t, MaxBodyFileSize, 20971520) // 20M
 };
 
 }

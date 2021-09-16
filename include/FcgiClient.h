@@ -182,7 +182,7 @@ protected:
     ByteArray BuildParamsPacket(uint16_t ID, const ByteArray &params) const;
     ByteArray BuildStdinPacket(uint16_t ID, const ByteArray &stdinData) const;
     std::string GetParam(FcgiParam param, const Request &request, const HttpConfig &config) const;
-    void OnDataReady(ByteArray &data);
+    void OnDataReady(const ByteArray &data);
     void OnConnectionClosed();
     ResponseData& GetResponseData(int ID);
     void RemoveResponseData(int ID);
