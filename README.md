@@ -7,16 +7,16 @@ small HTTP/C++11 library, mainly intended for old CPUs/compilers (~420K)
 *Note: the code in the midst of development, use it at your own risk*
 
 Currently supported:
-- HTTP
-- HTTPS (using OpenSSL)
-- GET
-- POST
+- HTTP/HTTPS (using OpenSSL) - server
+- HTTP/HTTPS (using OpenSSL) - client
+- GET, POST
 - Routing (no std::regex using) 
 - Pre/post routing handlers
 - Keep-alive
+- Content encoding: chunked, gzip, deflate (using zlib) 
 - Simple settings
 - Simple logging
-- WebSocket (both ws and wss)
+- WebSocket server (both ws and wss)
 - FastCGI basic support (tested with php-fpm)
 
 Requirements:
@@ -24,6 +24,7 @@ Requirements:
 - Gcc >= 4.8.3
 - CMake
 - OpenSSL & OpenSSL headers (optionally)
+- zlib (optionally)
 
 ### Usage: ###
 
