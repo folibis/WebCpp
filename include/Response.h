@@ -79,10 +79,22 @@ public:
     static std::string Extension2MimeType(const std::string &extension);
 
 protected:
+    enum class EncodingType
+    {
+        Undefined = 0,
+        Gzip,
+        Deflate,
+        Chunked,
+        Compress,
+        Brotli,
+    };
+
     void InitDefault();
     ByteArray BuildStatusLine() const;
     ByteArray BuildHeaders() const;    
     bool ParseStatusLine(const ByteArray &data, size_t &pos);
+    bool DecodeBody(EncodingType type, const ByteArray &data, size_t pos);
+    static EncodingType String2EncodingType(const std::string &str);
 
 private:
     int m_connID;

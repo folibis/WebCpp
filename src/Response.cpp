@@ -206,10 +206,12 @@ bool Response::Parse(const ByteArray &data)
         size_t allSize = pos + 2 + m_header.GetRequestSize();
         if(data.size() >= allSize)
         {
-
             auto transferEncoding = m_header.GetHeader(HttpHeader::HeaderType::TransferEncoding);
-            auto contentEncoding = m_header.GetHeader(HttpHeader::HeaderType::ContentEncoding);
+            auto contentEncoding = String2EncodingType(m_header.GetHeader(HttpHeader::HeaderType::ContentEncoding));
 
+            /* some servers send 'chunked' inside Content-Encoding but according to the
+             * https://datatracker.ietf.org/doc/html/rfc2616#section-3.5 it's incorrect
+             * and should only be sent in the Transfer-Encoding, so we ignore that here */
             if(transferEncoding == "chunked")
             {
                 try
@@ -217,24 +219,15 @@ bool Response::Parse(const ByteArray &data)
                     ByteArray tail(data.end() - 5, data.end());
                     if(StringUtil::Compare(tail, { '0', CR, LF, CR, LF})) // all data received
                     {
-                        size_t dataStart = pos + 2 + m_header.GetHeaderSize() + 4; // status line + CRLF (2 bytes) + headers + CRLFCRLF (4 bytes)
-                        size_t dataLength = data.size() - 5; // data w/o trailing chunk
-                        while(dataStart < dataLength)
+                        DecodeBody(EncodingType::Chunked, data, pos);
+                        if(contentEncoding != EncodingType::Undefined)
                         {
-                            auto pos = StringUtil::SearchPosition(data, {CR, LF}, dataStart); // end of length string
-                            std::string temp(data.begin() + dataStart,data.begin() + pos);
-                            int n = std::stoi(temp, nullptr, 16);
-                            size_t chunkEnd = pos + 2 + n; // end of lenght string + 2 bytes(CRLF) + data length
-                            if(chunkEnd <= dataLength)
-                            {
-                                m_body.insert(m_body.end(), data.begin() + pos + 2, data.begin() + chunkEnd);
-                                dataStart = chunkEnd + 2; // end of data + 2 bytes (CRLF)
-                            }
-                            else
+                            if(DecodeBody(contentEncoding, m_body, 0) == false)
                             {
                                 return false;
                             }
                         }
+
                         return true;
                     }
                 }
@@ -243,6 +236,7 @@ bool Response::Parse(const ByteArray &data)
                     return false;
                 }
             }
+
             else
             {
                 if(pos + 2 + m_header.GetRequestSize() == data.size())
@@ -250,27 +244,9 @@ bool Response::Parse(const ByteArray &data)
                     size_t dataStart = pos + 2 + m_header.GetHeaderSize() + 4;
                     if(data.size() > dataStart)
                     {
-                        switch(_(contentEncoding.c_str()))
+                        if(DecodeBody(contentEncoding, data, dataStart) == false)
                         {
-#ifdef WITH_ZLIB
-                            case _("gzip"):
-                                {
-                                    ByteArray encoded(data.begin() + dataStart, data.end());
-                                    ByteArray decoded = Data::Unzip(encoded);
-                                    m_body.insert(m_body.end(), decoded.begin(), decoded.end());
-                                }
-                                break;
-                            case _("deflate"):
-                                {
-                                    ByteArray encoded(data.begin() + dataStart, data.end());
-                                    ByteArray decoded = Data::Uncompress(encoded);
-                                    m_body.insert(m_body.end(), decoded.begin(), decoded.end());
-                                }
-                                break;
-#endif
-                            default:
-                                m_body.insert(m_body.end(), data.begin() + dataStart, data.end());
-                                break;
+                            return false;
                         }
                     }
                     return true;
@@ -280,6 +256,74 @@ bool Response::Parse(const ByteArray &data)
     }
 
     return false;
+}
+
+bool Response::DecodeBody(EncodingType type, const ByteArray& data, size_t pos)
+{
+    switch(type)
+    {
+        case EncodingType::Chunked:
+            {
+                m_body.clear();
+                size_t dataStart = pos + 2 + m_header.GetHeaderSize() + 4; // status line + CRLF (2 bytes) + headers + CRLFCRLF (4 bytes)
+                size_t dataLength = data.size() - 5; // data w/o trailing chunk
+                while(dataStart < dataLength)
+                {
+                    auto pos = StringUtil::SearchPosition(data, {CR, LF}, dataStart); // end of length string
+                    std::string temp(data.begin() + dataStart,data.begin() + pos);
+                    int n = std::stoi(temp, nullptr, 16);
+                    size_t chunkEnd = pos + 2 + n; // end of lenght string + 2 bytes(CRLF) + data length
+                    if(chunkEnd <= dataLength)
+                    {
+                        m_body.insert(m_body.end(), data.begin() + pos + 2, data.begin() + chunkEnd);
+                        dataStart = chunkEnd + 2; // end of data + 2 bytes (CRLF)
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+            break;
+#ifdef WITH_ZLIB
+        case EncodingType::Gzip:
+            {
+                ByteArray encoded(data.begin() + pos, data.end());
+                ByteArray decoded = Data::Unzip(encoded);
+                m_body.clear();
+                m_body.insert(m_body.begin(), decoded.begin(), decoded.end());
+            }
+            break;
+        case EncodingType::Deflate:
+            {
+                ByteArray encoded(data.begin() + pos, data.end());
+                ByteArray decoded = Data::Uncompress(encoded);
+                m_body.clear();
+                m_body.insert(m_body.begin(), decoded.begin(), decoded.end());
+            }
+            break;
+#endif
+        default:
+            m_body.insert(m_body.end(), data.begin() + pos, data.end());
+            break;
+    }
+
+    return true;
+}
+
+Response::EncodingType Response::String2EncodingType(const std::string &str)
+{
+    switch(_(str.c_str()))
+    {
+        case _("gzip"): return Response::EncodingType::Gzip;
+        case _("deflate"): return Response::EncodingType::Deflate;
+        case _("chunked"): return Response::EncodingType::Chunked;
+        case _("compress"): return Response::EncodingType::Compress;
+        case _("br"): return Response::EncodingType::Brotli;
+        default: break;
+    }
+
+    return Response::EncodingType::Undefined;
 }
 
 bool Response::ParseStatusLine(const ByteArray &data, size_t &pos)
