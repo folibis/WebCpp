@@ -28,6 +28,7 @@ Requirements:
 
 ### Usage: ###
 
+## Server ##
 
 **GET handling:**
 
@@ -174,4 +175,25 @@ wsServer.WaitFor();
             return true;
         });
     }
+```
+
+## Client ##
+
+```cpp
+WebCpp::HttpClient httpCient;
+
+httpCient.SetResponseCallback([&httpCient](const WebCpp::Response &response) -> bool
+{
+    std::cout << "response code: " << response.GetResponseCode() << " " << response.GetResponsePhrase() << std::endl;
+    StringUtil::Print(response.GetBody());
+    httpCient.Close(false);
+    return true;
+});
+
+if(httpCient.Init())
+{    
+    httpCient.Open(WebCpp::Http::Method::GET, "https://www.google.com");
+}
+
+httpCient.WaitFor();
 ```
