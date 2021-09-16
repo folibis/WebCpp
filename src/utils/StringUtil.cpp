@@ -335,9 +335,10 @@ std::string StringUtil::Int2Hex(int number, size_t len, const std::string &prefi
     return (prefix + retval);
 }
 
-#ifndef NDEBUG
+
 void StringUtil::Print(const ByteArray &array)
 {
+#ifndef NDEBUG
     size_t pos = 0;
     size_t size = array.size();
 
@@ -369,8 +370,10 @@ void StringUtil::Print(const ByteArray &array)
         std::cout << "| " << txt << std::endl;
         pos += 16;
     }
-}
+#else
+    std::cout << StringUtil::ByteArray2String(array) << std::endl;
 #endif
+}
 
 void StringUtil::Replace(std::string &str, const std::string &find, const std::string &replace)
 {
