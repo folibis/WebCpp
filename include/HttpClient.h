@@ -17,6 +17,16 @@ namespace WebCpp {
 class HttpClient: public IError, public IRunnable
 {
 public:
+    enum class State
+    {
+        Undefined = 0,
+        Initialized,
+        Connected,
+        DataSent,
+        DataReady,
+        Closed,
+    };
+
     HttpClient();
     HttpClient(const HttpClient& other) = delete;
     HttpClient& operator=(const HttpClient& other) = delete;
@@ -30,8 +40,11 @@ public:
     bool WaitFor() override;
 
     bool Open(Request &request);
-    bool Open(Http::Method method, const std::string &address, const std::map<std::string, std::string> &headers = {});
+    bool Open(Http::Method method, const std::string &url, const std::map<std::string, std::string> &headers = {});
     void SetResponseCallback(const std::function<bool(const Response&)> &func);
+    void SetStateCallback(const std::function<void(State)> &func);
+    State GetState() const;
+    void FireStateChanged() const;
 
 protected:
     void OnDataReady(ByteArray &data);
@@ -41,8 +54,11 @@ protected:
 private:
     std::shared_ptr<ICommunicationClient> m_connection = nullptr;
     HttpConfig m_config;
+    State m_state;
     ByteArray m_buffer;
+    std::function<void(State)> m_stateCallback = nullptr;
     std::function<bool(const Response&)> m_responseCallback = nullptr;
+
 };
 
 }

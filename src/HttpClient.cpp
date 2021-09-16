@@ -3,14 +3,13 @@
 #include "LogWriter.h"
 #include "HttpClient.h"
 #include "Response.h"
-#include <iostream>
+
 
 using namespace WebCpp;
 
 HttpClient::HttpClient()
 {
-    //m_address = address;
-    //m_port = port;
+
 }
 
 bool HttpClient::Init()
@@ -21,6 +20,8 @@ bool HttpClient::Init()
 
 bool HttpClient::Init(const HttpConfig &config)
 {
+    ClearError();
+
     m_config = config;
 
     return true;
@@ -29,12 +30,23 @@ bool HttpClient::Init(const HttpConfig &config)
 bool HttpClient::Run()
 {
     return true;
-    //return m_connection->Run();
 }
 
 bool HttpClient::Close(bool wait)
 {
-    return m_connection->Close(wait);
+    ClearError();
+    bool retval = true;
+
+    if(m_connection->Close(wait) == true)
+    {
+        SetLastError("close failed: " + m_connection->GetLastError());
+        retval = false;
+    }
+
+    m_state = State::Closed;
+    FireStateChanged();
+
+    return retval;
 }
 
 bool HttpClient::WaitFor()
@@ -44,34 +56,67 @@ bool HttpClient::WaitFor()
 
 bool HttpClient::Open(Request &request)
 {
-    if(request.Send(m_connection.get()) == false)
+    ClearError();
+
+    if(m_connection == nullptr)
+    {
+        if(InitConnection(request.GetUrl()) == false)
+        {
+            SetLastError("init failed: " + GetLastError());
+            LOG(GetLastError(), LogWriter::LogType::Error);
+            return false;
+        }
+    }
+
+    if(m_connection->IsConnected() == false)
+    {
+        if(m_connection->Connect() == false)
+        {
+            SetLastError("connection faied: " + m_connection->GetLastError());
+            LOG(GetLastError(), LogWriter::LogType::Error);
+            return false;
+        }
+
+        m_state = State::Connected;
+        FireStateChanged();
+    }
+
+    if(m_connection->Run() == false)
+    {
+        SetLastError("read routine failed: " + m_connection->GetLastError());
+        LOG(GetLastError(), LogWriter::LogType::Error);
+        return false;
+    }
+
+    if(request.Send(m_connection) == false)
     {
         SetLastError("request sending error: " + request.GetLastError());
         LOG(GetLastError(), LogWriter::LogType::Error);
         return false;
     }
+
+    m_state = State::DataSent;
+    FireStateChanged();
+
     return true;
 }
 
-bool HttpClient::Open(Http::Method method, const std::string &address, const std::map<std::string, std::string> &headers)
+bool HttpClient::Open(Http::Method method, const std::string &url, const std::map<std::string, std::string> &headers)
 {
     ClearError();
 
     Request request;
-    auto &url = request.GetUrl();
-    url.Parse(address);
-    if(url.IsInitiaized())
+    auto &p_url = request.GetUrl();
+    p_url.Parse(url);
+    if(p_url.IsInitiaized())
     {
-        if(InitConnection(url))
+        request.SetMethod(method);
+        for(auto &header: headers)
         {
-            m_connection->Connect();
-            request.SetMethod(method);
-            for(auto &header: headers)
-            {
-                request.GetHeader().SetHeader(header.first, header.second);
-            }
-            return Open(request);
+            request.GetHeader().SetHeader(header.first, header.second);
         }
+
+        return Open(request);
     }
     else
     {
@@ -87,6 +132,16 @@ void HttpClient::SetResponseCallback(const std::function<bool (const Response &)
     m_responseCallback = func;
 }
 
+void HttpClient::SetStateCallback(const std::function<void (State)> &func)
+{
+    m_stateCallback = func;
+}
+
+HttpClient::State HttpClient::GetState() const
+{
+    return m_state;
+}
+
 void HttpClient::OnDataReady(ByteArray &data)
 {
     m_buffer.insert(m_buffer.end(), data.begin(), data.end());
@@ -94,10 +149,14 @@ void HttpClient::OnDataReady(ByteArray &data)
     Response response(0, m_config);
     if(response.Parse(m_buffer))
     {
+        m_state = State::DataReady;
+        FireStateChanged();
+
         if(m_responseCallback != nullptr)
         {
             m_responseCallback(response);
         }
+
         m_buffer.clear();
     }
 }
@@ -105,6 +164,9 @@ void HttpClient::OnDataReady(ByteArray &data)
 void HttpClient::OnClosed()
 {
     m_buffer.clear();
+    m_connection->Close();
+    m_state = State::Closed;
+    FireStateChanged();
 }
 
 bool HttpClient::InitConnection(const Url &url)
@@ -117,11 +179,11 @@ bool HttpClient::InitConnection(const Url &url)
     switch(url.GetScheme())
     {
         case Url::Scheme::HTTP:
-            m_connection.reset(new CommunicationTcpClient());
+            m_connection = std::make_shared<CommunicationTcpClient>();
             break;
 #ifdef WITH_OPENSSL
         case Url::Scheme::HTTPS:
-            m_server.reset(new CommunicationSslServer(m_config.GetSslSertificate(), m_config.GetSslKey()));
+            m_connection = std::make_shared<CommunicationSslClient>(m_config.GetSslSertificate(), m_config.GetSslKey());
             break;
 #endif
         default:
@@ -145,12 +207,21 @@ bool HttpClient::InitConnection(const Url &url)
         return false;
     }
 
+    m_state = State::Initialized;
+    FireStateChanged();
+
     auto f1 = std::bind(&HttpClient::OnDataReady, this, std::placeholders::_1);
     m_connection->SetDataReadyCallback(f1);
     auto f2 = std::bind(&HttpClient::OnClosed, this);
     m_connection->SetCloseConnectionCallback(f2);
 
-    m_connection->Run();
-
     return true;
+}
+
+void HttpClient::FireStateChanged() const
+{
+    if(m_stateCallback != nullptr)
+    {
+        m_stateCallback(m_state);
+    }
 }
