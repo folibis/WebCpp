@@ -26,12 +26,54 @@
 #ifndef COMMUNICATIONSSLCLIENT_H
 #define COMMUNICATIONSSLCLIENT_H
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "ICommunicationClient.h"
 
-class CommunicationSslClient
+#define BUFFER_SIZE 1024
+
+
+namespace WebCpp
+{
+
+class CommunicationSslClient: public ICommunicationClient
 {
 public:
-    CommunicationSslClient();
+    CommunicationSslClient(const std::string &cert, const std::string &key) noexcept;
+    virtual ~CommunicationSslClient();
+    bool Init() override;
+    bool Run() override;
+    bool Close(bool wait = true) override;
+    bool WaitFor() override;
+
+    bool Connect(const std::string &address = "") override;
+    bool Write(const ByteArray &data) override;
+    ByteArray Read(size_t length) override;
+
+protected:
+    static void* ReadThreadWrapper(void *ptr);
+    void* ReadThread();    
+    bool InitSSL();
+
+private:
+    struct hostent *hostinfo;
+    struct sockaddr_in dest_addr = {};
+    const std::string m_cert;
+    const std::string m_key;
+    pollfd m_poll;
+    bool m_running = false;
+    pthread_t m_thread;
+    pthread_mutex_t m_writeMutex = PTHREAD_MUTEX_INITIALIZER;
+    SSL_CTX *m_ctx = nullptr;
+    SSL *m_ssl = nullptr;
+    char m_readBuffer[BUFFER_SIZE];
 };
 
+}
+
 #endif // COMMUNICATIONSSLCLIENT_H
+
 #endif // WITH_OPENSSL

@@ -36,11 +36,11 @@ bool WebCpp::HttpServer::Init(const WebCpp::HttpConfig& config)
     switch(m_protocol)
     {
         case Http::Protocol::HTTP:
-            m_server.reset(new CommunicationTcpServer());
+            m_server = std::make_shared<CommunicationTcpServer>();
             break;
 #ifdef WITH_OPENSSL
         case Http::Protocol::HTTPS:
-            m_server.reset(new CommunicationSslServer(m_config.GetSslSertificate(), m_config.GetSslKey()));
+            m_server = std::make_shared<CommunicationSslServer>(m_config.GetSslSertificate(), m_config.GetSslKey());
             break;
 #endif
         default:

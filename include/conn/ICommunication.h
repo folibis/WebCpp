@@ -63,9 +63,13 @@ public:
     int GetPort() const { return m_port; }
     void SetAddress(const std::string &address) { m_address = address; };
     std::string GetAddress() const { return m_address; }
+    bool IsInitialized() const { return m_initialized; }
+    bool IsConnected() const { return m_connected; }
 
 protected:
     int m_socket = (-1);
+    bool m_initialized = false;
+    bool m_connected = false;
     CommunicationProtocol m_protocol = CommunicationProtocol::Undefined;
     ComminicationType m_type = ComminicationType::Undefined;
     int m_port = DEFAULT_PORT;

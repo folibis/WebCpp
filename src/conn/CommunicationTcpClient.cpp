@@ -29,7 +29,7 @@ bool CommunicationTcpClient::Init()
         if(m_socket == (-1))
         {
             SetLastError(std::string("Socket creating error: ") + strerror(errno), errno);
-            throw GetLastError();
+            throw;
         }
 
         m_initialized = true;
@@ -69,7 +69,7 @@ bool CommunicationTcpClient::Close(bool wait)
     if(m_initialized)
     {
         close(m_socket);
-        m_isConnected = false;
+        m_connected = false;
         m_socket = (-1);
         m_initialized = false;
     }
@@ -113,7 +113,7 @@ bool CommunicationTcpClient::Connect(const std::string &address)
         if((hostinfo = gethostbyname(m_address.c_str())) == nullptr)
         {
             SetLastError(std::string("Error resolving the host name") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
+            throw;
         }
         dest_addr.sin_family = AF_INET;
         dest_addr.sin_port = htons(m_port);
@@ -123,40 +123,43 @@ bool CommunicationTcpClient::Connect(const std::string &address)
         if(connect(m_socket, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr)) == -1)
         {
             SetLastError(std::string("Connect error") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
+            throw;
         }
 
-        m_isConnected = true;
+        m_connected = true;
     }
     catch (...)
     {
-        m_isConnected = false;
+        m_connected = false;
     }
 
-    return m_isConnected;
+    return m_connected;
 }
 
 bool CommunicationTcpClient::Write(const ByteArray &data)
 {
     ClearError();
 
-    bool retval = false;
-    if(m_initialized)
+    if(m_initialized == false || m_connected == false)
     {
-        try
+        SetLastError("not initialized ot not connected");
+        return false;
+    }
+
+    bool retval = false;
+    try
+    {
+        size_t sentBytes = send(m_socket, data.data(), data.size(), MSG_NOSIGNAL);
+        if(data.size() != sentBytes)
         {
-            size_t sentBytes = send(m_socket, data.data(), data.size(), MSG_NOSIGNAL);
-            if(data.size() != sentBytes)
-            {
-                SetLastError(std::string("Send error: ") + strerror(errno), errno);
-                throw GetLastError();
-            }
-            retval = true;
+            SetLastError(std::string("Send error: ") + strerror(errno), errno);
+            throw GetLastError();
         }
-        catch(...)
-        {
-            SetLastError("Write failed: " + GetLastError());
-        }
+        retval = true;
+    }
+    catch(...)
+    {
+        SetLastError("Write failed: " + GetLastError());
     }
 
     return retval;
@@ -254,7 +257,7 @@ void *CommunicationTcpClient::ReadThread()
                         close(m_socket);
                         readMore = false;
                         isError = true;
-                        m_isConnected = false;
+                        m_connected = false;
                         if(m_closeConnectionCallback != nullptr)
                         {
                             m_closeConnectionCallback();

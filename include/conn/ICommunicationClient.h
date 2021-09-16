@@ -40,10 +40,8 @@ public:
     virtual ByteArray Read(size_t length) = 0;
     virtual bool SetDataReadyCallback(const std::function<void(ByteArray &data)> &callback) { m_dataReadyCallback = callback; return true; };
     virtual bool SetCloseConnectionCallback(const std::function<void()> &callback) { m_closeConnectionCallback = callback; return true; };
-    bool IsConnected() const { return m_isConnected; }
 
-protected:    
-    bool m_isConnected = false;
+protected:
     std::function<void(ByteArray &data)> m_dataReadyCallback = nullptr;
     std::function<void()> m_closeConnectionCallback = nullptr;
 };

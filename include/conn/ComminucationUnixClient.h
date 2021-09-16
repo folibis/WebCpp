@@ -28,7 +28,6 @@ protected:
     void* ReadThread();
 
 private:
-    bool m_initialized = false;
     pollfd m_poll;
     bool m_running = false;
     pthread_t m_thread;

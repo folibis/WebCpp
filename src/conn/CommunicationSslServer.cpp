@@ -30,50 +30,49 @@ CommunicationSslServer::CommunicationSslServer(const std::string &cert, const st
 
 bool CommunicationSslServer::Init()
 {
-    bool retval = false;
     try
     {
-        retval = InitSSL();
-        if(retval == false)
+        if(InitSSL() == false)
         {
             SetLastError(std::string("SSL init error"));
-            throw std::runtime_error(GetLastError());
+            throw;
         }
 
         m_socket = socket(AF_INET, SOCK_STREAM, 0);
         if(m_socket == ERROR)
         {
             SetLastError(std::string("socket create error: ") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
+            throw;
         }
 
         int opt = 1;
         if (setsockopt(m_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == ERROR)
         {
             SetLastError(std::string("set socket option error: ") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
+            throw;
         }
 
-        retval = true;
-    }
-    catch(const std::exception &ex)
-    {
-        std::cout << "CommunicationSslServer::Init error: " << ex.what() << std::endl;
-        CloseConnections();
-        retval = false;
+        m_initialized = true;
     }
     catch(...)
     {
-        std::cout << "CommunicationSslServer::Init unexpected error" << std::endl;
         CloseConnections();
-        retval = false;
+        m_initialized = false;
     }
 
-    return retval;
+    return m_initialized;
 }
 
 bool CommunicationSslServer::Connect(const std::string &address)
 {
+    ClearError();
+
+    if(m_initialized == false)
+    {
+        SetLastError("not initialized");
+        return false;
+    }
+
     try
     {
         ParseAddress(address);
@@ -91,29 +90,24 @@ bool CommunicationSslServer::Connect(const std::string &address)
         if(bind(m_socket, (struct sockaddr* ) &server_sockaddr, sizeof(server_sockaddr)) == ERROR)
         {
             SetLastError(std::string("socket bind error: ") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
+            throw;
         }
 
         if(listen(m_socket, QUEUE_SIZE) == -1)
         {
             SetLastError(std::string("socket listen error: ") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
+            throw;
         }
 
-        return true;
-    }
-    catch(const std::exception &ex)
-    {
-        std::cout << "CommunicationTcpServer::Connect error: " << ex.what() << std::endl;
-        CloseConnections();
-        return false;
+        m_connected = true;
     }
     catch(...)
     {
-        std::cout << "CommunicationTcpServer::Connect unexpected error" << std::endl;
+        m_connected = false;
         CloseConnections();
-        return false;
     }
+
+    return m_connected;
 }
 
 bool CommunicationSslServer::Run()
@@ -158,20 +152,32 @@ bool CommunicationSslServer::Close(bool wait)
 
         CloseConnections();
 
-        SSL_CTX_free(m_ctx);
+        close(m_socket);
+        if(m_ctx != nullptr)
+        {
+            SSL_CTX_free(m_ctx);
+        }
         EVP_cleanup();
     }
 
     return true;
 }
 
-bool CommunicationSslServer::Write(int connID, const std::vector<char> &data)
+bool CommunicationSslServer::Write(int connID, ByteArray &data)
 {
     return Write(connID, data, data.size());
 }
 
-bool CommunicationSslServer::Write(int connID, const std::vector<char> &data, size_t size)
+bool CommunicationSslServer::Write(int connID, ByteArray &data, size_t size)
 {
+    ClearError();
+
+    if(m_initialized == false || m_connected == false)
+    {
+        SetLastError("not initialized or not connected");
+        return false;
+    }
+
     bool retval = false;
     Lock lock(m_writeMutex);
     size_t written = 0;
@@ -202,7 +208,6 @@ bool CommunicationSslServer::Write(int connID, const std::vector<char> &data, si
     }
     catch(const std::exception &ex)
     {
-        std::cout << "CommunicationTcpServer::Write: " << ex.what() << std::endl;
         retval = false;
     }
 
@@ -245,29 +250,28 @@ bool CommunicationSslServer::InitSSL()
     bool retval = false;
     try
     {
-        SSL_load_error_strings();
         OpenSSL_add_ssl_algorithms();
+        SSL_load_error_strings();
 
-        const SSL_METHOD *method;
-
-        method = SSLv23_server_method();
+        const SSL_METHOD *method = TLS_server_method();
 
         m_ctx = SSL_CTX_new(method);
         if (!m_ctx)
         {
-            throw std::runtime_error("Unable to create SSL context");
+            SetLastError(ERR_error_string(ERR_get_error(), nullptr));
+            throw;
         }
-
-        SSL_CTX_set_ecdh_auto(ctx, 1);
 
         if (SSL_CTX_use_certificate_file(m_ctx, m_cert.c_str(), SSL_FILETYPE_PEM) <= 0)
         {
-            throw std::runtime_error("Unable to init certificate file");
+            SetLastError(ERR_error_string(ERR_get_error(), nullptr));
+            throw;
         }
 
         if (SSL_CTX_use_PrivateKey_file(m_ctx, m_key.c_str(), SSL_FILETYPE_PEM) <= 0 )
         {
-            throw std::runtime_error("Unable to init private key file");
+            SetLastError(ERR_error_string(ERR_get_error(), nullptr));
+            throw;
         }
 
         retval = true;
