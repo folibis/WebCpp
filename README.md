@@ -190,6 +190,10 @@ httpCient.SetResponseCallback([&httpCient](const WebCpp::Response &response) -> 
     return true;
 });
 
+httpCient.SetProgressCallback([](size_t all, size_t downoaded) {
+    std::cout << "downloaded :" << downoaded << " of " << all << "\r";
+});
+    
 if(httpCient.Init())
 {    
     httpCient.Open(WebCpp::Http::Method::GET, "https://www.google.com");
