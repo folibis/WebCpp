@@ -304,8 +304,8 @@ void *CommunicationTcpServer::ReadThread()
                                     m_fds[j].events = POLLIN;
                                     if(m_newConnectionCallback != nullptr)
                                     {
-                                        struct sockaddr_in client_sockaddr;
-                                        socklen_t len;
+                                        struct sockaddr_in client_sockaddr = {};
+                                        socklen_t len = sizeof(client_sockaddr);
                                         std::string remote;
                                         if (getpeername(new_socket, reinterpret_cast<struct sockaddr *>(&client_sockaddr), &len ) != -1)
                                         {
