@@ -264,15 +264,18 @@ bool HttpServer::CheckDataFullness()
 
     for(RequestData& requestData: m_requestQueue)
     {
-        if(requestData.request->Parse(requestData.data))
+        if(requestData.request != nullptr)
         {
-            size_t size = requestData.request->GetRequestSize();
-            if(requestData.data.size() >= size)
+            if(requestData.request->Parse(requestData.data))
             {
-                requestData.readyForDispatch = true;
-                requestData.data.erase(requestData.data.begin(), requestData.data.begin() + size);
-                retval = true;
-                break;
+                size_t size = requestData.request->GetRequestSize();
+                if(requestData.data.size() >= size)
+                {
+                    requestData.readyForDispatch = true;
+                    requestData.data.erase(requestData.data.begin(), requestData.data.begin() + size);
+                    retval = true;
+                    break;
+                }
             }
         }
     }
