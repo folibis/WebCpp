@@ -159,21 +159,23 @@ bool RequestBody::ParseUrlEncoded(const ByteArray &data, size_t offset, const By
     bool retval = true;
 
     m_contentType = ContentType::UrlEncoded;
-    auto ranges = StringUtil::Split(data, { CRLF }, offset);
-    for(auto &range: ranges)
+    auto end = StringUtil::SearchPositionReverse(data, { CRLF }, offset);
+    auto values = StringUtil::Split(data, {'&'}, offset, end);
+    if(values.size() > 0)
     {
-        auto pair = StringUtil::Split(data, {'&'}, range.start, range.end);
-        if(pair.size() > 0)
+        for(auto &value: values)
         {
-            std::string name(data.begin() + pair.at(0).start ,data.begin() + pair.at(0).end);
-            std::string value = pair.size() > 1 ? std::string(data.begin() + pair.at(1).start ,data.begin() + pair.at(1).end) : "";
+            auto pair = StringUtil::Split(data, {'='}, value.start, value.end);
+
+            std::string name(data.begin() + pair.at(0).start ,data.begin() + pair.at(0).end + 1);
+            std::string val = pair.size() > 1 ? std::string(data.begin() + pair.at(1).start ,data.begin() + pair.at(1).end + 1) : "";
             StringUtil::UrlDecode(name);
-            StringUtil::UrlDecode(value);
+            StringUtil::UrlDecode(val);
             m_values.push_back(ContentValue {
                                    name,
                                    std::string(contentType.begin(), contentType.end()),
-                                   value,
-                                   {} });
+                                   "",
+                                   ByteArray(val.begin(), val.end()) });
         }
     }
     retval = true;
