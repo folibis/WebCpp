@@ -47,7 +47,6 @@ public:
     static bool CreateFolder(const std::string &path);
     static bool DeleteFolder(const std::string &path);
     static std::string GetDateTime();
-    static std::string GetTimeStamp();
     static std::string GetFileModifiedTime(const std::string &file);
     static std::string TempFolder();
     static std::string Root();

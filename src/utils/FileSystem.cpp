@@ -304,20 +304,6 @@ std::string FileSystem::GetDateTime()
     return buffer;
 }
 
-std::string FileSystem::GetTimeStamp()
-{
-    auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now);
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) -
-            std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch());
-
-    std::ostringstream oss;
-    oss << std::put_time(std::localtime(&time), "%H:%M:%S");
-    oss << ":" << ms.count() <<  std::endl;
-
-    return oss.str();
-}
-
 std::string FileSystem::GetFileModifiedTime(const std::string &file)
 {
     struct stat result;
