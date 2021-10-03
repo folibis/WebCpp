@@ -268,9 +268,9 @@ ByteArray Request::BuildHeaders() const
     auto &header = GetHeader();
 
     std::string headers;
-    for(auto &header: header.GetHeaders())
+    for(auto &entry: header.GetHeaders())
     {
-        headers += header.name + ": " + header.value + CR + LF;
+        headers += entry.name + ": " + entry.value + CR + LF;
     }
 
     return ByteArray(headers.begin(), headers.end());
