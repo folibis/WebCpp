@@ -1,4 +1,5 @@
-#include "common.h"
+#include "common_webcpp.h"
+#include "defines_webcpp.h"
 #include "Print.h"
 #include "FileSystem.h"
 #include "HttpConfig.h"

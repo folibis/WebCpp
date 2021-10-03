@@ -23,8 +23,8 @@
 */
 
 #ifdef WITH_OPENSSL
-#ifndef COMMUNICATIONSSLCLIENT_H
-#define COMMUNICATIONSSLCLIENT_H
+#ifndef WEBCPP_COMMUNICATIONSSLCLIENT_H
+#define WEBCPP_COMMUNICATIONSSLCLIENT_H
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -74,6 +74,6 @@ private:
 
 }
 
-#endif // COMMUNICATIONSSLCLIENT_H
+#endif // WEBCPP_COMMUNICATIONSSLCLIENT_H
 
 #endif // WITH_OPENSSL

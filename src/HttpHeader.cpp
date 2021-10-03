@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "defines_webcpp.h"
 #include "StringUtil.h"
 #include "HttpHeader.h"
 

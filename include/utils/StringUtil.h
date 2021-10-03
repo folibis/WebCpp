@@ -22,10 +22,10 @@
 *
 */
 
-#ifndef STRINGUTIL_H
-#define STRINGUTIL_H
+#ifndef WEBCPP_STRINGUTIL_H
+#define WEBCPP_STRINGUTIL_H
 
-#include "common.h"
+#include "common_webcpp.h"
 
 
 class StringUtil
@@ -65,4 +65,4 @@ public:
     static bool Compare(const ByteArray &arr1, const ByteArray &arr2);
 };
 
-#endif // STRINGUTIL_H
+#endif // WEBCPP_STRINGUTIL_H

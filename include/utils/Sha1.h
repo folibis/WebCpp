@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef SHA1_H
-#define SHA1_H
+#ifndef WEBCPP_SHA1_H
+#define WEBCPP_SHA1_H
 
 #include <iostream>
 #include <string>
@@ -63,4 +63,4 @@ private:
 
 std::string sha1(const std::string &string);
 
-#endif /* SHA1_H */
+#endif /* WEBCPP_SHA1_H */

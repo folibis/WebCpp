@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef PERIODICALTASK_H
-#define PERIODICALTASK_H
+#ifndef WEBCPP_PERIODICALTASK_H
+#define WEBCPP_PERIODICALTASK_H
 
 #include <pthread.h>
 #include <functional>
@@ -59,4 +59,4 @@ private:
 
 }
 
-#endif // PERIODICALTASK_H
+#endif // WEBCPP_PERIODICALTASK_H

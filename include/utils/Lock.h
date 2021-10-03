@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef LOCK_H
-#define LOCK_H
+#ifndef WEBCPP_LOCK_H
+#define WEBCPP_LOCK_H
 
 #include <pthread.h>
 
@@ -49,4 +49,4 @@ private:
 
 }
 
-#endif // LOCK_H
+#endif // WEBCPP_LOCK_H

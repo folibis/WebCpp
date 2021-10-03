@@ -22,13 +22,13 @@
 *
 */
 
-#ifndef RESPONSE_H
-#define RESPONSE_H
+#ifndef WEBCPP_RESPONSE_H
+#define WEBCPP_RESPONSE_H
 
 #include <string>
 #include <map>
 #include "ICommunicationServer.h"
-#include "common.h"
+#include "common_webcpp.h"
 #include "HttpConfig.h"
 #include "HttpHeader.h"
 #include "IError.h"
@@ -111,4 +111,4 @@ private:
 
 }
 
-#endif // RESPONSE_H
+#endif // WEBCPP_RESPONSE_H

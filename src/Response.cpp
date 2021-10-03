@@ -1,5 +1,6 @@
 #include <fstream>
-#include "common.h"
+#include "common_webcpp.h"
+#include "defines_webcpp.h"
 #include "FileSystem.h"
 #include "Response.h"
 #include "IHttp.h"

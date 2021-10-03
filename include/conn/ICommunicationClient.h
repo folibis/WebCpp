@@ -22,12 +22,12 @@
 *
 */
 
-#ifndef ICOMMUNICATIONCLIENT_H
-#define ICOMMUNICATIONCLIENT_H
+#ifndef WEBCPP_ICOMMUNICATIONCLIENT_H
+#define WEBCPP_ICOMMUNICATIONCLIENT_H
 
 #include "ICommunication.h"
 #include "functional"
-#include "common.h"
+#include "common_webcpp.h"
 
 
 namespace WebCpp
@@ -48,4 +48,4 @@ protected:
 
 }
 
-#endif // ICOMMUNICATIONCLIENT_H
+#endif // WEBCPP_ICOMMUNICATIONCLIENT_H

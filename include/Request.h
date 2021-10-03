@@ -22,12 +22,12 @@
 *
 */
 
-#ifndef REQUEST_H
-#define REQUEST_H
+#ifndef WEBCPP_REQUEST_H
+#define WEBCPP_REQUEST_H
 
 #include <map>
 #include <memory>
-#include "common.h"
+#include "common_webcpp.h"
 #include "HttpConfig.h"
 #include "RequestBody.h"
 #include "HttpHeader.h"
@@ -96,4 +96,4 @@ private:
 
 }
 
-#endif // REQUEST_H
+#endif // WEBCPP_REQUEST_H

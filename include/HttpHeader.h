@@ -22,13 +22,13 @@
 *
 */
 
-#ifndef HTTPHEADER_H
-#define HTTPHEADER_H
+#ifndef WEBCPP_HTTPHEADER_H
+#define WEBCPP_HTTPHEADER_H
 
 #include <string>
 #include <vector>
 #include <map>
-#include "common.h"
+#include "common_webcpp.h"
 #include "StringUtil.h"
 
 
@@ -185,4 +185,4 @@ private:
 
 }
 
-#endif // HTTPHEADER_H
+#endif // WEBCPP_HTTPHEADER_H

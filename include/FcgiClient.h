@@ -24,8 +24,8 @@
 *
 */
 
-#ifndef FCGICLIENT_H
-#define FCGICLIENT_H
+#ifndef WEBCPP_FCGICLIENT_H
+#define WEBCPP_FCGICLIENT_H
 
 #include <string>
 #include <map>
@@ -204,6 +204,6 @@ private:
 
 }
 
-#endif // FCGICLIENT_H
+#endif // WEBCPP_FCGICLIENT_H
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef WEBCPP_COMMON_WEBCPP_H
+#define WEBCPP_COMMON_WEBCPP_H
 
 /*
 *
@@ -37,22 +37,6 @@
 #define WEBCPP_NAME "WebCpp"
 #define WEBCPP_CANONICAL_NAME WEBCPP_NAME " " WEBCPP_VERSION
 
-
-constexpr uint64_t mix(char m, uint64_t s)
-{
-    return ((s << 7) + ~(s >> 3)) + static_cast<uint64_t>(~m);
-}
-
-constexpr uint64_t _(const char* str)
-{
-    return (*str) ? mix(*str,_(str + 1)) : 0;
-}
-
-constexpr uint64_t operator "" _(const char* str)
-{
-    return _(str);
-}
-
 using ByteArray = std::vector<uint8_t>;
 
 struct point
@@ -75,4 +59,4 @@ constexpr unsigned long long operator"" _Gb(unsigned long long num)
     return num * 1024LL * 1024LL * 1024LL;
 }
 
-#endif // COMMON_H
+#endif // WEBCPP_COMMON_WEBCPP_H

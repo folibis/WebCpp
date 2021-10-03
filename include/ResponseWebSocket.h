@@ -24,10 +24,10 @@
 *
 */
 
-#ifndef RESPONSEWEBSOCKET_H
-#define RESPONSEWEBSOCKET_H
+#ifndef WEBCPP_RESPONSEWEBSOCKET_H
+#define WEBCPP_RESPONSEWEBSOCKET_H
 
-#include "common.h"
+#include "common_webcpp.h"
 #include "ICommunicationServer.h"
 #include "common_ws.h"
 
@@ -61,6 +61,6 @@ private:
 
 }
 
-#endif // RESPONSEWEBSOCKET_H
+#endif // WEBCPP_RESPONSEWEBSOCKET_H
 
 #endif

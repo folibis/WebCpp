@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef LOGWRITER_H
-#define LOGWRITER_H
+#ifndef WEBCPP_LOGWRITER_H
+#define WEBCPP_LOGWRITER_H
 
 #include <string>
 #include <fstream>
@@ -57,4 +57,4 @@ private:
     std::ofstream m_streams[3];
 };
 
-#endif // LOGWRITER_H
+#endif // WEBCPP_LOGWRITER_H

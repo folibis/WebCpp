@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <cstring>
 #include <iostream>
-#include "common.h"
+#include "common_webcpp.h"
 #include "Lock.h"
 #include "Print.h"
 #include "StringUtil.h"

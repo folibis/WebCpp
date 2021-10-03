@@ -24,8 +24,8 @@
 *
 */
 
-#ifndef WEBSOCKETSERVER_H
-#define WEBSOCKETSERVER_H
+#ifndef WEBCPP_WEBSOCKETSERVER_H
+#define WEBCPP_WEBSOCKETSERVER_H
 
 #include <memory>
 #include <deque>
@@ -135,6 +135,6 @@ private:
 
 }
 
-#endif // WEBSOCKETSERVER_H
+#endif // WEBCPP_WEBSOCKETSERVER_H
 
 #endif

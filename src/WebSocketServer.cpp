@@ -9,6 +9,7 @@
 #include "Lock.h"
 #include "Data.h"
 #include "common_ws.h"
+#include "defines_webcpp.h"
 #include "WebSocketServer.h"
 #include "IHttp.h"
 

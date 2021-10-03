@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef IRUNNABE_H
-#define IRUNNABE_H
+#ifndef WEBCPP_IRUNNABE_H
+#define WEBCPP_IRUNNABE_H
 
 namespace WebCpp
 {
@@ -40,4 +40,4 @@ public:
 
 }
 
-#endif // IRUNNABE_H
+#endif // WEBCPP_IRUNNABE_H

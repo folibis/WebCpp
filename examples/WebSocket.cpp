@@ -1,5 +1,6 @@
 #include <signal.h>
-#include "common.h"
+#include "common_webcpp.h"
+#include "defines_webcpp.h"
 #include "HttpServer.h"
 #include "WebSocketServer.h"
 #include "Request.h"

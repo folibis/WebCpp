@@ -1,5 +1,5 @@
-#ifndef COMMON_WS_H
-#define COMMON_WS_H
+#ifndef WEBCPP_COMMON_WS_H
+#define WEBCPP_COMMON_WS_H
 /*
 *
 * Copyright (c) 2021 ruslan@muhlinin.com
@@ -72,4 +72,4 @@
         Pong = 10,
     };
 
-#endif // COMMON_WS_H
+#endif // WEBCPP_COMMON_WS_H

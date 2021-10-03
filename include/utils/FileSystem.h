@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef FILESYSTEM_H
-#define FILESYSTEM_H
+#ifndef WEBCPP_FILESYSTEM_H
+#define WEBCPP_FILESYSTEM_H
 
 #include <string>
 #include <vector>
@@ -66,4 +66,4 @@ public:
 
 }
 
-#endif // FILESYSTEM_H
+#endif // WEBCPP_FILESYSTEM_H

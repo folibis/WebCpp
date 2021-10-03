@@ -5,9 +5,9 @@
 
 option(ZLIB "Add zlib support" OFF)
 option(OPENSSL "Add openssl/https support" OFF)
-option(WEBSOCKET "Add websocket support" ON)
-option(FASTCGI "Add FastCGI support" ON)
-option(EXAMPLES "Build examples" ON)
+option(WEBSOCKET "Add websocket support" OFF)
+option(FASTCGI "Add FastCGI support" OFF)
+option(EXAMPLES "Build examples" OFF)
 
 set(ZLIB_URL https://zlib.net/)
 set(ZLIB_VERSION zlib-1.2.11)
@@ -20,9 +20,15 @@ set(CMAKE_CXX_STANDARD 11)
 
 project(webcpp)
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+if(NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+endif()
+if(NOT DEFINED CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+endif()
+if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+endif()
 
 file(GLOB SRC . src/*.cpp src/conn/*.cpp src/utils/*.cpp)
 file(GLOB INC . include/*.h include/common/*.h include/conn/*.h include/utils/*.h)
@@ -79,7 +85,7 @@ endif()
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 
-include_directories(PUBLIC
+target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/common
     ${CMAKE_CURRENT_SOURCE_DIR}/include/conn

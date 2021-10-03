@@ -1,3 +1,6 @@
+#ifndef DEFINES_WEBCPP_H
+#define DEFINES_WEBCPP_H
+
 /*
 *
 * Copyright (c) 2021 ruslan@muhlinin.com
@@ -22,54 +25,22 @@
 *
 */
 
-#ifndef WEBCPP_PRINT_H
-#define WEBCPP_PRINT_H
-
-#include <iostream>
+#include <inttypes.h>
 
 
-namespace WebCpp
+constexpr uint64_t mix(char m, uint64_t s)
 {
-
-class Print
-{
-public:
-    Print();
-
-    template<typename T>
-    Print& operator<<(const T &t)
-    {
-        if(Print::AllowPrint)
-        {
-            std::cout << t;
-        }
-
-        return *this;
-    }
-
-    typedef std::basic_ostream<char, std::char_traits<char> > CoutType;
-    typedef std::ostream& (*StandardEndLine)(CoutType&);
-    Print& operator<<(StandardEndLine manip)
-    {
-        if(Print::AllowPrint)
-        {
-            manip(std::cout);
-        }
-        return *this;
-    }
-
-    static Print& endl(Print& stream)
-    {
-        if(Print::AllowPrint)
-        {
-            std::cout << std::endl;
-        }
-        return stream;
-    }
-
-    static bool AllowPrint;
-};
-
+    return ((s << 7) + ~(s >> 3)) + static_cast<uint64_t>(~m);
 }
 
-#endif // WEBCPP_PRINT_H
+constexpr uint64_t _(const char* str)
+{
+    return (*str) ? mix(*str,_(str + 1)) : 0;
+}
+
+constexpr uint64_t operator "" _(const char* str)
+{
+    return _(str);
+}
+
+#endif // DEFINES_WEBCPP_H

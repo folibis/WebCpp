@@ -11,7 +11,7 @@
 #include <vector>
 #include "FileSystem.h"
 #include "StringUtil.h"
-#include "common.h"
+#include "common_webcpp.h"
 
 #define MAX_EXT_LENGTH 8
 

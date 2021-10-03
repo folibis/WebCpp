@@ -23,8 +23,8 @@
 */
 
 #ifdef WITH_OPENSSL
-#ifndef COMMUNICATION_SSL_SERVER_H
-#define COMMUNICATION_SSL_SERVER_H
+#ifndef WEBCPP_COMMUNICATION_SSL_SERVER_H
+#define WEBCPP_COMMUNICATION_SSL_SERVER_H
 
 #include <poll.h>
 #include <pthread.h>
@@ -77,5 +77,5 @@ private:
 
 }
 
-#endif // COMMUNICATION_SSL_SERVER_H
+#endif // WEBCPP_COMMUNICATION_SSL_SERVER_H
 #endif // WITH_OPENSSL

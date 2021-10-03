@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef KEEP_ALIVE_TIMER_H
-#define KEEP_ALIVE_TIMER_H
+#ifndef WEBCPP_KEEP_ALIVE_TIMER_H
+#define WEBCPP_KEEP_ALIVE_TIMER_H
 
 #include <functional>
 #include <vector>
@@ -61,4 +61,4 @@ private:
 
 }
 
-#endif // KEEP_ALIVE_TIMER_H
+#endif // WEBCPP_KEEP_ALIVE_TIMER_H

@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef COMMUNICATIONTCPCLIENT_H
-#define COMMUNICATIONTCPCLIENT_H
+#ifndef WEBCPP_COMMUNICATIONTCPCLIENT_H
+#define WEBCPP_COMMUNICATIONTCPCLIENT_H
 
 #include <poll.h>
 #include "ICommunicationClient.h"
@@ -60,4 +60,4 @@ private:
 
 }
 
-#endif // COMMUNICATIONTCPCLIENT_H
+#endif // WEBCPP_COMMUNICATIONTCPCLIENT_H

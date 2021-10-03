@@ -22,11 +22,11 @@
 *
 */
 
-#ifndef HTTPSERVER_H
-#define HTTPSERVER_H
+#ifndef WEBCPP_HTTPSERVER_H
+#define WEBCPP_HTTPSERVER_H
 
 #include <ICommunicationServer.h>
-#include "common.h"
+#include "common_webcpp.h"
 #include <deque>
 #include <vector>
 #include <memory>
@@ -128,4 +128,4 @@ private:
 
 }
 
-#endif // HTTPSERVER_H
+#endif // WEBCPP_HTTPSERVER_H

@@ -24,8 +24,8 @@
 *
 */
 
-#ifndef ROUTEWEBSOCKET_H
-#define ROUTEWEBSOCKET_H
+#ifndef WEBCPP_ROUTEWEBSOCKET_H
+#define WEBCPP_ROUTEWEBSOCKET_H
 
 #include "Route.h"
 #include "Request.h"
@@ -57,6 +57,6 @@ private:
 
 }
 
-#endif // ROUTEWEBSOCKET_H
+#endif // WEBCPP_ROUTEWEBSOCKET_H
 
 #endif

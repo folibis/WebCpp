@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef ROUTE_H
-#define ROUTE_H
+#ifndef WEBCPP_ROUTE_H
+#define WEBCPP_ROUTE_H
 
 #include <functional>
 #include <map>
@@ -136,4 +136,4 @@ private:
 
 }
 
-#endif // ROUTE_H
+#endif // WEBCPP_ROUTE_H

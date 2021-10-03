@@ -22,11 +22,11 @@
 *
 */
 
-#ifndef DATA_H
-#define DATA_H
+#ifndef WEBCPP_DATA_H
+#define WEBCPP_DATA_H
 
 #include <string>
-#include "common.h"
+#include "common_webcpp.h"
 
 
 class Data
@@ -49,4 +49,4 @@ private:
     static unsigned int pos_of_char(const unsigned char chr);
 };
 
-#endif // DATA_H
+#endif // WEBCPP_DATA_H

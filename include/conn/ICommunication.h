@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef ICOMMUNICATION_H
-#define ICOMMUNICATION_H
+#ifndef WEBCPP_ICOMMUNICATION_H
+#define WEBCPP_ICOMMUNICATION_H
 
 #include <string>
 #include <vector>
@@ -80,4 +80,4 @@ protected:
 
 }
 
-#endif // ICOMMUNICATION_H
+#endif // WEBCPP_ICOMMUNICATION_H

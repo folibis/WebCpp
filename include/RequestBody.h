@@ -22,10 +22,10 @@
 *
 */
 
-#ifndef REQUEST_BODY_H
-#define REQUEST_BODY_H
+#ifndef WEBCPP_REQUEST_BODY_H
+#define WEBCPP_REQUEST_BODY_H
 
-#include "common.h"
+#include "common_webcpp.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -103,4 +103,4 @@ private:
 
 }
 
-#endif // REQUEST_BODY_H
+#endif // WEBCPP_REQUEST_BODY_H

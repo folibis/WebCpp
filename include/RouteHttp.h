@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef ROUTEHTTP_H
-#define ROUTEHTTP_H
+#ifndef WEBCPP_ROUTEHTTP_H
+#define WEBCPP_ROUTEHTTP_H
 
 #include "Route.h"
 #include "Request.h"
@@ -48,4 +48,4 @@ private:
 
 }
 
-#endif // ROUTEHTTP_H
+#endif // WEBCPP_ROUTEHTTP_H

@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef IERROR_H
-#define IERROR_H
+#ifndef WEBCPP_IERROR_H
+#define WEBCPP_IERROR_H
 
 #define NO_ERROR 0
 #define ERROR (-1)
@@ -49,4 +49,4 @@ private:
 
 }
 
-#endif // IERROR_H
+#endif // WEBCPP_IERROR_H

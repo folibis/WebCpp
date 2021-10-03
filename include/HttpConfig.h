@@ -22,12 +22,12 @@
 *
 */
 
-#ifndef HTTPCONFIG_H
-#define HTTPCONFIG_H
+#ifndef WEBCPP_HTTPCONFIG_H
+#define WEBCPP_HTTPCONFIG_H
 
 #include <string>
 #include <vector>
-#include "common.h"
+#include "common_webcpp.h"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -79,4 +79,4 @@ private:
 
 }
 
-#endif // HTTPCONFIG_H
+#endif // WEBCPP_HTTPCONFIG_H
