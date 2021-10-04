@@ -5,7 +5,7 @@
 
 option(ZLIB "Add zlib support" OFF)
 option(OPENSSL "Add openssl/https support" OFF)
-option(WEBSOCKET "Add websocket support" OFF)
+option(WEBSOCKET "Add websocket support" ON)
 option(FASTCGI "Add FastCGI support" OFF)
 option(EXAMPLES "Build examples" OFF)
 
@@ -37,7 +37,7 @@ add_library(${PROJECT_NAME} SHARED ${SRC} ${INC})
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if(ZLIB)
-    add_definitions(-DWITH_ZLIB)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DWITH_ZLIB)
     if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${ZLIB_ARCHIVE})
         message(STATUS "Downloading zlib archive")
         file(DOWNLOAD ${ZLIB_URL}${ZLIB_ARCHIVE}
@@ -67,19 +67,19 @@ endif()
 
 if(OPENSSL)
     message(STATUS "Configure with OpenSSL support")
-    add_definitions(-DWITH_OPENSSL)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DWITH_OPENSSL)
     find_package(OpenSSL REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL)
 endif()
 
 if(WEBSOCKET)
     message(STATUS "Configure with WebSocket support")
-    add_definitions(-DWITH_WEBSOCKET)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DWITH_WEBSOCKET)
 endif()
 
 if(FASTCGI)
     message(STATUS "Configure with FastCGI support")
-    add_definitions(-DWITH_FASTCGI)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DWITH_FASTCGI)
 endif()
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
