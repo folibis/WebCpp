@@ -9,7 +9,7 @@
 #include "ResponseWebSocket.h"
 #include "FcgiClient.h"
 #include "StringUtil.h"
-#include "PeriodicalTask.h"
+#include "ThreadWorker.h"
 
 
 static WebCpp::HttpServer *httpServerPtr = nullptr;
@@ -31,7 +31,7 @@ int main()
     WebCpp::WebSocketServer wsServer;
     httpServerPtr = &httpServer;
     wsServerPtr = &wsServer;
-    WebCpp::PeriodicalTask task;
+    WebCpp::ThreadWorker task;
     task.SetFunction([&](bool *running) -> void*
     {
         WebCpp::ResponseWebSocket response(connID);

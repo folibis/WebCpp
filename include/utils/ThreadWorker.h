@@ -34,10 +34,10 @@
 namespace WebCpp
 {
 
-class PeriodicalTask: public IError
+class ThreadWorker: public IError
 {
 public:
-    PeriodicalTask();
+    ThreadWorker();
     void SetFunction(const std::function<void *(bool *)> &func);
     void SetFinishFunction(const std::function<void(void *)> &func);
     void Start();

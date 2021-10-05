@@ -1,23 +1,23 @@
-#include "PeriodicalTask.h"
+#include "ThreadWorker.h"
 
 using namespace WebCpp;
 
-PeriodicalTask::PeriodicalTask()
+ThreadWorker::ThreadWorker()
 {
     m_isRunning = false;
 }
 
-void PeriodicalTask::SetFunction(const std::function<void *(bool *running)> &func)
+void ThreadWorker::SetFunction(const std::function<void *(bool *running)> &func)
 {
     m_func = func;
 }
 
-void PeriodicalTask::SetFinishFunction(const std::function<void (void *)> &func)
+void ThreadWorker::SetFinishFunction(const std::function<void (void *)> &func)
 {
     m_funcFinish = func;
 }
 
-void PeriodicalTask::Start()
+void ThreadWorker::Start()
 {
     if(m_isRunning)
         return;
@@ -25,13 +25,13 @@ void PeriodicalTask::Start()
     ClearError();
     m_isRunning = true;
 
-    if(pthread_create( &m_thread, nullptr, PeriodicalTask::StartThread, this) != 0)
+    if(pthread_create( &m_thread, nullptr, ThreadWorker::StartThread, this) != 0)
     {
         SetLastError("failed to starting a thread");
     }
 }
 
-void PeriodicalTask::Stop()
+void ThreadWorker::Stop()
 {
     if(m_isRunning)
     {
@@ -40,12 +40,12 @@ void PeriodicalTask::Stop()
     }
 }
 
-void PeriodicalTask::StopNoWait()
+void ThreadWorker::StopNoWait()
 {
     m_isRunning = false;
 }
 
-void PeriodicalTask::Wait() const
+void ThreadWorker::Wait() const
 {
     if(m_isRunning)
     {
@@ -53,10 +53,10 @@ void PeriodicalTask::Wait() const
     }
 }
 
-void *PeriodicalTask::StartThread(void *cls)
+void *ThreadWorker::StartThread(void *cls)
 {
     void *res = nullptr;
-    PeriodicalTask *instance = static_cast<PeriodicalTask *>(cls);
+    ThreadWorker *instance = static_cast<ThreadWorker *>(cls);
     if(instance->m_func)
     {
         res = instance->m_func(&(instance->m_isRunning));
@@ -69,7 +69,7 @@ void *PeriodicalTask::StartThread(void *cls)
     return res;
 }
 
-void PeriodicalTask::SetStop()
+void ThreadWorker::SetStop()
 {
     m_isRunning = false;
 }

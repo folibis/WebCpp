@@ -28,7 +28,7 @@
 #include <functional>
 #include <vector>
 #include <inttypes.h>
-#include <PeriodicalTask.h>
+#include <ThreadWorker.h>
 
 namespace WebCpp
 {
@@ -54,7 +54,7 @@ private:
     };
 
     static std::function<void(int)> m_callback;
-    static PeriodicalTask m_task;
+    static ThreadWorker m_task;
     static std::vector<Timer> m_timers;
     static pthread_mutex_t m_mutex;
 };

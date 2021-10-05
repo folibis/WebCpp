@@ -7,7 +7,7 @@
 using namespace WebCpp;
 
 std::function<void(int)> KeepAliveTimer::m_callback = nullptr;;
-PeriodicalTask KeepAliveTimer::m_task;
+ThreadWorker KeepAliveTimer::m_task;
 std::vector<KeepAliveTimer::Timer> KeepAliveTimer::m_timers;
 pthread_mutex_t KeepAliveTimer::m_mutex = PTHREAD_MUTEX_INITIALIZER;
 

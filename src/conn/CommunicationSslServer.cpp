@@ -8,7 +8,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <iostream>
-#include "common.h"
+#include "common_webcpp.h"
 #include "Lock.h"
 #include "StringUtil.h"
 #include "CommunicationSslServer.h"
