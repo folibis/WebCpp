@@ -22,27 +22,13 @@ CommunicationTcpClient::CommunicationTcpClient()
 
 bool CommunicationTcpClient::Init()
 {
-    try
+    if(m_initialized == true)
     {
-        ClearError();
-        m_socket = socket(AF_INET, SOCK_STREAM, 0);
-        if(m_socket == (-1))
-        {
-            SetLastError(std::string("Socket creating error: ") + strerror(errno), errno);
-            throw;
-        }
+        SetLastError("already initialized");
+        return false;
+    }
 
-        m_initialized = true;
-    }
-    catch(...)
-    {
-        m_initialized = false;
-        if(m_socket >= 0)
-        {
-            close(m_socket);
-            m_socket = (-1);
-        }
-    }
+    m_initialized = ICommunicationClient::Init();
     return m_initialized;
 }
 
@@ -93,47 +79,6 @@ bool CommunicationTcpClient::WaitFor()
         pthread_join(m_thread, nullptr);
     }
     return true;
-}
-
-bool CommunicationTcpClient::Connect(const std::string &address)
-{
-    struct hostent *hostinfo;
-    struct sockaddr_in dest_addr;
-
-    if(m_initialized == false)
-    {
-        SetLastError("Connect failed: connection not initialized");
-        return false;
-    }
-
-    try
-    {
-        ParseAddress(address);
-
-        if((hostinfo = gethostbyname(m_address.c_str())) == nullptr)
-        {
-            SetLastError(std::string("Error resolving the host name") + strerror(errno), errno);
-            throw;
-        }
-        dest_addr.sin_family = AF_INET;
-        dest_addr.sin_port = htons(m_port);
-        dest_addr.sin_addr = *((struct in_addr *)hostinfo->h_addr);
-        memset(&(dest_addr.sin_zero), 0, 8);
-
-        if(connect(m_socket, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr)) == -1)
-        {
-            SetLastError(std::string("Connect error") + strerror(errno), errno);
-            throw;
-        }
-
-        m_connected = true;
-    }
-    catch (...)
-    {
-        m_connected = false;
-    }
-
-    return m_connected;
 }
 
 bool CommunicationTcpClient::Write(const ByteArray &data)

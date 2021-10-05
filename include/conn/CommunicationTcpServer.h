@@ -31,7 +31,6 @@
 #include <vector>
 #include "ICommunicationServer.h"
 
-#define MAX_CLIENTS 10
 #define READ_BUFFER_SIZE 1024
 
 
@@ -42,27 +41,22 @@ class CommunicationTcpServer : public ICommunicationServer
 {
 public:
     CommunicationTcpServer() noexcept;    
+    virtual ~CommunicationTcpServer();
 
-    bool Init() override;
+    bool Init() override final;
     bool Connect(const std::string &address = "") override;
     bool Run() override;
     bool WaitFor() override;
     bool Close(bool wait = true) override;
-    bool Write(int connID, ByteArray &data) override;
-    bool Write(int connID, ByteArray &data, size_t size) override;
-
-    bool CloseClient(int connID) override;
+    bool CloseConnection(int connID) override;
 
 protected:
-    void CloseConnections();
     static void* ReadThreadWrapper(void *ptr);
     void* ReadThread();
 
 private:
-    struct pollfd m_fds[MAX_CLIENTS + 1];
     bool m_running = false;
     pthread_t m_readThread;
-    pthread_mutex_t m_writeMutex = PTHREAD_MUTEX_INITIALIZER;
 
     char m_readBuffer[READ_BUFFER_SIZE];
 };

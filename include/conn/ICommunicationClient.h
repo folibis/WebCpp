@@ -36,6 +36,8 @@ namespace WebCpp
 class ICommunicationClient : public ICommunication
 {
 public:
+    virtual bool Init() override;
+    virtual bool Connect(const std::string &address = "") override;
     virtual bool Write(const ByteArray &data) = 0;
     virtual ByteArray Read(size_t length) = 0;
     virtual bool SetDataReadyCallback(const std::function<void(const ByteArray &data)> &callback) { m_dataReadyCallback = callback; return true; };

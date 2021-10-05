@@ -1,11 +1,11 @@
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <stdexcept>
+#include <sys/types.h>
 #include <fcntl.h>
 #include <cstring>
+#include <stdexcept>
 #include <iostream>
 #include "common_webcpp.h"
 #include "Lock.h"
@@ -13,9 +13,8 @@
 #include "StringUtil.h"
 #include "CommunicationTcpServer.h"
 
-#define QUEUE_SIZE 10
 #define POLL_TIMEOUT 1000 // milliseconds
-#define WRITE_MAX_SIZE 1500
+
 #define READ_FAIL_COUNT 10
 
 
@@ -27,87 +26,35 @@ CommunicationTcpServer::CommunicationTcpServer() noexcept
     m_type = ICommunication::ComminicationType::Server;
 }
 
+CommunicationTcpServer::~CommunicationTcpServer()
+{
+    CommunicationTcpServer::Close();
+}
+
 bool CommunicationTcpServer::Init()
 {
-    bool retval;
-
-    try
+    if(m_initialized == true)
     {
-        m_socket = socket(AF_INET, SOCK_STREAM, 0);
-        if(m_socket == ERROR)
-        {
-            SetLastError(std::string("socket create error: ") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
-        }
-
-        int opt = 1;
-        if (setsockopt(m_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == ERROR)
-        {
-            SetLastError(std::string("set socket option error: ") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
-        }
-
-        retval = true;
-    }
-    catch(const std::exception &ex)
-    {
-        Print() << "CommunicationTcpServer::Init error: " << ex.what() << std::endl;
-        CloseConnections();
-        retval = false;
-    }
-    catch(...)
-    {
-        Print() << "CommunicationTcpServer::Init unexpected error" << std::endl;
-        CloseConnections();
-        retval = false;
+        SetLastError("already initialized");
+        return false;
     }
 
-    return retval;
+    m_initialized = ICommunicationServer::Init();
+    return m_initialized;
 }
 
 bool CommunicationTcpServer::Connect(const std::string &address)
 {
-    try
+    ClearError();
+
+    if(m_initialized == false)
     {
-        ParseAddress(address);
-        struct sockaddr_in server_sockaddr;
-        server_sockaddr.sin_family = AF_INET;
-        server_sockaddr.sin_port = htons(m_port);
-        if(m_address.empty() || m_address == "*")
-        {
-            server_sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-        }
-        else
-        {
-            server_sockaddr.sin_addr.s_addr = inet_addr(m_address.c_str());
-        }
-
-        if(bind(m_socket, (struct sockaddr* ) &server_sockaddr, sizeof(server_sockaddr)) == ERROR)
-        {
-            SetLastError(std::string("socket bind error: ") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
-        }
-
-        if(listen(m_socket, QUEUE_SIZE) == -1)
-        {
-            SetLastError(std::string("socket listen error: ") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
-        }
-
-        return true;
-    }
-    catch(const std::exception &ex)
-    {
-        Print() << "CommunicationTcpServer::Connect error: " << ex.what() << std::endl;
-        CloseConnections();
+        SetLastError("not initialized");
         return false;
     }
-    catch(...)
-    {
-        Print() << "CommunicationTcpServer::Connect unexpected error" << std::endl;
-        CloseConnections();
-        return false;
-    }
+
+    m_connected = ICommunicationServer::Connect(address);
+    return m_connected;
 }
 
 bool CommunicationTcpServer::Run()
@@ -162,74 +109,10 @@ bool CommunicationTcpServer::Close(bool wait)
     return true;
 }
 
-bool CommunicationTcpServer::Write(int connID, ByteArray &data)
+bool CommunicationTcpServer::CloseConnection(int connID)
 {
-    return Write(connID, data, data.size());
-}
-
-bool CommunicationTcpServer::Write(int connID, ByteArray &data, size_t size)
-{
-    bool retval = false;
-    Lock lock(m_writeMutex);
-
-    size_t written = 0;
-    try
+    if(ICommunicationServer::CloseConnection(connID))
     {
-        if(connID < 0 || connID > MAX_CLIENTS)
-        {
-            throw std::runtime_error("connection ID isn't valid");
-        }
-
-        int fd = m_fds[connID].fd;
-        bool finished = false;
-        if(fd != (-1))
-        {
-            while(!finished)
-            {
-                size_t s = (size - written) > WRITE_MAX_SIZE ? WRITE_MAX_SIZE : size;
-                ssize_t sent = send(fd, data.data() + written, s, MSG_NOSIGNAL);
-                std::cout << "write " << sent << " bytes" << std::endl;
-                if(sent == ERROR)
-                {
-                    CloseClient(connID);
-                    retval = false;
-                    finished = true;
-                }
-                else
-                {
-                    written += sent;
-                    if(written >= size)
-                    {
-                        finished = true;
-                    }
-                    retval = true;
-                }
-            }
-        }
-    }
-    catch(const std::exception &ex)
-    {
-        Print() << "CommunicationTcpServer::Write() exception: " << ex.what() << std::endl;
-        retval = false;
-    }
-
-    return retval;
-}
-
-bool CommunicationTcpServer::CloseClient(int connID)
-{
-    if(connID < 0 || connID > (MAX_CLIENTS + 1))
-    {
-        return false;
-    }
-
-    if(m_fds[connID].fd != (-1))
-    {
-        close(m_fds[connID].fd);
-        m_fds[connID].fd = (-1);
-        m_fds[connID].events = 0;
-        m_fds[connID].revents = 0;
-
         if(m_closeConnectionCallback != nullptr)
         {
             m_closeConnectionCallback(connID);
@@ -239,19 +122,6 @@ bool CommunicationTcpServer::CloseClient(int connID)
     }
 
     return false;
-}
-
-void CommunicationTcpServer::CloseConnections()
-{
-    try
-    {
-        for (int i = 0; i < MAX_CLIENTS + 1; i++)
-        {
-            CloseClient(i);
-        }
-    }
-    catch(...)
-    { }
 }
 
 void *CommunicationTcpServer::ReadThreadWrapper(void *ptr)
@@ -335,7 +205,7 @@ void *CommunicationTcpServer::ReadThread()
                                     else
                                     {
                                         isError = true;
-                                        CloseClient(i);
+                                        CloseConnection(i);
                                         readMore = false;
                                     }
                                 }
@@ -347,7 +217,7 @@ void *CommunicationTcpServer::ReadThread()
                                 {
                                     readMore = false;
                                     isError = true;
-                                    CloseClient(i);
+                                    CloseConnection(i);
                                 }
                             }
                             while(readMore == true);

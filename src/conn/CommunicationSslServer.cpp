@@ -30,6 +30,14 @@ CommunicationSslServer::CommunicationSslServer(const std::string &cert, const st
 
 bool CommunicationSslServer::Init()
 {
+    ClearError();
+
+    if(m_initialized == true)
+    {
+        SetLastError("already initialized");
+        return false;
+    }
+
     try
     {
         if(InitSSL() == false)
@@ -38,21 +46,7 @@ bool CommunicationSslServer::Init()
             throw;
         }
 
-        m_socket = socket(AF_INET, SOCK_STREAM, 0);
-        if(m_socket == ERROR)
-        {
-            SetLastError(std::string("socket create error: ") + strerror(errno), errno);
-            throw;
-        }
-
-        int opt = 1;
-        if (setsockopt(m_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == ERROR)
-        {
-            SetLastError(std::string("set socket option error: ") + strerror(errno), errno);
-            throw;
-        }
-
-        m_initialized = true;
+        m_initialized = ICommunicationServer::Init();
     }
     catch(...)
     {
@@ -73,40 +67,7 @@ bool CommunicationSslServer::Connect(const std::string &address)
         return false;
     }
 
-    try
-    {
-        ParseAddress(address);
-        struct sockaddr_in server_sockaddr;
-        server_sockaddr.sin_family = AF_INET;
-        server_sockaddr.sin_port = htons(m_port);
-        if(m_address.empty() || m_address == "*")
-        {
-            server_sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-        }
-        else
-        {
-            server_sockaddr.sin_addr.s_addr = inet_addr(m_address.c_str());
-        }
-        if(bind(m_socket, (struct sockaddr* ) &server_sockaddr, sizeof(server_sockaddr)) == ERROR)
-        {
-            SetLastError(std::string("socket bind error: ") + strerror(errno), errno);
-            throw;
-        }
-
-        if(listen(m_socket, QUEUE_SIZE) == -1)
-        {
-            SetLastError(std::string("socket listen error: ") + strerror(errno), errno);
-            throw;
-        }
-
-        m_connected = true;
-    }
-    catch(...)
-    {
-        m_connected = false;
-        CloseConnections();
-    }
-
+    m_connected = ICommunicationServer::Connect(address);
     return m_connected;
 }
 
@@ -163,11 +124,6 @@ bool CommunicationSslServer::Close(bool wait)
     return true;
 }
 
-bool CommunicationSslServer::Write(int connID, ByteArray &data)
-{
-    return Write(connID, data, data.size());
-}
-
 bool CommunicationSslServer::Write(int connID, ByteArray &data, size_t size)
 {
     ClearError();
@@ -194,7 +150,7 @@ bool CommunicationSslServer::Write(int connID, ByteArray &data, size_t size)
 
                 if(sent <= 0)
                 {
-                    CloseClient(connID);
+                    CloseConnection(connID);
                     retval = false;
                 }
                 else
@@ -220,15 +176,10 @@ bool CommunicationSslServer::WaitFor()
     return true;
 }
 
-bool CommunicationSslServer::CloseClient(int connID)
+bool CommunicationSslServer::CloseConnection(int connID)
 {
-    if(m_fds[connID].fd != (-1))
+    if(ICommunicationServer::CloseConnection(connID))
     {
-        close(m_fds[connID].fd);
-        m_fds[connID].fd = (-1);
-        m_fds[connID].events = 0;
-        m_fds[connID].revents = 0;
-
         SSL *ssl = m_sslClient[connID];
         SSL_shutdown(ssl);
         SSL_free(ssl);
@@ -282,19 +233,6 @@ bool CommunicationSslServer::InitSSL()
     }
 
     return retval;
-}
-
-void CommunicationSslServer::CloseConnections()
-{
-    try
-    {
-        for (int i = 0; i < MAX_CLIENTS + 1; i++)
-        {
-            CloseClient(i);
-        }
-    }
-    catch(...)
-    { }
 }
 
 void *CommunicationSslServer::ReadThreadWrapper(void *ptr)
@@ -416,7 +354,7 @@ void *CommunicationSslServer::ReadThread()
                                     {
                                         readMore = false;
                                         isError = true;
-                                        CloseClient(i);
+                                        CloseConnection(i);
                                     }
                                 }
                                 else

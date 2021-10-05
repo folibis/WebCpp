@@ -47,18 +47,16 @@ class CommunicationSslServer: public ICommunicationServer
 public:
     CommunicationSslServer(const std::string &cert, const std::string &key) noexcept;
 
-    bool Init() override;
-    bool Connect(const std::string &address = "") override;
-    bool Close(bool wait = false) override;
-    bool Write(int connID, ByteArray &data) override;
+    bool Init() override final;
+    bool Connect(const std::string &address = "") override final;
+    bool Close(bool wait = false) override final;
+    bool CloseConnection(int connID) override;
     bool Write(int connID, ByteArray &data, size_t size) override;
     bool Run() override;
     bool WaitFor() override;
-    bool CloseClient(int connID) override;
 
 protected:
     bool InitSSL();
-    void CloseConnections();
     static void* ReadThreadWrapper(void *ptr);
     void* ReadThread();
 

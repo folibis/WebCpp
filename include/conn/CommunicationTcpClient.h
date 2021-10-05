@@ -43,7 +43,6 @@ public:
     bool Close(bool wait = true) override;
     bool WaitFor() override;
 
-    bool Connect(const std::string &address = "") override;
     bool Write(const ByteArray &data) override;
     ByteArray Read(size_t length) override;
 

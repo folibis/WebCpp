@@ -32,6 +32,12 @@ WebCpp::CommunicationSslClient::~CommunicationSslClient()
 
 bool CommunicationSslClient::Init()
 {
+    if(m_initialized == true)
+    {
+        SetLastError("already initialized");
+        return false;
+    }
+
     try
     {
         ClearError();
@@ -41,14 +47,7 @@ bool CommunicationSslClient::Init()
             throw std::runtime_error(GetLastError());
         }
 
-        m_socket = socket(AF_INET, SOCK_STREAM, 0);
-        if(m_socket == (-1))
-        {
-            SetLastError(std::string("Socket creating error: ") + strerror(errno), errno);
-            throw GetLastError();
-        }
-
-        m_initialized = true;
+        m_initialized = ICommunicationClient::Init();
     }
     catch(...)
     {
@@ -126,24 +125,9 @@ bool CommunicationSslClient::Connect(const std::string &address)
 
     try
     {
-        ParseAddress(address);
-
-        struct hostent *host;
-        struct sockaddr_in addr = {};
-
-        if((host = gethostbyname(m_address.c_str())) == nullptr)
+        if(ICommunicationClient::Connect(address) == false)
         {
-            SetLastError("error resolveing hostname");
-            throw;
-        }
-
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(m_port);
-        addr.sin_addr.s_addr = *(long*)(host->h_addr);
-        if(connect(m_socket, (struct sockaddr *)&addr, sizeof(struct sockaddr)) == -1)
-        {
-            SetLastError("connection failed");
-            throw;
+            return false;
         }
 
         m_ssl = SSL_new(m_ctx);
@@ -153,26 +137,12 @@ bool CommunicationSslClient::Connect(const std::string &address)
             SetLastError(ERR_error_string(ERR_get_error(), NULL));
             throw;
         }
-
-        m_connected = true;
     }
     catch(...)
     {
         m_connected = false;
     }
 
-    /*
-    const char *msg = "GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n";
-    char buf[10000];
-    SSL_write(m_ssl, msg, strlen(msg));
-    int bytes = SSL_read(m_ssl, buf, sizeof(buf));
-    buf[bytes] = 0;
-    printf("Received: \"%s\"\n", buf);
-
-    SSL_free(m_ssl);
-    close(m_socket);
-    SSL_CTX_free(m_ctx)
-    */
     return m_connected;
 }
 
