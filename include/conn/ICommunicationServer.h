@@ -27,11 +27,9 @@
 
 #include <functional>
 #include <poll.h>
-#include "ICommunication.h
+#include "ICommunication.h"
 #include "functional"
 #include "common_webcpp.h"
-
->>>>>>> 6a3bef6 (move common conn function into separated base classes)
 
 #define MAX_CLIENTS 10
 #define QUEUE_SIZE 10

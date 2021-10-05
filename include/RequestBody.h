@@ -29,13 +29,13 @@
 #include <vector>
 #include <map>
 #include <string>
-#include "IError.h"
+#include "IErrorable.h"
 
 
 namespace WebCpp
 {
 
-class RequestBody: public IError
+class RequestBody: public IErrorable
 {
 public:
 

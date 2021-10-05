@@ -31,13 +31,13 @@
 #include "common_webcpp.h"
 #include "HttpConfig.h"
 #include "HttpHeader.h"
-#include "IError.h"
+#include "IErrorable.h"
 
 
 namespace WebCpp
 {
 
-class Response: public IError
+class Response: public IErrorable
 {
 public:
     enum class HeaderType

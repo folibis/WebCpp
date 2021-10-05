@@ -26,7 +26,7 @@
 #define WEBCPP_HTTPCLIENT_H
 
 #include <memory>
-#include "IError.h"
+#include "IErrorable.h"
 #include "IRunnable.h"
 #include "IHttp.h"
 #include "ICommunicationClient.h"
@@ -38,7 +38,7 @@
 
 namespace WebCpp {
 
-class HttpClient: public IError, public IRunnable
+class HttpClient: public IErrorable, public IRunnable
 {
 public:
     enum class State

@@ -27,7 +27,7 @@
 
 #include <string>
 #include <vector>
-#include "IError.h"
+#include "IErrorable.h"
 #include "IRunnable.h"
 
 #define DEFAULT_ADDRESS "0.0.0.0"
@@ -37,7 +37,7 @@
 namespace WebCpp
 {
 
-class ICommunication : public IError, public IRunnable
+class ICommunication : public IErrorable, public IRunnable
 {
 public:
     enum class CommunicationProtocol

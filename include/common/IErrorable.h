@@ -34,7 +34,7 @@
 namespace WebCpp
 {
 
-class IError
+class IErrorable
 {
 public:
     inline std::string &GetLastError() { return m_lastError; }

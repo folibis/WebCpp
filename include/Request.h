@@ -34,13 +34,13 @@
 #include "ICommunicationClient.h"
 #include "Url.h"
 #include "IHttp.h"
-#include "IError.h"
+#include "IErrorable.h"
 
 
 namespace WebCpp
 {
 
-class Request: public IError
+class Request: public IErrorable
 {
 public:
     Request();

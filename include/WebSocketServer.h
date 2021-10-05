@@ -32,7 +32,7 @@
 #include "HttpConfig.h"
 #include "RouteHttp.h"
 #include "RouteWebSocket.h"
-#include "IError.h"
+#include "IErrorable.h"
 #include "IRunnable.h"
 #include "Request.h"
 #include "ICommunicationServer.h"
@@ -42,7 +42,7 @@
 namespace WebCpp
 {
 
-class WebSocketServer: public IError, public IRunnable
+class WebSocketServer: public IErrorable, public IRunnable
 {
 public:
     enum class Protocol

@@ -31,7 +31,7 @@
 #include <vector>
 #include <memory>
 #include <pthread.h>
-#include "IError.h"
+#include "IErrorable.h"
 #include "IRunnable.h"
 #include "Request.h"
 #include "Response.h"
@@ -43,7 +43,7 @@
 namespace WebCpp
 {
 
-class HttpServer: public IError, public IRunnable
+class HttpServer: public IErrorable, public IRunnable
 {
 public:
     HttpServer();

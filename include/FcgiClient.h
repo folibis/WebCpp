@@ -31,7 +31,7 @@
 #include <map>
 #include <pthread.h>
 #include "ComminucationUnixClient.h"
-#include "IError.h"
+#include "IErrorable.h"
 #include "Request.h"
 #include "Response.h"
 #include "HttpConfig.h"
@@ -40,7 +40,7 @@
 namespace WebCpp
 {
 
-class FcgiClient : public IError
+class FcgiClient : public IErrorable
 {
 public:
     enum class FcgiParam

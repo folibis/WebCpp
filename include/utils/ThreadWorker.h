@@ -28,13 +28,13 @@
 #include <pthread.h>
 #include <functional>
 #include <unistd.h>
-#include "IError.h"
+#include "IErrorable.h"
 
 
 namespace WebCpp
 {
 
-class ThreadWorker: public IError
+class ThreadWorker: public IErrorable
 {
 public:
     ThreadWorker();
