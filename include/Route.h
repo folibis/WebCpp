@@ -63,6 +63,7 @@ protected:
         enum class View
         {
             Default = 0,
+            Any,
             Alpha,
             Numeric,
             String,
@@ -107,6 +108,7 @@ protected:
         }
 
         bool IsMatch(const char *ch, size_t length, size_t& pos);
+        bool IsAny(char ch) const;
         bool IsString(char ch) const;
         bool IsAlpha(char ch) const;
         bool IsNumeric(char ch) const;

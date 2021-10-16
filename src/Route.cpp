@@ -232,6 +232,9 @@ bool Route::Token::IsMatch(const char *ch, size_t length, size_t &pos)
 
                 switch(view)
                 {
+                    case View::Any:
+                        fptr = &Route::Token::IsAny;
+                        break;
                     case View::Alpha:
                         fptr = &Route::Token::IsAlpha;
                         break;
@@ -290,6 +293,11 @@ bool Route::Token::IsMatch(const char *ch, size_t length, size_t &pos)
     return retval;
 }
 
+bool Route::Token::IsAny(char ch) const
+{
+    return true;
+}
+
 bool Route::Token::IsString(char ch) const
 {
     static ByteArray allowed = { '.', '_', '-', ' ' };
@@ -323,6 +331,7 @@ Route::Token::View Route::Token::String2View(const std::string &str)
     StringUtil::ToLower(s);
     switch(_(s.c_str()))
     {
+        case _("any"): return Route::Token::View::Any;
         case _("alpha"): return Route::Token::View::Alpha;
         case _("numeric"): return Route::Token::View::Numeric;
         case _("string"): return Route::Token::View::String;
