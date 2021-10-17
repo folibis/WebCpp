@@ -154,7 +154,10 @@ bool HttpServer::SendResponse(Response &response)
     if(response.IsShouldSend())
     {
         response.AddHeader(HttpHeader::HeaderType::Date, FileSystem::GetDateTime());
-        response.Send(m_server.get());
+        if(response.Send(m_server.get()) == false)
+        {
+            LOG("Error sending response: " + response.GetLastError(), LogWriter::LogType::Error);
+        }
     }
 
     return true;
@@ -361,7 +364,7 @@ void HttpServer::ProcessRequest(Request &request)
         response.SendNotFound();
     }
 
-    LOG(request.GetHeader().ToString() + (processed ? ", processed" : ", not processed"), LogWriter::LogType::Access);
+    LOG(request.GetUrl().GetPath() + (processed ? ", processed" : ", not processed"), LogWriter::LogType::Access);
 
     SendResponse(response);
 }
