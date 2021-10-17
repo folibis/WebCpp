@@ -1,10 +1,12 @@
-#include <fstream>
+#include <fcntl.h>
+#include <unistd.h>
 #include "common_webcpp.h"
 #include "defines_webcpp.h"
 #include "FileSystem.h"
 #include "Response.h"
 #include "IHttp.h"
 #include "Data.h"
+#include "Print.h"
 
 #define WRITE_BIFFER_SIZE 1024
 
@@ -161,17 +163,41 @@ bool Response::Send(ICommunicationServer *communication)
     if(!m_file.empty())
     {
         ByteArray buffer(WRITE_BIFFER_SIZE);
-        std::ifstream stream(m_file, std::ios::binary);
-        do
+        if(FileSystem::IsFileExist(m_file))
         {
-            stream.read(reinterpret_cast<char *>(buffer.data()), WRITE_BIFFER_SIZE);
-            if(communication->Write(m_connID, buffer, stream.gcount()) == false)
+            size_t size = FileSystem::GetFileSize(m_file);
+            int fd = open(m_file.c_str(), O_RDONLY);
+            if(fd >= 0)
             {
-                SetLastError("error sending file: " + communication->GetLastError());
+                size_t pos = 0;
+                while(pos < size)
+                {
+                    ssize_t bytes = read(fd, reinterpret_cast<char *>(buffer.data()), WRITE_BIFFER_SIZE);
+                    if(bytes == ERROR)
+                    {
+                        break;
+                    }
+                    pos += bytes;
+                    if(communication->Write(m_connID, buffer, bytes) == false)
+                    {
+                        SetLastError("error sending file: " + communication->GetLastError());
+                        std::cout << GetLastError() << std::endl;
+                        return false;
+                    }
+                }
+                close(fd);
+            }
+            else
+            {
+                SetLastError("file " + m_file + " failed to open");
                 return false;
             }
         }
-        while(stream);
+        else
+        {
+            SetLastError("file " + m_file + " not exists");
+            return false;
+        }
     }
     else if(m_body.size() > 0)
     {
