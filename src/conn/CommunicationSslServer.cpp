@@ -185,12 +185,12 @@ bool CommunicationSslServer::CloseConnection(int connID)
         SSL_free(ssl);
         m_sslClient[connID] = nullptr;
 
-        if(m_closeConnectionCallback != nullptr)
-        {
-            m_closeConnectionCallback(connID);
-        }
-
         return true;
+    }
+
+    if(m_closeConnectionCallback != nullptr)
+    {
+        m_closeConnectionCallback(connID);
     }
 
     return false;

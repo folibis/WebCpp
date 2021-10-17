@@ -14,7 +14,6 @@
 #include "CommunicationTcpServer.h"
 
 #define POLL_TIMEOUT 1000 // milliseconds
-
 #define READ_FAIL_COUNT 10
 
 
@@ -111,17 +110,13 @@ bool CommunicationTcpServer::Close(bool wait)
 
 bool CommunicationTcpServer::CloseConnection(int connID)
 {
-    if(ICommunicationServer::CloseConnection(connID))
+    bool retval = ICommunicationServer::CloseConnection(connID);
+    if(m_closeConnectionCallback != nullptr)
     {
-        if(m_closeConnectionCallback != nullptr)
-        {
-            m_closeConnectionCallback(connID);
-        }
-
-        return true;
+        m_closeConnectionCallback(connID);
     }
 
-    return false;
+    return retval;
 }
 
 void *CommunicationTcpServer::ReadThreadWrapper(void *ptr)

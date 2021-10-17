@@ -151,34 +151,32 @@ bool ICommunicationServer::Write(int connID, ByteArray &data, size_t size)
         }
 
         int fd = m_fds[connID].fd;
-        bool finished = false;
         if(fd != (-1))
         {
-            while(!finished)
+            size_t pos = 0;
+            while(pos < size)
             {
-                size_t s = (size - written) > WRITE_MAX_SIZE ? WRITE_MAX_SIZE : size;
-                ssize_t sent = send(fd, data.data() + written, s, MSG_NOSIGNAL);
+                ssize_t sent = send(fd, data.data() + pos, (size - pos), MSG_NOSIGNAL);
                 if(sent == ERROR)
                 {
-                    CloseConnection(connID);
-                    retval = false;
-                    finished = true;
+                    if(errno != EAGAIN)
+                    {
+                        CloseConnection(connID);
+                        break;
+                    }
                 }
                 else
                 {
-                    written += sent;
-                    if(written >= size)
-                    {
-                        finished = true;
-                    }
-                    retval = true;
+                    pos += sent;
                 }
             }
+
+            retval = (pos == size);
         }
     }
     catch(const std::exception &ex)
     {
-        Print() << "CommunicationServer::Write() exception: " << ex.what() << std::endl;
+        SetLastError(std::string("CommunicationServer::Write() exception: ") + ex.what());
         retval = false;
     }
 
