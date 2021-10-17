@@ -285,7 +285,7 @@ std::string HttpHeader::HeaderType2String(HttpHeader::HeaderType headerType)
 
 std::string HttpHeader::ToString() const
 {
-    return "";
+    return "Header (" + std::to_string(m_headers.size()) + " records, ver. " + m_version + ", size: " + std::to_string(m_headerSize) + ")";
 }
 
 const std::vector<HttpHeader::Header> &HttpHeader::GetHeaders() const
