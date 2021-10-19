@@ -22,6 +22,9 @@ add_definitions(-DPUBLIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/public")
 add_executable(Simple Simple.cpp)
 target_link_libraries(Simple PRIVATE webcpp)
 
+add_executable(Server Server.cpp)
+target_link_libraries(Server PRIVATE webcpp)
+
 add_executable(FileServer FileServer.cpp)
 target_link_libraries(FileServer PRIVATE webcpp)
 
