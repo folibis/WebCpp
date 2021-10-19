@@ -181,7 +181,6 @@ bool Response::Send(ICommunicationServer *communication)
                     if(communication->Write(m_connID, buffer, bytes) == false)
                     {
                         SetLastError("error sending file: " + communication->GetLastError());
-                        std::cout << GetLastError() << std::endl;
                         return false;
                     }
                 }

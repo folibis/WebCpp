@@ -172,6 +172,10 @@ bool ICommunicationServer::Write(int connID, ByteArray &data, size_t size)
             }
 
             retval = (pos == size);
+            if(retval == false)
+            {
+                SetLastError("send " + std::to_string(pos) + " of " + std::to_string(size) + " bytes");
+            }
         }
     }
     catch(const std::exception &ex)

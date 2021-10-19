@@ -221,7 +221,10 @@ void HttpServer::SendSignal()
 void HttpServer::WaitForSignal()
 {
     Lock lock(m_signalMutex);
-    pthread_cond_wait(& m_signalCondition, &m_signalMutex);
+    if(IsQueueEmpty() && m_requestThreadRunning)
+    {
+        pthread_cond_wait(& m_signalCondition, &m_signalMutex);
+    }
 }
 
 void HttpServer::PutToQueue(int connID, const std::string &remote)
@@ -232,6 +235,8 @@ void HttpServer::PutToQueue(int connID, const std::string &remote)
 
 void HttpServer::AppendData(int connID, const ByteArray &data)
 {
+    Lock lock(m_queueMutex);
+
     for(auto &req: m_requestQueue)
     {
         if(req.connID == connID)
@@ -250,14 +255,7 @@ bool HttpServer::IsQueueEmpty()
 {
     Lock lock(m_queueMutex);
     bool retval = false;
-    for(RequestData& requestData: m_requestQueue)
-    {
-        if(requestData.readyForDispatch == true)
-        {
-            return true;
-        }
-    }
-    return false;
+    return m_requestQueue.empty();
 }
 
 bool HttpServer::CheckDataFullness()
@@ -267,7 +265,7 @@ bool HttpServer::CheckDataFullness()
 
     for(RequestData& requestData: m_requestQueue)
     {
-        if(requestData.request != nullptr)
+        if(requestData.request != nullptr && requestData.data.size() > 0)
         {
             if(requestData.request->Parse(requestData.data))
             {
@@ -275,10 +273,14 @@ bool HttpServer::CheckDataFullness()
                 if(requestData.data.size() >= size)
                 {
                     requestData.readyForDispatch = true;
-                    requestData.data.erase(requestData.data.begin(), requestData.data.begin() + size);
+                    requestData.data.clear();
                     retval = true;
                     break;
                 }
+            }
+            else
+            {
+                SetLastError("parsing error: " + requestData.request->GetLastError());
             }
         }
     }

@@ -1,6 +1,6 @@
 #include <algorithm>
 #include "Request.h"
-
+#include "IHttp.h"
 
 using namespace WebCpp;
 
@@ -53,7 +53,7 @@ bool Request::ParseRequestLine(const ByteArray &data, size_t &pos)
     {
         auto ranges = StringUtil::Split(data, { ' ' }, 0, pos);
         if(ranges.size() == 3)
-        {
+        {                  
             m_method = Http::String2Method(std::string(data.begin() + ranges[0].start, data.begin() + ranges[0].end + 1));
             if(m_method == Http::Method::Undefined)
             {
