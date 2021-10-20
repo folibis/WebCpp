@@ -91,7 +91,7 @@ protected:
         int connID;
         Request request;
         ByteArray data;
-        ByteArray encodedData;
+        std::vector<ByteArray> encodedData;
         bool handshake;
         bool readyForDispatch;
     };

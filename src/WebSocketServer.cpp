@@ -336,10 +336,10 @@ bool WebSocketServer::CheckWsFrame(RequestData& requestData)
     bool retval = false;
 
     WebSocketHeader header;
-    size_t dataSize = requestData.data.size();
+    size_t dataSize;
     size_t headerSize = sizeof(WebSocketHeader);
 
-    if(dataSize >= headerSize)
+    while((dataSize = requestData.data.size()) >= headerSize)
     {
         std::memcpy(&header, requestData.data.data(), headerSize);
 
@@ -383,16 +383,19 @@ bool WebSocketServer::CheckWsFrame(RequestData& requestData)
                 }
             }
 
-            if(dataSize == (headerSize + sizeHeaderSize + maskHeaderSize + payloadSize))
+            size_t messageFullSize = headerSize + sizeHeaderSize + maskHeaderSize + payloadSize;
+            if(dataSize >= messageFullSize)
             {
-                requestData.encodedData = ByteArray(payloadSize);
+                ByteArray encodedData(payloadSize);
                 for(size_t i = 0;i < payloadSize;i ++)
                 {
-                    requestData.encodedData[i] = requestData.data[headerSize + sizeHeaderSize + maskHeaderSize + i] ^ mask.bytes[i % 4];
+                    encodedData[i] = requestData.data[headerSize + sizeHeaderSize + maskHeaderSize + i] ^ mask.bytes[i % 4];
                 }
 
-                requestData.data.clear();
+                requestData.encodedData.push_back(std::move(encodedData));
+                requestData.data.erase(requestData.data.begin(), requestData.data.begin() + messageFullSize);
                 requestData.data.shrink_to_fit();
+
                 if(header.flags1.FIN == 1)
                 {
                     requestData.readyForDispatch = true;
@@ -409,23 +412,31 @@ void WebSocketServer::ProcessRequests()
 {
     Lock lock(m_queueMutex);
 
-    for(auto &request: m_requestQueue)
+    for(auto &entry: m_requestQueue)
     {
-        if(request.readyForDispatch)
+        if(entry.readyForDispatch)
         {
-            if(request.handshake == false)
+            if(entry.handshake == false)
             {
-                if(ProcessRequest(request.request))
+                if(ProcessRequest(entry.request))
                 {
-                    request.data.clear();
-                    request.handshake = true;
-                    request.readyForDispatch = false;
+                    entry.data.clear();
+                    entry.handshake = true;
+                    entry.readyForDispatch = false;
                 }
             }
             else
             {
-                ProcessWsRequest(request.request, request.encodedData);
-                request.readyForDispatch = false;
+                if(entry.encodedData.size() > 0)
+                {
+                    for(const auto&data: entry.encodedData)
+                    {
+                        ProcessWsRequest(entry.request, data);
+                    }
+
+                    entry.readyForDispatch = false;
+                    entry.encodedData.clear();
+                }
             }
         }
     }
