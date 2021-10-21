@@ -40,6 +40,9 @@ target_link_libraries(PreRoute PRIVATE webcpp)
 if(WEBSOCKET)
     add_executable(WebSocket WebSocket.cpp)
     target_link_libraries(WebSocket PRIVATE webcpp)
+
+    add_executable(WebSocket2 WebSocket2.cpp)
+    target_link_libraries(WebSocket2 PRIVATE webcpp)
 endif()
 
 if(FASTCGI)

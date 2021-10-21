@@ -1,0 +1,68 @@
+<html>
+    <head>
+	<title>The WebSocket test page</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta http-equiv="expires" content="0">
+	<link rel="stylesheet" href="style.css" type="text/css" />
+    </head>
+    <body>
+	<h3 style="text-align: center;margin-top:50px;">This is a WebSocket test page of the WebCpp server</h3>
+    <div class="box">  	 
+  	  	<div class='center'><button id="button1">Send long string</button></div>
+  	  	<div class='center'><button id="button2">Send Unicode string</button></div>
+
+  	  	<div id="result_box"></div>
+    </div>
+    </body>
+    <script>
+
+    	var socket = new WebSocket("ws://127.0.0.1:8081/ws");
+    	socket.onopen = function () {
+			setResult("Connected to WebSocket server");
+	  	};
+	  		
+	  	socket.onmessage = function(event) {
+			setResult(event.data);
+	  	};
+	  		
+	  	socket.onclose = function(event) {
+			setResult("Closed");
+	  	};
+	  		
+	  	socket.onerror = function(event) {
+			setResult("Error: " + event);
+	  	};
+
+		var resultBox = document.getElementById("result_box");
+		function setResult(str)
+	  	{
+	  		resultBox.innerHTML = str;
+	  	}
+
+		var button1 = document.getElementById("button1");
+		var button2 = document.getElementById("button2");
+
+	  	button1.addEventListener('click', function ()
+	  	{	
+	  		var str = "";
+	  		for(var i = 0;i < 200;i ++)
+	  		{
+	  			var ind = (i % 10) + 48; 
+	  			str += String.fromCharCode(ind);
+	  		}
+	 
+	  		socket.send(str);
+	  			
+	  	});
+	  	
+	    button2.addEventListener('click', function ()
+	  	{	
+	  		var str = "您好 नमस्ते привет";
+	  		
+	  		socket.send(str);
+	  			
+	  	});
+	  		  	
+	</script>
+<html>
