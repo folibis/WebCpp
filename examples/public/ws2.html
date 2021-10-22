@@ -1,13 +1,13 @@
 <html>
     <head>
-	<title>The WebSocket test page</title>
+	<title>The WebSocket binary test page</title>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta content="utf-8" http-equiv="encoding">
     <meta http-equiv="expires" content="0">
 	<link rel="stylesheet" href="style.css" type="text/css" />
     </head>
     <body>
-	<h3 style="text-align: center;margin-top:50px;">This is a WebSocket test page of the WebCpp server</h3>
+	<h3 style="text-align: center;margin-top:50px;">This is a WebSocket binary data test</h3>
     <div class="box">  	 
   	  	<div class='center'><button id="button1">Send long string</button></div>
   	  	<div class='center'><button id="button2">Send Unicode string</button></div>
@@ -22,15 +22,31 @@
 			setResult("Connected to WebSocket server");
 	  	};
 	  		
-	  	socket.onmessage = function(event) {
-			setResult(event.data);
+	  	socket.onmessage = function(event) 
+	  	{
+			if (event.data instanceof Blob) 
+			{
+        		reader = new FileReader();
+
+        		reader.onload = () => {
+            		setResult(reader.result);
+        		};
+
+        		reader.readAsText(event.data);
+    		}	
+    		else
+    		{
+    			setResult(event.data);	
+    		}
 	  	};
 	  		
-	  	socket.onclose = function(event) {
+	  	socket.onclose = function(event) 
+	  	{
 			setResult("Closed");
 	  	};
 	  		
-	  	socket.onerror = function(event) {
+	  	socket.onerror = function(event) 
+	  	{
 			setResult("Error: " + event);
 	  	};
 
@@ -46,8 +62,12 @@
 	  	button1.addEventListener('click', function ()
 	  	{	
 	  		var str = "";
-	  		for(var i = 0;i < 200;i ++)
+	  		for(var i = 0;i < 500;i ++)
 	  		{
+	  			if(i % 30 == 0)
+	  			{
+	  				str += ' ';
+	  			}
 	  			var ind = (i % 10) + 48; 
 	  			str += String.fromCharCode(ind);
 	  		}
@@ -58,7 +78,7 @@
 	  	
 	    button2.addEventListener('click', function ()
 	  	{	
-	  		var str = "您好 नमस्ते привет";
+	  		var str = "您好 नमस्ते привет ጤና ይስጥል السلام علیکم নমস্কার მიესალმები xαίρε שלום ᐊᐃᓐᖓᐃ こんにちは 안녕하세요 ନମସ୍କାର";
 	  		
 	  		socket.send(str);
 	  			
