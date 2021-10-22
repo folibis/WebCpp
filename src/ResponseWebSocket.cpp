@@ -69,17 +69,21 @@ bool ResponseWebSocket::Send(ICommunicationServer *communication) const
         if(dataSize >= 126 && dataSize <= std::numeric_limits<uint16_t>::max())
         {
             WebSocketHeaderLength2 lengthHeader;
-            lengthHeader.length = dataSize;
-            auto const ptr = reinterpret_cast<char*>(&header);
-            ByteArray buffer(ptr, ptr + sizeof(header));
+            lengthHeader.length.value = dataSize;
+            ByteArray buffer(sizeof(lengthHeader));
+            buffer[0] = lengthHeader.length.bytes[1];
+            buffer[1] = lengthHeader.length.bytes[0];
             response.insert(response.end(), buffer.begin(), buffer.end());
         }
         else if(dataSize > std::numeric_limits<uint16_t>::max())
         {
             WebSocketHeaderLength3 lengthHeader;
-            lengthHeader.length = dataSize;
-            auto const ptr = reinterpret_cast<char*>(&header);
-            ByteArray buffer(ptr, ptr + sizeof(header));
+            lengthHeader.length.value = dataSize;
+            ByteArray buffer(sizeof(lengthHeader));
+            for(int i = 0;i < 8;i ++)
+            {
+                buffer[i] = lengthHeader.length.bytes[7 - i];
+            }
             response.insert(response.end(), buffer.begin(), buffer.end());
         }
 

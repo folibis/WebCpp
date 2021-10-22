@@ -50,11 +50,19 @@
     };
     struct WebSocketHeaderLength2
     {
-        uint16_t length;
+        union length
+        {
+            uint8_t bytes[2];
+            uint16_t value;
+        } length;
     };
     struct WebSocketHeaderLength3
     {
-        uint64_t length;
+        union length
+        {
+            uint8_t bytes[8];
+            uint64_t value;
+        } length;
     };
     struct WebSocketHeaderMask
     {

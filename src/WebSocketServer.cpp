@@ -352,8 +352,14 @@ bool WebSocketServer::CheckWsFrame(RequestData& requestData)
                 if(dataSize >= headerSize + sizeHeaderSize)
                 {
                     WebSocketHeaderLength2 length;
-                    std::memcpy(&length, requestData.data.data() + headerSize, sizeof(WebSocketHeaderLength2));
-                    payloadSize = length.length;
+                    uint8_t* ptr = requestData.data.data() + headerSize;
+                    length.length.bytes[0] = *(ptr + 1);
+                    length.length.bytes[1] = *ptr;
+                    payloadSize = length.length.value;
+                }
+                else
+                {
+                    return false;
                 }
                 break;
             case 127:
@@ -361,8 +367,16 @@ bool WebSocketServer::CheckWsFrame(RequestData& requestData)
                 if(dataSize >= headerSize + sizeHeaderSize)
                 {
                     WebSocketHeaderLength3 length;
-                    std::memcpy(&length, requestData.data.data() + headerSize, sizeof(WebSocketHeaderLength3));
-                    payloadSize = length.length;
+                    uint8_t* ptr = requestData.data.data() + headerSize;
+                    for(int i = 0;i < 8;i ++)
+                    {
+                        length.length.bytes[i] = *(ptr + 7 - i);
+                    }
+                    payloadSize = length.length.value;
+                }
+                else
+                {
+                    return false;
                 }
                 break;
             default:
@@ -374,25 +388,43 @@ bool WebSocketServer::CheckWsFrame(RequestData& requestData)
         {
             size_t maskHeaderSize = 0;
             WebSocketHeaderMask mask;
+            size_t headers_size = headerSize + sizeHeaderSize;
             if(header.flags2.Mask == 1)
             {
                 maskHeaderSize = sizeof(WebSocketHeaderMask);
-                if(dataSize >= headerSize + sizeHeaderSize + maskHeaderSize)
+                headers_size += maskHeaderSize;
+                if(dataSize >= headers_size)
                 {
                     std::memcpy(&mask, requestData.data.data() + headerSize + sizeHeaderSize, maskHeaderSize);
                 }
+                else
+                {
+                    return false;
+                }
             }
 
-            size_t messageFullSize = headerSize + sizeHeaderSize + maskHeaderSize + payloadSize;
+            size_t messageFullSize = headers_size + payloadSize;
             if(dataSize >= messageFullSize)
             {
-                ByteArray encodedData(payloadSize);
-                for(size_t i = 0;i < payloadSize;i ++)
+                // according to rfc6455#section-5.3 server must ignore unmasked data
+                // but anyway I decided to support such unstandard clients
+                if(header.flags2.Mask == 1)
                 {
-                    encodedData[i] = requestData.data[headerSize + sizeHeaderSize + maskHeaderSize + i] ^ mask.bytes[i % 4];
+                    ByteArray encodedData(payloadSize);
+                    for(size_t i = 0;i < payloadSize;i ++)
+                    {
+                        encodedData[i] = requestData.data[headers_size + i] ^ mask.bytes[i % 4];
+                    }
+                    requestData.encodedData.push_back(std::move(encodedData));
                 }
-
-                requestData.encodedData.push_back(std::move(encodedData));
+                else
+                {
+                    requestData.encodedData.push_back(
+                                ByteArray(
+                                    requestData.data.begin() + headers_size,
+                                    requestData.data.begin() + messageFullSize)
+                                );
+                }
                 requestData.data.erase(requestData.data.begin(), requestData.data.begin() + messageFullSize);
                 requestData.data.shrink_to_fit();
 
