@@ -48,6 +48,7 @@ public:
     void WriteText(const ByteArray &data);
     void WriteText(const std::string &data);
     void WriteBinary(const ByteArray &data);
+    void WriteBinary(const std::string &data);
 
     bool Send(ICommunicationServer *communication) const;
 

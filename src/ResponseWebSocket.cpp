@@ -34,13 +34,18 @@ void ResponseWebSocket::WriteBinary(const ByteArray &data)
     m_messageType = MessageType::Binary;
 }
 
+void ResponseWebSocket::WriteBinary(const std::string &data)
+{
+    WriteBinary(ByteArray(data.begin(), data.end()));
+}
+
 bool ResponseWebSocket::Send(ICommunicationServer *communication) const
 {
     try
     {
         ByteArray response;
 
-        WebSocketHeader header;
+        WebSocketHeader header = {};
         header.flags1.FIN = 1;
         header.flags1.opcode = static_cast<uint8_t>(m_messageType);
         header.flags2.Mask = 0;
@@ -68,7 +73,7 @@ bool ResponseWebSocket::Send(ICommunicationServer *communication) const
 
         if(dataSize >= 126 && dataSize <= std::numeric_limits<uint16_t>::max())
         {
-            WebSocketHeaderLength2 lengthHeader;
+            WebSocketHeaderLength2 lengthHeader = {};
             lengthHeader.length.value = dataSize;
             ByteArray buffer(sizeof(lengthHeader));
             buffer[0] = lengthHeader.length.bytes[1];
@@ -77,7 +82,7 @@ bool ResponseWebSocket::Send(ICommunicationServer *communication) const
         }
         else if(dataSize > std::numeric_limits<uint16_t>::max())
         {
-            WebSocketHeaderLength3 lengthHeader;
+            WebSocketHeaderLength3 lengthHeader = {};
             lengthHeader.length.value = dataSize;
             ByteArray buffer(sizeof(lengthHeader));
             for(int i = 0;i < 8;i ++)
