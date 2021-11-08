@@ -9,7 +9,7 @@
 #include <iostream>
 #include "common_webcpp.h"
 #include "Lock.h"
-#include "Print.h"
+#include "DebugPrint.h"
 #include "StringUtil.h"
 #include "CommunicationTcpServer.h"
 
@@ -232,7 +232,7 @@ void *CommunicationTcpServer::ReadThread()
     }
     catch(...)
     {
-        Print() << "critical unexpected error occured in the read thread" << std::endl;
+        DebugPrint() << "critical unexpected error occured in the read thread" << std::endl;
     }
 
     return nullptr;

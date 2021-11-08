@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <cstring>
 #include <stdexcept>
-#include "Print.h"
+#include "DebugPrint.h"
 #include "Lock.h"
 #include "ICommunicationServer.h"
 
@@ -39,7 +39,7 @@ bool ICommunicationServer::Init()
     catch(...)
     {
         CloseConnection(0);
-        Print() << "CommunicationServer::Init error: " << GetLastError() << std::endl;
+        DebugPrint() << "CommunicationServer::Init error: " << GetLastError() << std::endl;
         retval = false;
     }
 
@@ -81,7 +81,7 @@ bool ICommunicationServer::Connect(const std::string &address)
     catch(...)
     {
         CloseConnection(0);
-        Print() << "CommunicationServer::Connect error: " << GetLastError() << std::endl;
+        DebugPrint() << "CommunicationServer::Connect error: " << GetLastError() << std::endl;
         return false;
     }
 }
@@ -141,7 +141,6 @@ bool ICommunicationServer::Write(int connID, ByteArray &data, size_t size)
     bool retval = false;
     Lock lock(m_writeMutex);
 
-    size_t written = 0;
     try
     {
         if(connID < 0 || connID > MAX_CLIENTS)

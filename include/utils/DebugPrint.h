@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef WEBCPP_PRINT_H
-#define WEBCPP_PRINT_H
+#ifndef WEBCPP_DEBUG_PRINT_H
+#define WEBCPP_DEBUG_PRINT_H
 
 #include <iostream>
 
@@ -31,15 +31,15 @@
 namespace WebCpp
 {
 
-class Print
+class DebugPrint
 {
 public:
-    Print();
+    DebugPrint();
 
     template<typename T>
-    Print& operator<<(const T &t)
+    DebugPrint& operator<<(const T &t)
     {
-        if(Print::AllowPrint)
+        if(DebugPrint::AllowPrint)
         {
             std::cout << t;
         }
@@ -49,18 +49,18 @@ public:
 
     typedef std::basic_ostream<char, std::char_traits<char> > CoutType;
     typedef std::ostream& (*StandardEndLine)(CoutType&);
-    Print& operator<<(StandardEndLine manip)
+    DebugPrint& operator<<(StandardEndLine manip)
     {
-        if(Print::AllowPrint)
+        if(DebugPrint::AllowPrint)
         {
             manip(std::cout);
         }
         return *this;
     }
 
-    static Print& endl(Print& stream)
+    static DebugPrint& endl(DebugPrint& stream)
     {
-        if(Print::AllowPrint)
+        if(DebugPrint::AllowPrint)
         {
             std::cout << std::endl;
         }
@@ -72,4 +72,4 @@ public:
 
 }
 
-#endif // WEBCPP_PRINT_H
+#endif // WEBCPP_DEBUG_PRINT_H

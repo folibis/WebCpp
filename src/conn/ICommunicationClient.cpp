@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <cstring>
 #include <stdexcept>
-#include "Print.h"
+#include "DebugPrint.h"
 #include "ICommunicationClient.h"
 
 
@@ -37,7 +37,7 @@ bool ICommunicationClient::Init()
             close(m_socket);
             m_socket = (-1);
         }
-        Print() << "CommunicationClient::Init error: " << GetLastError() << std::endl;
+        DebugPrint() << "CommunicationClient::Init error: " << GetLastError() << std::endl;
     }
 
     return retval;

@@ -1,6 +1,6 @@
 #include "common_webcpp.h"
 #include "defines_webcpp.h"
-#include "Print.h"
+#include "DebugPrint.h"
 #include "FileSystem.h"
 #include "HttpConfig.h"
 
@@ -15,7 +15,7 @@ void HttpConfig::Init()
 {
     if(Load() == false)
     {
-        Print() << "error while loading settings" << std::endl;
+        DebugPrint() << "error while loading settings" << std::endl;
     }
 
     SetRootFolder();

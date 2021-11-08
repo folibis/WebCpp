@@ -6,9 +6,10 @@
 #include "Response.h"
 #include "IHttp.h"
 #include "Data.h"
-#include "Print.h"
+#include "DebugPrint.h"
 
 #define WRITE_BIFFER_SIZE 1024
+
 
 using namespace WebCpp;
 
@@ -384,7 +385,7 @@ bool Response::ParseStatusLine(const ByteArray &data, size_t &pos)
                 return false;
             }
 
-            for(int i = 2;i < ranges.size();i ++)
+            for(size_t i = 2;i < ranges.size();i ++)
             {
                 m_responsePhrase += (m_responsePhrase.empty() ? "" : " ") + std::string(data.begin() + ranges[i].start, data.begin() + ranges[i].end + 1);
             }
