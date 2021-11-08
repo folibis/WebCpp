@@ -100,8 +100,11 @@ protected:
     void OnDataReady(int connID, ByteArray &data);
     void OnClosed(int connID);
 
+    bool StartRequestThread();
+    bool StopRequestThread();
     static void* RequestThreadWrapper(void *ptr);
     void* RequestThread();
+
     void SendSignal();
     void WaitForSignal();
     void InitConnection(int connID, const std::string &remote);
@@ -114,8 +117,7 @@ protected:
     bool ProcessRequest(Request &request);
     bool CheckWsHeader(RequestData& requestData);
     bool CheckWsFrame(RequestData &requestData);
-    bool ProcessWsRequest(Request &request, const ByteArray &data);
-    //bool IsRouteExist(const std::string &path);
+    bool ProcessWsRequest(Request &request, const ByteArray &data);    
     RouteWebSocket* GetRoute(const std::string &path);
 
 private:

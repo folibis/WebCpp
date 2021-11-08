@@ -75,6 +75,8 @@ protected:
     void OnDataReady(int connID, ByteArray &data);
     void OnClosed(int connID);
 
+    bool StartRequestThread();
+    bool StopRequestThread();
     static void* RequestThreadWrapper(void *ptr);
     void* RequestThread();
 

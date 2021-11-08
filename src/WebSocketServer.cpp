@@ -80,12 +80,8 @@ bool WebSocketServer::Init(WebCpp::HttpConfig config)
     auto f3 = std::bind(&WebSocketServer::OnClosed, this, std::placeholders::_1);
     m_server->SetCloseConnectionCallback(f3);
 
-    m_requestThreadRunning = true;
-    if(pthread_create(&m_requestThread, nullptr, &WebSocketServer::RequestThreadWrapper, this) != 0)
+    if(StartRequestThread() == false)
     {
-        SetLastError("failed to run request thread");
-        LOG(GetLastError(), LogWriter::LogType::Error);
-        m_requestThreadRunning = false;
         return false;
     }
 
@@ -110,6 +106,7 @@ bool WebSocketServer::Run()
 bool WebSocketServer::Close(bool wait)
 {
     m_server->Close(wait);
+    StopRequestThread();
     return true;
 }
 
@@ -216,6 +213,31 @@ void WebSocketServer::OnClosed(int connID)
 {
     LOG(std::string("client disconnected: #") + std::to_string(connID), LogWriter::LogType::Access);
     RemoveFromQueue(connID);
+}
+
+bool WebSocketServer::StartRequestThread()
+{
+    m_requestThreadRunning = true;
+    if(pthread_create(&m_requestThread, nullptr, &WebSocketServer::RequestThreadWrapper, this) != 0)
+    {
+        SetLastError("failed to run request thread");
+        LOG(GetLastError(), LogWriter::LogType::Error);
+        m_requestThreadRunning = false;
+        return false;
+    }
+
+    return true;
+}
+
+bool WebSocketServer::StopRequestThread()
+{
+    if(m_requestThreadRunning)
+    {
+        m_requestThreadRunning = false;
+        SendSignal();
+        pthread_join(m_requestThread, nullptr);
+    }
+    return true;
 }
 
 void *WebSocketServer::RequestThreadWrapper(void *ptr)

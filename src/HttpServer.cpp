@@ -74,12 +74,8 @@ bool WebCpp::HttpServer::Init(const WebCpp::HttpConfig& config)
     auto f3 = std::bind(&HttpServer::OnClosed, this, std::placeholders::_1);
     m_server->SetCloseConnectionCallback(f3);
 
-    m_requestThreadRunning = true;
-    if(pthread_create(&m_requestThread, nullptr, &HttpServer::RequestThreadWrapper, this) != 0)
+    if(StartRequestThread() == false)
     {
-        SetLastError("failed to run request thread");
-        LOG(GetLastError(), LogWriter::LogType::Error);
-        m_requestThreadRunning = false;
         return false;
     }
 
@@ -112,6 +108,7 @@ bool HttpServer::Close(bool wait)
 {
     m_server->Close(wait);
     KeepAliveTimer::stop();
+    StopRequestThread();
     return true;
 }
 
@@ -185,6 +182,31 @@ void HttpServer::OnClosed(int connID)
     LOG(std::string("client disconnected: #") + std::to_string(connID), LogWriter::LogType::Access);
 }
 
+bool HttpServer::StartRequestThread()
+{
+    m_requestThreadRunning = true;
+    if(pthread_create(&m_requestThread, nullptr, &HttpServer::RequestThreadWrapper, this) != 0)
+    {
+        SetLastError("failed to run request thread");
+        LOG(GetLastError(), LogWriter::LogType::Error);
+        m_requestThreadRunning = false;
+        return false;
+    }
+
+    return true;
+}
+
+bool HttpServer::StopRequestThread()
+{
+    if(m_requestThreadRunning)
+    {
+        m_requestThreadRunning = false;
+        SendSignal();
+        pthread_join(m_requestThread, nullptr);
+    }
+    return true;
+}
+
 void *HttpServer::RequestThreadWrapper(void *ptr)
 {
     HttpServer *instance = static_cast<HttpServer *>(ptr);
@@ -201,12 +223,14 @@ void *HttpServer::RequestThread()
     while(m_requestThreadRunning)
     {
         WaitForSignal();
-        if(CheckDataFullness())
+        if(m_requestThreadRunning)
         {
-            auto request = GetNextRequest();
-            ProcessRequest(*request);
+            if(CheckDataFullness())
+            {
+                auto request = GetNextRequest();
+                ProcessRequest(*request);
+            }
         }
-
     }
 
     return nullptr;
@@ -254,7 +278,6 @@ void HttpServer::AppendData(int connID, const ByteArray &data)
 bool HttpServer::IsQueueEmpty()
 {
     Lock lock(m_queueMutex);
-    bool retval = false;
     return m_requestQueue.empty();
 }
 
