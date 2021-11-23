@@ -13,8 +13,6 @@
 #include "WebSocketServer.h"
 #include "IHttp.h"
 
-#define WEBSOCKET_KEY_TOKEN "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-
 
 using namespace WebCpp;
 
@@ -256,7 +254,7 @@ void *WebSocketServer::RequestThread()
     while(m_requestThreadRunning)
     {
         WaitForSignal();
-        if(CheckDataFullness())
+        if(CheckData())
         {
             ProcessRequests();
         }
@@ -312,7 +310,7 @@ void WebSocketServer::InitConnection(int connID, const std::string &remote)
     m_requestQueue.push_back(RequestData(connID, remote, m_config));
 }
 
-bool WebSocketServer::CheckDataFullness()
+bool WebSocketServer::CheckData()
 {
     bool retval = false;
     Lock lock(m_queueMutex);
@@ -327,7 +325,11 @@ bool WebSocketServer::CheckDataFullness()
             }
             else
             {
-                retval |= CheckWsFrame(requestData);
+                bool frameParsed;
+                while((frameParsed = CheckWsFrame(requestData)))
+                {
+                    retval |= frameParsed;
+                }
             }
         }
     }
@@ -345,7 +347,9 @@ bool WebSocketServer::CheckWsHeader(RequestData& requestData)
         if(requestData.data.size() >= size)
         {
             requestData.request.SetMethod(Http::Method::WEBSOCKET);
+            requestData.data.erase(requestData.data.begin(), requestData.data.begin() + size);
             requestData.readyForDispatch = true;
+            requestData.handshake = false;
             retval = true;
         }
     }
@@ -356,107 +360,17 @@ bool WebSocketServer::CheckWsHeader(RequestData& requestData)
 bool WebSocketServer::CheckWsFrame(RequestData& requestData)
 {
     bool retval = false;
+    Lock lock(m_requestMutex);
 
-    WebSocketHeader header;
-    size_t dataSize;
-    size_t headerSize = sizeof(WebSocketHeader);
-
-    while((dataSize = requestData.data.size()) >= headerSize)
+    RequestWebSocket request;
+    if(request.Parse(requestData.data))
     {
-        std::memcpy(&header, requestData.data.data(), headerSize);
-
-        uint64_t payloadSize = 0;
-        size_t sizeHeaderSize = 0;
-        switch(header.flags2.PayloadLen)
-        {
-            case 126:
-                sizeHeaderSize = sizeof(WebSocketHeaderLength2);
-                if(dataSize >= headerSize + sizeHeaderSize)
-                {
-                    WebSocketHeaderLength2 length;
-                    uint8_t* ptr = requestData.data.data() + headerSize;
-                    length.length.bytes[0] = *(ptr + 1);
-                    length.length.bytes[1] = *ptr;
-                    payloadSize = length.length.value;
-                }
-                else
-                {
-                    return false;
-                }
-                break;
-            case 127:
-                sizeHeaderSize = sizeof(WebSocketHeaderLength3);
-                if(dataSize >= headerSize + sizeHeaderSize)
-                {
-                    WebSocketHeaderLength3 length;
-                    uint8_t* ptr = requestData.data.data() + headerSize;
-                    for(int i = 0;i < 8;i ++)
-                    {
-                        length.length.bytes[i] = *(ptr + 7 - i);
-                    }
-                    payloadSize = length.length.value;
-                }
-                else
-                {
-                    return false;
-                }
-                break;
-            default:
-                payloadSize = header.flags2.PayloadLen;
-                break;
-        }
-
-        if(payloadSize > 0)
-        {
-            size_t maskHeaderSize = 0;
-            WebSocketHeaderMask mask;
-            size_t headers_size = headerSize + sizeHeaderSize;
-            if(header.flags2.Mask == 1)
-            {
-                maskHeaderSize = sizeof(WebSocketHeaderMask);
-                headers_size += maskHeaderSize;
-                if(dataSize >= headers_size)
-                {
-                    std::memcpy(&mask, requestData.data.data() + headerSize + sizeHeaderSize, maskHeaderSize);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            size_t messageFullSize = headers_size + payloadSize;
-            if(dataSize >= messageFullSize)
-            {
-                // according to rfc6455#section-5.3 server must ignore unmasked data
-                // but anyway I decided to support such unstandard clients
-                if(header.flags2.Mask == 1)
-                {
-                    ByteArray encodedData(payloadSize);
-                    for(size_t i = 0;i < payloadSize;i ++)
-                    {
-                        encodedData[i] = requestData.data[headers_size + i] ^ mask.bytes[i % 4];
-                    }
-                    requestData.encodedData.push_back(std::move(encodedData));
-                }
-                else
-                {
-                    requestData.encodedData.push_back(
-                                ByteArray(
-                                    requestData.data.begin() + headers_size,
-                                    requestData.data.begin() + messageFullSize)
-                                );
-                }
-                requestData.data.erase(requestData.data.begin(), requestData.data.begin() + messageFullSize);
-                requestData.data.shrink_to_fit();
-
-                if(header.flags1.FIN == 1)
-                {
-                    requestData.readyForDispatch = true;
-                    retval = true;
-                }
-            }
-        }
+        size_t size = request.GetSize();
+        requestData.data.erase(requestData.data.begin(), requestData.data.begin() + size);
+        requestData.requestList.push_back(std::move(request));
+        requestData.readyForDispatch = true;
+        requestData.handshake = true;
+        retval = true;
     }
 
     return retval;
@@ -474,22 +388,30 @@ void WebSocketServer::ProcessRequests()
             {
                 if(ProcessRequest(entry.request))
                 {
-                    entry.data.clear();
                     entry.handshake = true;
                     entry.readyForDispatch = false;
                 }
             }
             else
             {
-                if(entry.encodedData.size() > 0)
+                Lock lock(m_requestMutex);
+                if(entry.requestList.size() > 0)
                 {
-                    for(const auto&data: entry.encodedData)
+                    auto it = entry.requestList.begin();
+                    while (it != entry.requestList.end())
                     {
-                        ProcessWsRequest(entry.request, data);
+                        if(it->IsFinal())
+                        {
+                            ProcessWsRequest(entry.request, *it);
+                            it = entry.requestList.erase(it);
+                        }
+                        else
+                        {
+                            ++it;
+                        }
                     }
 
                     entry.readyForDispatch = false;
-                    entry.encodedData.clear();
                 }
             }
         }
@@ -552,6 +474,7 @@ bool WebSocketServer::ProcessRequest(Request &request)
             response.AddHeader(HttpHeader::HeaderType::Upgrade, "websocket");
             response.AddHeader(HttpHeader::HeaderType::Connection, "upgrade");
             response.AddHeader("Sec-WebSocket-Accept", key);
+            response.AddHeader("Sec-WebSocket-Version", WS_VERSION);
         }
         else
         {
@@ -562,28 +485,43 @@ bool WebSocketServer::ProcessRequest(Request &request)
     return response.Send(m_server.get());
 }
 
-bool WebSocketServer::ProcessWsRequest(Request &request, const ByteArray &data)
+bool WebSocketServer::ProcessWsRequest(Request &request, const RequestWebSocket &wsRequest)
 {
     ResponseWebSocket response(request.GetConnectionID());
     bool processed = false;
 
-    for(auto &route: m_routes)
+    auto type = wsRequest.GetType();
+    switch(type)
     {
-        if(route.IsMatch(request))
-        {
-            auto &f = route.GetFunctionMessage();
-            if(f != nullptr)
+        case MessageType::Text:
+        case MessageType::Binary:
+            for(auto &route: m_routes)
             {
-                try
+                if(route.IsMatch(request))
                 {
-                    if((processed = f(request, response, data)))
+                    auto &f = route.GetFunctionMessage();
+                    if(f != nullptr)
                     {
-                        break;
+                        try
+                        {
+                            if(f(request, response, wsRequest.GetData()) == true)
+                            {
+                                break;
+                            }
+                        }
+                        catch(...) { }
                     }
                 }
-                catch(...) { }
             }
-        }
+            break;
+        case MessageType::Ping:
+            response.WriteBinary(wsRequest.GetData());
+            response.SetMessageType(MessageType::Pong);
+            break;
+        case MessageType::Close:
+            break;
+        default:
+            break;
     }
 
     if(!response.IsEmpty())

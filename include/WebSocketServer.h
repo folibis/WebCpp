@@ -36,6 +36,7 @@
 #include "IRunnable.h"
 #include "Request.h"
 #include "ICommunicationServer.h"
+#include "RequestWebSocket.h"
 #include "ResponseWebSocket.h"
 
 
@@ -91,7 +92,7 @@ protected:
         int connID;
         Request request;
         ByteArray data;
-        std::vector<ByteArray> encodedData;
+        std::vector<RequestWebSocket> requestList;
         bool handshake;
         bool readyForDispatch;
     };
@@ -111,13 +112,17 @@ protected:
     void PutToQueue(int connID, ByteArray &data);
 
     bool IsQueueEmpty();
-    bool CheckDataFullness();
+    bool CheckData();
     void ProcessRequests();
     void RemoveFromQueue(int connID);
     bool ProcessRequest(Request &request);
     bool CheckWsHeader(RequestData& requestData);
     bool CheckWsFrame(RequestData &requestData);
+<<<<<<< HEAD
     bool ProcessWsRequest(Request &request, const ByteArray &data);    
+=======
+    bool ProcessWsRequest(Request &request, const RequestWebSocket &wsRequest);
+>>>>>>> 9a6aac3 (update ws server class)
     RouteWebSocket* GetRoute(const std::string &path);
 
 private:
@@ -126,13 +131,12 @@ private:
     pthread_t m_requestThread;
     pthread_mutex_t m_queueMutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_t m_signalMutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t m_requestMutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t m_signalCondition = PTHREAD_COND_INITIALIZER;
     bool m_requestThreadRunning = false;
     std::deque<RequestData> m_requestQueue;
     HttpConfig m_config;
-    //RouteHttp::RouteFunc m_webSocketRequest = nullptr;
     std::vector<RouteWebSocket> m_routes;
-    //std::function<bool(const Request& request, ResponseWebSocket &response, const ByteArray& data)> m_dataFunc;
 };
 
 }
