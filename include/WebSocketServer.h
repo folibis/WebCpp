@@ -118,11 +118,7 @@ protected:
     bool ProcessRequest(Request &request);
     bool CheckWsHeader(RequestData& requestData);
     bool CheckWsFrame(RequestData &requestData);
-<<<<<<< HEAD
-    bool ProcessWsRequest(Request &request, const ByteArray &data);    
-=======
     bool ProcessWsRequest(Request &request, const RequestWebSocket &wsRequest);
->>>>>>> 9a6aac3 (update ws server class)
     RouteWebSocket* GetRoute(const std::string &path);
 
 private:
