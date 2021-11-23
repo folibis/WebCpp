@@ -17,6 +17,7 @@ Currently supported:
 - Simple settings
 - Simple logging
 - WebSocket server (both ws and wss)
+- WebSocket client
 - FastCGI basic support (tested with php-fpm)
 
 Requirements:
