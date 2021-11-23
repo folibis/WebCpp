@@ -177,7 +177,9 @@ wsServer.WaitFor();
     }
 ```
 
-## Client ##
+## Clients ##
+
+#### HTTP ####
 
 ```cpp
 WebCpp::HttpClient httpCient;
@@ -200,4 +202,36 @@ if(httpCient.Init())
 }
 
 httpCient.WaitFor();
+```
+
+
+#### WebSocket ####
+
+```cpp
+WebCpp::WebSocketClient wsClient;
+wsClient.SetOnConnect([](bool connected)
+{
+    std::cout << "connected: " << (connected ? "true" : "false") << std::endl;
+});
+
+wsClient.SetOnClose([]()
+{
+    std::cout << "closed" << std::endl;
+});
+
+wsClient.SetOnError([](const std::string &error)
+{
+    std::cout << "error: " << error << std::endl;
+});
+    
+wsClient.SetOnMessage([](WebCpp::ResponseWebSocket &response)
+{
+        std::cout << "message received: " << StringUtil::ByteArray2String(response.GetData()) << std::endl;
+});
+
+wsClient.Init();
+wsClient.Open("ws://127.0.0.1");
+wsClient.SendText("Hello!");
+sleep(1);
+wsClient.Close();
 ```
