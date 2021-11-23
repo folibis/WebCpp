@@ -1,6 +1,7 @@
 #ifdef WITH_WEBSOCKET
 
 #include <limits>
+#include <cstring>
 #include "common_ws.h"
 #include "ResponseWebSocket.h"
 
@@ -14,7 +15,7 @@ ResponseWebSocket::ResponseWebSocket(int connID)
 
 bool ResponseWebSocket::IsEmpty() const
 {
-    return (m_messageType == MessageType::Undefined || m_data.empty());
+    return (m_messageType == MessageType::Undefined);
 }
 
 void ResponseWebSocket::WriteText(const ByteArray &data)
@@ -37,6 +38,21 @@ void ResponseWebSocket::WriteBinary(const ByteArray &data)
 void ResponseWebSocket::WriteBinary(const std::string &data)
 {
     WriteBinary(ByteArray(data.begin(), data.end()));
+}
+
+MessageType WebCpp::ResponseWebSocket::GetMessageType() const
+{
+    return m_messageType;
+}
+
+void ResponseWebSocket::SetMessageType(MessageType type)
+{
+    m_messageType = type;
+}
+
+const ByteArray &ResponseWebSocket::GetData() const
+{
+    return m_data;
 }
 
 bool ResponseWebSocket::Send(ICommunicationServer *communication) const
@@ -102,6 +118,44 @@ bool ResponseWebSocket::Send(ICommunicationServer *communication) const
     {
         return false;
     }
+}
+
+bool ResponseWebSocket::Parse(const ByteArray &data)
+{
+    WebSocketHeader header;
+    const uint8_t *ptr = data.data();
+    std::memcpy(&header, ptr, sizeof(header));
+    unsigned long long size = 0;
+    size_t headerSize = sizeof(header);
+    if(header.flags2.PayloadLen >= 126)
+    {
+        if(header.flags2.PayloadLen == 126)
+        {
+            WebSocketHeaderLength2 lengthHeader;
+            std::memcpy(&lengthHeader, ptr + sizeof(header), sizeof(lengthHeader));
+            headerSize += sizeof(lengthHeader);
+            size = lengthHeader.length.value;
+        }
+        else
+        {
+            WebSocketHeaderLength3 lengthHeader;
+            std::memcpy(&lengthHeader, ptr + sizeof(header), sizeof(lengthHeader));
+            headerSize += sizeof(lengthHeader);
+            size = lengthHeader.length.value;
+        }
+    }
+    else
+    {
+        size = header.flags2.PayloadLen;
+    }
+
+    if(data.size() >= size + headerSize)
+    {
+        m_data.insert(m_data.end(), data.begin() + headerSize, data.begin() + headerSize + size);
+        return true;
+    }
+
+    return false;
 }
 
 #endif

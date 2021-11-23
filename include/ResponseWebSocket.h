@@ -50,9 +50,13 @@ public:
     void WriteBinary(const ByteArray &data);
     void WriteBinary(const std::string &data);
 
+    MessageType GetMessageType() const;
+    void SetMessageType(MessageType type);
+
+    const ByteArray& GetData() const;
+
     bool Send(ICommunicationServer *communication) const;
-
-
+    bool Parse(const ByteArray &data);
 
 private:
     int m_connID = (-1);
