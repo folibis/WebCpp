@@ -418,3 +418,62 @@ bool StringUtil::Compare(const ByteArray &arr1, const ByteArray &arr2)
 
     return true;
 }
+
+/*
+   range   | count |  index   |   ascii   |
+   a - z   |   26  |  0 - 25  | 97 - 122  |
+   A - Z   |   26  |  26 - 51 | 65 - 90   |
+   spec*   |   32  |          |           |
+     spec1 |   15  |  52 - 66 | 33 - 47   |
+     spec2 |   7   |  67 - 73 | 58 - 64   |
+     spec3 |   6   |  74 - 79 | 91 - 96   |
+     spec4 |   4   |  80 - 83 | 123 - 126 |
+*/
+std::string StringUtil::GenerateRandomString(size_t length, bool uppercase, bool special)
+{
+    std::string retval = "";
+    size_t vars = 26; // lowercase
+    if(uppercase)
+    {
+        vars += 26; // uppercase
+    }
+    if(special)
+    {
+        vars += 32; // special chars
+    }
+    RandInit();
+
+    for(size_t i = 0;i < length;i ++)
+    {
+        size_t pos = GetRand(0, vars);
+        char ch;
+        if(pos >= 0 && pos <= 25)
+        {
+            ch = 'a' + pos;
+        }
+        else if(pos >= 26 && pos <= 51)
+        {
+            ch = pos - 26 + 'A';
+        }
+        else if(pos >= 52 && pos <= 66)
+        {
+            ch = pos - 52 + '!';
+        }
+        else if(pos >= 67 && pos <= 73)
+        {
+            ch = pos - 67 + ':';
+        }
+        else if(pos >= 74 && pos < 79)
+        {
+            ch = pos - 74 + '[';
+        }
+        else
+        {
+            ch = pos - 80 + '{';
+        }
+
+        retval += ch;
+    }
+
+    return retval;
+}
