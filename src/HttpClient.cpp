@@ -43,8 +43,7 @@ bool HttpClient::Close(bool wait)
         retval = false;
     }
 
-    m_state = State::Closed;
-    FireStateChanged();
+    SetState(State::Closed);
 
     return retval;
 }
@@ -77,8 +76,7 @@ bool HttpClient::Open(Request &request)
             return false;
         }
 
-        m_state = State::Connected;
-        FireStateChanged();
+        SetState(State::Connected);
     }
 
     if(m_connection->Run() == false)
@@ -95,8 +93,7 @@ bool HttpClient::Open(Request &request)
         return false;
     }
 
-    m_state = State::DataSent;
-    FireStateChanged();
+    SetState(State::DataSent);
 
     return true;
 }
@@ -155,8 +152,7 @@ void HttpClient::OnDataReady(const ByteArray &data)
     size_t all, downloaded;
     if(response.Parse(m_buffer, &all, &downloaded))
     {
-        m_state = State::DataReady;
-        FireStateChanged();
+        SetState(State::DataReady);
 
         if(m_responseCallback != nullptr)
         {
@@ -176,8 +172,7 @@ void HttpClient::OnClosed()
 {
     m_buffer.clear();
     m_connection->Close();
-    m_state = State::Closed;
-    FireStateChanged();
+    SetState(State::Closed);
 }
 
 bool HttpClient::InitConnection(const Url &url)
@@ -218,8 +213,7 @@ bool HttpClient::InitConnection(const Url &url)
         return false;
     }
 
-    m_state = State::Initialized;
-    FireStateChanged();
+    SetState(State::Initialized);
 
     auto f1 = std::bind(&HttpClient::OnDataReady, this, std::placeholders::_1);
     m_connection->SetDataReadyCallback(f1);
@@ -229,8 +223,10 @@ bool HttpClient::InitConnection(const Url &url)
     return true;
 }
 
-void HttpClient::FireStateChanged() const
+void HttpClient::SetState(State state)
 {
+    m_state = state;
+
     if(m_stateCallback != nullptr)
     {
         m_stateCallback(m_state);

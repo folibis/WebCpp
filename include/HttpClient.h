@@ -69,12 +69,12 @@ public:
     void SetStateCallback(const std::function<void(State)> &func);
     void SetProgressCallback(const std::function<void(size_t,size_t)> &func);
     State GetState() const;
-    void FireStateChanged() const;
 
 protected:
     void OnDataReady(const ByteArray &data);
     void OnClosed();
     bool InitConnection(const Url &url);
+    void SetState(State state);
 
 private:
     std::shared_ptr<ICommunicationClient> m_connection = nullptr;
