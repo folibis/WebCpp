@@ -43,6 +43,12 @@ if(WEBSOCKET)
 
     add_executable(WebSocket2 WebSocket2.cpp)
     target_link_libraries(WebSocket2 PRIVATE webcpp)
+
+    add_executable(WebSocketPingPong WebSocketPingPong.cpp)
+    target_link_libraries(WebSocketPingPong PRIVATE webcpp)
+
+    add_executable(WebSocketClient WebSocketClient.cpp)
+    target_link_libraries(WebSocketClient PRIVATE webcpp)
 endif()
 
 if(FASTCGI)

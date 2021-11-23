@@ -26,6 +26,8 @@
 
 #include <inttypes.h>
 
+#define WEBSOCKET_KEY_TOKEN "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+#define WS_VERSION "13"
 
 #pragma pack(push, 1)
 
@@ -76,6 +78,7 @@
         Undefined = 0,
         Text = 1,
         Binary = 2,
+        Close = 8,
         Ping = 9,
         Pong = 10,
     };

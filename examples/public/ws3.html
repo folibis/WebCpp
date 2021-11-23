@@ -1,0 +1,163 @@
+<html>
+    <head>
+	<title>The WebSocket test page</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <meta http-equiv="expires" content="0">
+	<link rel="stylesheet" href="style.css" type="text/css" />
+    </head>
+    <body>
+	<h3 style="text-align: center;margin-top:50px;">This is a WebSocket test page of the WebCpp server</h3>
+    <div class="box">  	 
+    	<p>The Ping Pong test</p>
+    	<p><i>The server should reespond with the same random string that client has sent</i></p>
+    	<p>Change the delay as you want</p>
+    	<p>Click 'Start' to begin the test, click again to stop</p>
+    	<br>
+  	  	<div><span>Delay: </span><input type="text" value="1000" id="delay_value" onkeypress='validate(event)'>&nbsp;ms.</div>
+  	  	<div class='center'><button id="button_start">Start</button></div>
+  	  	<div><input id="stoponerror" type="checkbox" name=""><label for="stoponerror"> Stop on error</label></div>
+  	  	<div>Sent:</div>
+  	  	<div id="sent_box"></div>
+  	  	<div>Received:</div>
+  	  	<div id="reseived_box"></div>
+  	  	<div>Status:</div>
+  	  	<div id="status_box"></div>
+    </div>
+    </body class="ws">
+    <script>
+    	var socket = new WebSocket("ws://127.0.0.1:8081/ws");
+    	socket.onopen = function () {
+			setStatus("Connected to WebSocket server");
+	  	};
+	  		
+	  	socket.onmessage = function(event) {
+			setResponse(event.data);
+	  	};
+	  		
+	  	socket.onclose = function(event) {
+			setStatus("Closed");
+			stopSend();
+	  	};
+	  		
+	  	socket.onerror = function(event) {
+			setStatus("Error: " + event);
+			stopSend();
+	  	};
+
+    	var statusBox = document.getElementById("status_box");
+		function setStatus(str)
+	  	{
+	  		statusBox.innerHTML = str;
+	  	}
+
+	  	var cnt = 1;
+	  	var sentBox = document.getElementById("sent_box");
+	  	function setSent(msg)
+	  	{
+	  		sentBox.innerHTML = msg;
+	  	}
+
+	  	var reseivedBox = document.getElementById("reseived_box");
+		var stopOnError = document.getElementById("stoponerror");
+
+	  	function setResponse(msg)
+	  	{
+	  		reseivedBox.innerHTML = msg;
+	  		var sentMsg = sentBox.innerHTML;
+	  		if(msg == sentMsg)
+	  		{
+	  			reseivedBox.classList.add("ok");
+	  		}
+	  		else
+	  		{
+	  			reseivedBox.classList.remove("ok");
+	  			if(stopOnError.checked)
+	  			{
+	  				stopSend();
+	  			}
+	  		}
+	  		cnt --;
+	  	}
+
+		var buttonStart = document.getElementById("button_start");
+	  	buttonStart.addEventListener('click', function ()
+	  	{	
+	  		if(buttonStart.textContent == "Start")
+	  		{  		
+	  			startSend();
+	  		}	
+	  		else
+	  		{
+	  			
+	  			stopSend();
+	  		}
+	  	});
+
+	  	var timer = null;
+
+	  	function send()
+	  	{
+	  		var str = generate();
+	  		setSent(str);
+	  		socket.send(str);
+	  		cnt ++;
+	  		if(cnt >= 10)
+	  		{
+	  			stopSend();
+	  			setStatus("Looks that server doesn't response");
+	  		}
+	  	}
+
+	  	function startSend()
+	  	{
+	  		var delay = parseInt(delay_value.value);
+	  		timer = setInterval(send, delay);
+	  		buttonStart.textContent = "Stop";
+	  	}
+
+	  	function stopSend()
+	  	{
+	  		buttonStart.textContent = "Start";
+	  		if(timer !== null)
+	  		{
+	  			clearInterval(timer);
+	  			timer = null;
+	  		}
+	  	}
+
+	  	function validate(evt) 
+	  	{
+  			var theEvent = evt || window.event;
+  			if (theEvent.type === 'paste') 
+  			{
+      			key = event.clipboardData.getData('text/plain');
+  			} 
+  			else 
+  			{
+      			var key = theEvent.keyCode || theEvent.which;
+      			key = String.fromCharCode(key);
+  			}
+  			var regex = /[0-9]|\./;
+  			if( !regex.test(key) ) 
+  			{
+    			theEvent.returnValue = false;
+    			if(theEvent.preventDefault) theEvent.preventDefault();
+  			}
+		}
+
+		function generate() 
+		{
+    		var result = '';
+    		var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    		var charactersLength = characters.length;
+    		var length = 10 + Math.floor(Math.random() * 30);
+    		for ( var i = 0; i < length; i++ ) 
+    		{
+      			result += characters.charAt(Math.floor(Math.random() * charactersLength));
+   			}
+   			return result;
+		}
+	  		  	
+	</script>
+<html>

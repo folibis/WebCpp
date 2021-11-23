@@ -48,6 +48,24 @@ form div {
   margin: 10px;
 }
 
+#sent_box {
+  background-color: #fef5e7;
+  border: 1px solid #999;
+  border-radius: 5px;
+  min-height: 20px;
+}
+
+#reseived_box {
+  background-color: #f5b7b1;
+  border: 1px solid #999;
+  border-radius: 5px;
+  min-height: 20px;
+}
+
+#reseived_box.ok {
+  background-color: #abebc6;
+}
+
 .center {
   text-align:center;
 }
