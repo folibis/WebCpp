@@ -85,9 +85,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    task.SetFunction([&wsClient, &counter](bool *running) -> void*
+    task.SetFunction([&wsClient, &counter](bool &running) -> void*
     {
-        while(*running)
+        while(running)
         {
             auto str = StringUtil::GenerateRandomString();
             WebCpp::DebugPrint() << "message send:     " << str << std::endl;

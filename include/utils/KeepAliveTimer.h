@@ -43,7 +43,7 @@ public:
     static void SetTimer(uint32_t delay, int connID);
 
 protected:
-    static void *task(bool *);
+    static void *task(bool &);
 
 private:
     struct Timer

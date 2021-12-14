@@ -38,7 +38,7 @@ class ThreadWorker: public IErrorable
 {
 public:
     ThreadWorker();
-    void SetFunction(const std::function<void *(bool *)> &func);
+    void SetFunction(const std::function<void *(bool &)> &func);
     void SetFinishFunction(const std::function<void(void *)> &func);
     void Start();
     void Stop();
@@ -52,7 +52,7 @@ protected:
 
 private:
     pthread_t m_thread;
-    std::function<void *(bool *)> m_func = nullptr;
+    std::function<void *(bool &)> m_func = nullptr;
     std::function<void(void *)> m_funcFinish = nullptr;
     bool m_isRunning = false;
 };

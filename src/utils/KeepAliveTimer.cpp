@@ -54,9 +54,9 @@ void KeepAliveTimer::SetTimer(uint32_t delay, int connID)
     m_timers.push_back(std::move(timer));
 }
 
-void *KeepAliveTimer::task(bool *running)
+void *KeepAliveTimer::task(bool &running)
 {
-    while(*running)
+    while(running)
     {
         if(!m_timers.empty())
         {

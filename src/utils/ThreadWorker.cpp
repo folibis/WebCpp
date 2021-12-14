@@ -7,7 +7,7 @@ ThreadWorker::ThreadWorker()
     m_isRunning = false;
 }
 
-void ThreadWorker::SetFunction(const std::function<void *(bool *running)> &func)
+void ThreadWorker::SetFunction(const std::function<void *(bool &)> &func)
 {
     m_func = func;
 }
@@ -59,7 +59,7 @@ void *ThreadWorker::StartThread(void *cls)
     ThreadWorker *instance = static_cast<ThreadWorker *>(cls);
     if(instance->m_func)
     {
-        res = instance->m_func(&(instance->m_isRunning));
+        res = instance->m_func(instance->m_isRunning);
     }
     instance->SetStop();
     if(instance->m_funcFinish)

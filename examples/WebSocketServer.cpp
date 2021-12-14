@@ -63,11 +63,11 @@ int main(int argc, char *argv[])
     httpServerPtr = &httpServer;
     wsServerPtr = &wsServer;
     WebCpp::ThreadWorker task;
-    task.SetFunction([&](bool *running) -> void*
+    task.SetFunction([&](bool &running) -> void*
     {
         WebCpp::ResponseWebSocket response(connID);
         StringUtil::RandInit();
-        while(*running)
+        while(running)
         {
             int num = StringUtil::GetRand(min, max);
             ByteArray data = StringUtil::String2ByteArray(std::to_string(num));
