@@ -140,6 +140,13 @@ bool WebSocketClient::SendBinary(const std::string &data)
     return SendBinary(StringUtil::String2ByteArray(data));
 }
 
+bool WebSocketClient::SendPing()
+{
+    RequestWebSocket request;
+    request.SetType(MessageType::Ping);
+    return request.Send(m_connection.get());
+}
+
 void WebSocketClient::SetOnConnect(const std::function<void (bool)> &callback)
 {
     m_connectCallback = callback;
