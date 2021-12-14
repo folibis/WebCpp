@@ -1,15 +1,13 @@
 #include <signal.h>
 #include "common_webcpp.h"
 #include "HttpServer.h"
-#include "WebSocketServer.h"
 #include "Request.h"
-#include <string>
 #include <iostream>
 #include "StringUtil.h"
 #include "Data.h"
-#include "ResponseWebSocket.h"
-#include "FcgiClient.h"
 #include "FileSystem.h"
+#include "example_common.h"
+#include "DebugPrint.h"
 
 
 static WebCpp::HttpServer *httpServerPtr = nullptr;
@@ -19,24 +17,53 @@ void handle_sigint(int)
     httpServerPtr->Close(false);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     signal(SIGINT, handle_sigint);
+
+    int port_http = DEFAULT_HTTP_PORT;
+    std::string http_protocol = DEFAULT_HTTP_PROTOCOL;
+
+    auto cmdline = CommandLine::Parse(argc, argv);
+
+    if(cmdline.Exists("-h"))
+    {
+        cmdline.PrintUsage(false, true);
+        exit(0);
+    }
+
+    if(cmdline.Exists("-v"))
+    {
+        WebCpp::DebugPrint::AllowPrint = true;
+    }
+
+    int v;
+    if(StringUtil::String2int(cmdline.Get("-ph"), v))
+    {
+        port_http = v;
+    }
+
+    cmdline.Set("-rh", http_protocol);
 
     WebCpp::HttpServer httpServer;
     httpServerPtr = &httpServer;
 
     WebCpp::HttpConfig config;
-    config.SetRoot(PUBLIC_DIR);
-    config.SetHttpProtocol("HTTP");
-    config.SetHttpServerPort(8080);
+    config.SetRoot(PUB);
+    config.SetHttpProtocol(http_protocol);
+    config.SetHttpServerPort(port_http);
+
+    WebCpp::DebugPrint() << config.ToString() << std::endl;
 
     if(httpServer.Init(config))
     {
+        WebCpp::DebugPrint() << "HTTP POST server" << std::endl;
         httpServer.OnGet("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;
             std::string file = request.GetArg("file");
+            WebCpp::DebugPrint() << "OnGet(), file: " << file << std::endl;
+
             if(!file.empty())
             {
                 retval = response.AddFile(file);
@@ -61,6 +88,7 @@ int main()
             auto &body = request.GetRequestBody();
             auto file1 = body.GetValue("file1");
             auto file2 = body.GetValue("file2");
+            WebCpp::DebugPrint() << "OnPost()" << std::endl;
 
             response.AddHeader("Content-Type","text/html;charset=utf-8");
             response.Write("<div>Hello, " + body.GetValue("name").GetDataString() + " " + body.GetValue("surname").GetDataString() + "</div>");
@@ -71,8 +99,13 @@ int main()
         });
 
         httpServer.Run();
+        WebCpp::DebugPrint() << "Starting... Press Ctrl-C to terminate" << std::endl;
         httpServer.WaitFor();
         return 0;
+    }
+    else
+    {
+        WebCpp::DebugPrint() << "HTTP server Init() failed: " << httpServer.GetLastError() << std::endl;
     }
 
     return 1;

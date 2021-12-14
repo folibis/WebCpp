@@ -111,9 +111,12 @@ bool CommunicationTcpServer::Close(bool wait)
 bool CommunicationTcpServer::CloseConnection(int connID)
 {
     bool retval = ICommunicationServer::CloseConnection(connID);
-    if(m_closeConnectionCallback != nullptr)
+    if(retval)
     {
-        m_closeConnectionCallback(connID);
+        if(m_closeConnectionCallback != nullptr)
+        {
+            m_closeConnectionCallback(connID);
+        }
     }
 
     return retval;

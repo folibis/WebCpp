@@ -3,6 +3,8 @@
 #include "FileSystem.h"
 #include "StringUtil.h"
 #include "HttpServer.h"
+#include "example_common.h"
+#include "DebugPrint.h"
 
 
 static WebCpp::HttpServer *httpServerPtr = nullptr;
@@ -12,22 +14,50 @@ void handle_sigint(int)
     httpServerPtr->Close(false);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     signal(SIGINT, handle_sigint);
+
+    int port_http = DEFAULT_HTTP_PORT;
+    std::string http_protocol = DEFAULT_HTTP_PROTOCOL;
+
+    auto cmdline = CommandLine::Parse(argc, argv);
+
+    if(cmdline.Exists("-h"))
+    {
+        cmdline.PrintUsage(false, true);
+        exit(0);
+    }
+
+    if(cmdline.Exists("-v"))
+    {
+        WebCpp::DebugPrint::AllowPrint = true;
+    }
+
+    int v;
+    if(StringUtil::String2int(cmdline.Get("-ph"), v))
+    {
+        port_http = v;
+    }
+
+    cmdline.Set("-rh", http_protocol);
 
     WebCpp::HttpServer httpServer;
     httpServerPtr = &httpServer;
 
     WebCpp::HttpConfig config;
-    config.SetRoot(PUBLIC_DIR);
-    config.SetHttpProtocol("HTTP");
-    config.SetHttpServerPort(8080);
+    config.SetRoot(PUB);
+    config.SetHttpProtocol(http_protocol);
+    config.SetHttpServerPort(port_http);
+
+    WebCpp::DebugPrint() << config.ToString() << std::endl;
 
     bool authenticated = false;
 
     if(httpServer.Init(config))
     {
+        WebCpp::DebugPrint() << "HTTP prerouting test server" << std::endl;
+
         httpServer.SetPreRouteFunc([&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             // skip the common files
@@ -96,7 +126,12 @@ int main()
         });
 
         httpServer.Run();
+        WebCpp::DebugPrint() << "Starting... Press Ctrl-C to terminate" << std::endl;
         httpServer.WaitFor();
+    }
+    else
+    {
+        WebCpp::DebugPrint() << "HTTP server Init() failed: " << httpServer.GetLastError() << std::endl;
     }
 
     return 1;

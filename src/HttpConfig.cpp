@@ -33,7 +33,13 @@ std::string HttpConfig::RootFolder() const
 
 std::string HttpConfig::ToString() const
 {
-    return "HttpConfig (name: " + m_ServerName + ", protocol: " + m_HttpProtocol + ", port: " + std::to_string(m_HttpServerPort) + ")";
+    return std::string("HttpConfig :") +
+            "\tname: " + m_ServerName + "\n" +
+            "\tHTTP protocol: " + m_HttpProtocol + "\n" +
+            "\tHTTP port: " + std::to_string(m_HttpServerPort) + "\n" +
+            "\tWebSocket protocol: " + m_WsProtocol + "\n" +
+            "\tWebSocket port: " + std::to_string(m_WsServerPort) + "\n" +
+            "\tRoot : " + m_rootFolder + "\n";
 }
 
 void HttpConfig::SetRootFolder()

@@ -33,7 +33,7 @@ bool ComminucationUnixClient::Init()
         if(m_socket == (-1))
         {
             SetLastError(std::string("Socket creating error: ") + strerror(errno), errno);
-            throw;
+            throw std::runtime_error(GetLastError());
         }
 
         m_initialized = true;
@@ -124,7 +124,7 @@ bool ComminucationUnixClient::Connect(const std::string &address)
         if(connect(m_socket, reinterpret_cast<struct sockaddr *>(&addr), len) == (-1))
         {
             SetLastError(std::string("Socket creating error: ") + strerror(errno), errno);
-            throw;
+            throw std::runtime_error(GetLastError());
         }
 
         m_connected = true;
@@ -154,7 +154,7 @@ bool ComminucationUnixClient::Write(const ByteArray &data)
         if(data.size() != sentBytes)
         {
             SetLastError(std::string("Send error: ") + strerror(errno), errno);
-            throw;
+            throw std::runtime_error(GetLastError());
         }
         retval = true;
     }

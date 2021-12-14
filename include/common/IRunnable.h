@@ -36,6 +36,10 @@ public:
     virtual bool Close(bool wait = true) = 0;
     virtual bool WaitFor() = 0;
 
+    virtual bool IsRunning() { return m_running; }
+
+protected:
+    bool m_running = false;
 };
 
 }

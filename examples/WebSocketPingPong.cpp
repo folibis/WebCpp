@@ -5,11 +5,13 @@
 #include "WebSocketServer.h"
 #include "Request.h"
 #include <string>
+#include "DebugPrint.h"
 #include "StringUtil.h"
 #include "ResponseWebSocket.h"
 #include "FcgiClient.h"
 #include "StringUtil.h"
 #include "ThreadWorker.h"
+#include "example_common.h"
 
 
 static WebCpp::HttpServer *httpServerPtr = nullptr;
@@ -23,42 +25,36 @@ void handle_sigint(int)
 
 int main(int argc, char *argv[])
 {
-    int port_http = 8080;
-    int port_ws = 8081;
-    int t;
-    std::string action;
+    int port_http = DEFAULT_HTTP_PORT;
+    int port_ws = DEFAULT_WS_PORT;
+    std::string http_protocol = DEFAULT_HTTP_PROTOCOL;
+    std::string ws_protocol = DEFAULT_WS_PROTOCOL;
 
-    for(int i = 1;i < argc;i ++)
+    auto cmdline = CommandLine::Parse(argc, argv);
+
+    if(cmdline.Exists("-h"))
     {
-        switch(_(argv[i]))
-        {
-            case _("-ph"):
-                action = "port_http";
-                break;
-            case _("-pw"):
-                action = "port_ws";
-                break;
-            default:
-                switch(_(action.c_str()))
-                {
-                    case _("port_http"):
-                        if(StringUtil::String2int(argv[i], t))
-                        {
-                            port_http = t;
-                        }
-                        break;
-                    case _("port_ws"):
-                        if(StringUtil::String2int(argv[i], t))
-                        {
-                            port_ws = t;
-                        }
-                        break;
-                }
-
-                action = "";
-                break;
-        }
+        cmdline.PrintUsage(true, true);
+        exit(0);
     }
+
+    if(cmdline.Exists("-v"))
+    {
+        WebCpp::DebugPrint::AllowPrint = true;
+    }
+
+    int v;
+    if(StringUtil::String2int(cmdline.Get("-ph"), v))
+    {
+        port_http = v;
+    }
+    if(StringUtil::String2int(cmdline.Get("-pw"), v))
+    {
+        port_ws = v;
+    }
+
+    cmdline.Set("-rh", http_protocol);
+    cmdline.Set("-rw", ws_protocol);
 
     signal(SIGINT, handle_sigint);
 
@@ -70,18 +66,23 @@ int main(int argc, char *argv[])
     wsServerPtr = &wsServer;
 
     WebCpp::HttpConfig config;
-    config.SetRoot(PUBLIC_DIR);
-    config.SetHttpProtocol("HTTP");
+    config.SetRoot(PUB);
+    config.SetHttpProtocol(http_protocol);
     config.SetHttpServerPort(port_http);
-    config.SetWsProtocol("WS");
+    config.SetWsProtocol(ws_protocol);
     config.SetWsServerPort(port_ws);
+
+    WebCpp::DebugPrint() << config.ToString() << std::endl;
 
     if(httpServer.Init(config))
     {
+        WebCpp::DebugPrint() << "WebSocket ping-pong test server" << std::endl;
+        WebCpp::DebugPrint() << "HTTP server Init(): ok " << std::endl;
         httpServer.OnGet("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             std::string file = request.GetArg("file");
             bool retval = false;
+            WebCpp::DebugPrint() << "OnGet(), file: " << file << std::endl;
 
             if(file.empty())
             {
@@ -101,9 +102,14 @@ int main(int argc, char *argv[])
 
         httpServer.Run();
     }
+    else
+    {
+        WebCpp::DebugPrint() << "HTTP server Init() failed: " << httpServer.GetLastError() << std::endl;
+    }
 
     if(wsServer.Init(config))
     {
+        WebCpp::DebugPrint() << "WS server Init(): ok " << std::endl;
         wsServer.OnMessage("/ws", [&](const WebCpp::Request &request, WebCpp::ResponseWebSocket &response, const ByteArray &data) -> bool
         {
             response.WriteText(data);
@@ -112,9 +118,17 @@ int main(int argc, char *argv[])
 
         wsServer.Run();
     }
+    else
+    {
+        WebCpp::DebugPrint() << "WS server Init() failed: " << wsServer.GetLastError() << std::endl;
+    }
 
-    httpServer.WaitFor();
-    wsServer.WaitFor();
+    if(httpServer.IsRunning() && wsServer.IsRunning())
+    {
+        WebCpp::DebugPrint() << "Starting... Press Ctrl-C to terminate" << std::endl;
+        httpServer.WaitFor();
+        wsServer.WaitFor();
+    }
 
     return 0;
 }

@@ -2,6 +2,8 @@
 #include "common_webcpp.h"
 #include "HttpServer.h"
 #include "FcgiClient.h"
+#include "example_common.h"
+#include "DebugPrint.h"
 
 #define FPM "/run/php/php7.4-fpm.sock"
 
@@ -13,17 +15,43 @@ void handle_sigint(int)
     httpServerPtr->Close(false);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     signal(SIGINT, handle_sigint);
+
+    int port_http = DEFAULT_HTTP_PORT;
+    std::string http_protocol = DEFAULT_HTTP_PROTOCOL;
+
+    auto cmdline = CommandLine::Parse(argc, argv);
+
+    if(cmdline.Exists("-h"))
+    {
+        cmdline.PrintUsage(false, true);
+        exit(0);
+    }
+
+    if(cmdline.Exists("-v"))
+    {
+        WebCpp::DebugPrint::AllowPrint = true;
+    }
+
+    int v;
+    if(StringUtil::String2int(cmdline.Get("-ph"), v))
+    {
+        port_http = v;
+    }
+
+    cmdline.Set("-rh", http_protocol);
 
     WebCpp::HttpServer httpServer;
     httpServerPtr = &httpServer;
 
     WebCpp::HttpConfig config;
-    config.SetRoot(PUBLIC_DIR);
-    config.SetHttpProtocol("HTTP");
-    config.SetHttpServerPort(8080);
+    config.SetRoot(PUB);
+    config.SetHttpProtocol(http_protocol);
+    config.SetHttpServerPort(port_http);
+
+    WebCpp::DebugPrint() << config.ToString() << std::endl;
 
     WebCpp::FcgiClient fcgi(FPM, config);
     if(fcgi.Init())
@@ -50,9 +78,12 @@ int main()
 
     if(httpServer.Init(config))
     {
+        WebCpp::DebugPrint() << "HTTP fcgi server" << std::endl;
+        WebCpp::DebugPrint() << "Note: php-fcgi server must be run" << std::endl;
         httpServer.OnGet("/*.php", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             bool retval = false;
+            WebCpp::DebugPrint() << "OnGet(*.php), sends fcgi request..." << std::endl;
 
             retval = fcgi.SendRequest(request);
             if(retval == false)
@@ -70,6 +101,7 @@ int main()
         {
             std::string file = request.GetArg("file");
             bool retval = false;
+            WebCpp::DebugPrint() << "OnGet(), file: " << file << std::endl;
 
             if(file.empty())
             {
@@ -88,8 +120,13 @@ int main()
         });
 
         httpServer.Run();
+        WebCpp::DebugPrint() << "Starting... Press Ctrl-C to terminate" << std::endl;
         httpServer.WaitFor();
         return 0;
+    }
+    else
+    {
+        WebCpp::DebugPrint() << "HTTP server Init() failed: " << httpServer.GetLastError() << std::endl;
     }
 
     return 1;

@@ -4,12 +4,12 @@
 #include "HttpServer.h"
 #include "WebSocketServer.h"
 #include "Request.h"
-#include <string>
 #include "StringUtil.h"
 #include "ResponseWebSocket.h"
-#include "FcgiClient.h"
 #include "StringUtil.h"
+#include "DebugPrint.h"
 #include "ThreadWorker.h"
+#include "example_common.h"
 
 
 static WebCpp::HttpServer *httpServerPtr = nullptr;
@@ -21,9 +21,40 @@ void handle_sigint(int)
     wsServerPtr->Close(false);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     signal(SIGINT, handle_sigint);
+
+    int port_http = DEFAULT_HTTP_PORT;
+    int port_ws = DEFAULT_WS_PORT;
+    std::string http_protocol = DEFAULT_HTTP_PROTOCOL;
+    std::string ws_protocol = DEFAULT_WS_PROTOCOL;
+
+    auto cmdline = CommandLine::Parse(argc, argv);
+
+    if(cmdline.Exists("-h"))
+    {
+        cmdline.PrintUsage(true, true);
+        exit(0);
+    }
+
+    if(cmdline.Exists("-v"))
+    {
+        WebCpp::DebugPrint::AllowPrint = true;
+    }
+
+    int v;
+    if(StringUtil::String2int(cmdline.Get("-ph"), v))
+    {
+        port_http = v;
+    }
+    if(StringUtil::String2int(cmdline.Get("-pw"), v))
+    {
+        port_ws = v;
+    }
+
+    cmdline.Set("-rh", http_protocol);
+    cmdline.Set("-rw", ws_protocol);
 
     int connID = (-1);
     int min = 1,max = 100;
@@ -49,18 +80,23 @@ int main()
     });
 
     WebCpp::HttpConfig config;
-    config.SetRoot(PUBLIC_DIR);
-    config.SetHttpProtocol("HTTP");
-    config.SetHttpServerPort(8080);
-    config.SetWsProtocol("WS");
-    config.SetWsServerPort(8081);
+    config.SetRoot(PUB);
+    config.SetHttpProtocol(http_protocol);
+    config.SetHttpServerPort(port_http);
+    config.SetWsProtocol(ws_protocol);
+    config.SetWsServerPort(port_ws);
+
+    WebCpp::DebugPrint() << config.ToString() << std::endl;
 
     if(httpServer.Init(config))
     {
+        WebCpp::DebugPrint() << "WebSocket test server" << std::endl;
+
         httpServer.OnGet("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
             std::string file = request.GetArg("file");
             bool retval = false;
+            WebCpp::DebugPrint() << "OnGet(), file: " << file << std::endl;
 
             if(file.empty())
             {
@@ -79,6 +115,10 @@ int main()
         });
 
         httpServer.Run();
+    }
+    else
+    {
+        WebCpp::DebugPrint() << "HTTP server Init() failed: " << httpServer.GetLastError() << std::endl;
     }
 
     if(wsServer.Init(config))
@@ -119,7 +159,12 @@ int main()
 
         wsServer.Run();
     }
+    else
+    {
+        WebCpp::DebugPrint() << "WS server Init() failed: " << wsServer.GetLastError() << std::endl;
+    }
 
+    WebCpp::DebugPrint() << "Starting... Press Ctrl-C to terminate" << std::endl;
     httpServer.WaitFor();
     wsServer.WaitFor();
 

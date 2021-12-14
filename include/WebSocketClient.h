@@ -41,7 +41,7 @@ public:
     bool SendText(const std::string &data);
     bool SendBinary(const ByteArray &data);
     bool SendBinary(const std::string &data);
-
+    bool SendPing();
 
     void SetOnConnect(const std::function<void(bool)> &callback);
     void SetOnClose(const std::function<void(void)> &callback);
