@@ -2,6 +2,8 @@
 #include "LogWriter.h"
 #include <iostream>
 #include <cstring>
+#include "DebugPrint.h"
+
 #define DEFAULT_FOLDER "/var/log/webcpp"
 
 
@@ -18,12 +20,14 @@ LogWriter& LogWriter::Instance()
 
 void LogWriter::Write(const std::string &text, LogWriter::LogType type)
 {
+    std::string s = "[" + WebCpp::FileSystem::GetDateTime() + "] " + text;
     auto &stream = m_streams[static_cast<int>(type)];
     if(stream.is_open())
     {
-        std::string s = "[" + WebCpp::FileSystem::GetDateTime() + "] " + text;
         stream << s << std::endl;
     }
+
+    WebCpp::DebugPrint() << text << std::endl;
 }
 
 LogWriter::LogWriter()
