@@ -43,7 +43,7 @@ bool CommunicationSslServer::Init()
         if(InitSSL() == false)
         {
             SetLastError(std::string("SSL init error"));
-            throw;
+            throw std::runtime_error(GetLastError());
         }
 
         m_initialized = ICommunicationServer::Init();
@@ -181,8 +181,11 @@ bool CommunicationSslServer::CloseConnection(int connID)
     if(ICommunicationServer::CloseConnection(connID))
     {
         SSL *ssl = m_sslClient[connID];
-        SSL_shutdown(ssl);
-        SSL_free(ssl);
+        if(ssl != nullptr)
+        {
+            SSL_shutdown(ssl);
+            SSL_free(ssl);
+        }
         m_sslClient[connID] = nullptr;
 
         return true;
@@ -210,19 +213,19 @@ bool CommunicationSslServer::InitSSL()
         if (!m_ctx)
         {
             SetLastError(ERR_error_string(ERR_get_error(), nullptr));
-            throw;
+            throw std::runtime_error(GetLastError());;
         }
 
         if (SSL_CTX_use_certificate_file(m_ctx, m_cert.c_str(), SSL_FILETYPE_PEM) <= 0)
         {
             SetLastError(ERR_error_string(ERR_get_error(), nullptr));
-            throw;
+            throw std::runtime_error(GetLastError());;
         }
 
         if (SSL_CTX_use_PrivateKey_file(m_ctx, m_key.c_str(), SSL_FILETYPE_PEM) <= 0 )
         {
             SetLastError(ERR_error_string(ERR_get_error(), nullptr));
-            throw;
+            throw std::runtime_error(GetLastError());;
         }
 
         retval = true;
@@ -341,6 +344,12 @@ void *CommunicationSslServer::ReadThread()
                             do
                             {
                                 SSL *ssl = m_sslClient[i];
+                                if(ssl == nullptr)
+                                {
+                                    readMore = false;
+                                    isError = true;
+                                    break;
+                                }
                                 retval = SSL_read(ssl, m_readBuffer, READ_BUFFER_SIZE);
                                 if (retval <= 0)
                                 {

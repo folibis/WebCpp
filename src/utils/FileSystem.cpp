@@ -48,13 +48,18 @@ bool FileSystem::ChangeDir(const std::string &path)
     return (chdir(path.c_str()) == 0);
 }
 
-std::string FileSystem::NormalizePath(const std::string &path)
+std::string FileSystem::NormalizePath(const std::string &path, bool file)
 {
     std::string tmp = path;
+    StringUtil::Replace(tmp, "~/", HomeFolder() + "/");
     StringUtil::Replace(tmp, "//", "/");
-    if(tmp.rfind(FileSystem::PathDelimiter()) != (tmp.length() - 1))
+
+    if(file == false)
     {
-        return tmp + FileSystem::PathDelimiter();
+        if(tmp.rfind(FileSystem::PathDelimiter()) != (tmp.length() - 1))
+        {
+            return tmp + FileSystem::PathDelimiter();
+        }
     }
 
     return tmp;
@@ -365,3 +370,9 @@ std::string FileSystem::TempFolder()
 
     return path;
 }
+
+std::string FileSystem::HomeFolder()
+{
+    return getenv("HOME");
+}
+

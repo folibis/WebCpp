@@ -40,7 +40,9 @@ bool WebCpp::HttpServer::Init(const WebCpp::HttpConfig& config)
             break;
 #ifdef WITH_OPENSSL
         case Http::Protocol::HTTPS:
-            m_server = std::make_shared<CommunicationSslServer>(m_config.GetSslSertificate(), m_config.GetSslKey());
+            m_server = std::make_shared<CommunicationSslServer>(
+                        FileSystem::NormalizePath(m_config.GetSslSertificate(), true),
+                        FileSystem::NormalizePath(m_config.GetSslKey(), true));
             break;
 #endif
         default:

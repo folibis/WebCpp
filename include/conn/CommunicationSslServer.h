@@ -61,7 +61,6 @@ protected:
     void* ReadThread();
 
 private:
-    struct pollfd m_fds[MAX_CLIENTS + 1];
     bool m_running = false;
     pthread_t m_readThread;
     pthread_mutex_t m_writeMutex = PTHREAD_MUTEX_INITIALIZER;

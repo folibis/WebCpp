@@ -6,13 +6,15 @@
 #include <algorithm>
 #include <iostream>
 #include "defines_webcpp.h"
-
+#include "FileSystem.h"
 
 #define PUB PUBLIC_DIR
 #define DEFAULT_HTTP_PORT 8080
 #define DEFAULT_WS_PORT 8081
 #define DEFAULT_HTTP_PROTOCOL "HTTP"
 #define DEFAULT_WS_PROTOCOL "WS"
+#define SSL_CERT "~/.ssh/server.cert"
+#define SSL_KEY "~/.ssh/server.key"
 
 
 class CommandLine
@@ -28,7 +30,7 @@ public:
         for(int i = 1;i < argc;i ++)
         {
             token = argv[i];
-            if(name.at(0) == '-')
+            if(token.at(0) == '-')
             {
                 if(!name.empty())
                 {
@@ -90,10 +92,10 @@ public:
         return (m_values.size() > 0);
     }
 
-    void PrintUsage(bool http = true, bool ws = false, const std::string &adds = "")
+    void PrintUsage(bool ws = true, bool http = false, const std::string &adds = "")
     {
-        std::cout << "Usage: " << m_exe << " [options]" << std::endl;
-        std::cout << "where:" << std::endl;
+        std::cout << "Usage: " << WebCpp::FileSystem::ExtractFileName(m_exe) << " [options]" << std::endl;
+        std::cout << "where [options] are:" << std::endl;
         if(http)
         {
             std::cout << "\t-ph: HTTP port" << std::endl;

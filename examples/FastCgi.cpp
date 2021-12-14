@@ -50,8 +50,8 @@ int main(int argc, char *argv[])
     config.SetRoot(PUB);
     config.SetHttpProtocol(http_protocol);
     config.SetHttpServerPort(port_http);
-
-    WebCpp::DebugPrint() << config.ToString() << std::endl;
+    config.SetSslSertificate(SSL_CERT);
+    config.SetSslKey(SSL_KEY);
 
     WebCpp::FcgiClient fcgi(FPM, config);
     if(fcgi.Init())

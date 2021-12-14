@@ -85,8 +85,8 @@ int main(int argc, char *argv[])
     config.SetHttpServerPort(port_http);
     config.SetWsProtocol(ws_protocol);
     config.SetWsServerPort(port_ws);
-
-    WebCpp::DebugPrint() << config.ToString() << std::endl;
+    config.SetSslSertificate(SSL_CERT);
+    config.SetSslKey(SSL_KEY);
 
     if(httpServer.Init(config))
     {

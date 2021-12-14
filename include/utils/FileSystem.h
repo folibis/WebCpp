@@ -38,7 +38,7 @@ public:
     static std::string GetFullPath(const std::string &path);
     static std::string GetApplicationFolder();
     static bool ChangeDir(const std::string &path);
-    static std::string NormalizePath(const std::string &path);
+    static std::string NormalizePath(const std::string &path, bool file = false);
     static std::string ExtractFileName(const std::string &path);
     static std::string ExtractFileExtension(const std::string &path);
     static bool IsFileExist(const std::string &path);
@@ -49,6 +49,7 @@ public:
     static std::string GetDateTime();
     static std::string GetFileModifiedTime(const std::string &file);
     static std::string TempFolder();
+    static std::string HomeFolder();
     static std::string Root();
     static bool IsDir(const std::string &path);
 

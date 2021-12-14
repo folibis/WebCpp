@@ -70,15 +70,15 @@ int main(int argc, char *argv[])
     WebCpp::HttpConfig config;
     config.SetHttpProtocol(http_protocol);
     config.SetHttpServerPort(port_http);
-
-    WebCpp::DebugPrint() << config.ToString() << std::endl;
+    config.SetSslSertificate(SSL_CERT);
+    config.SetSslKey(SSL_KEY);
 
     if(httpServer.Init(config))
     {
         WebCpp::DebugPrint() << "HTTP file server" << std::endl;
         httpServer.OnGet("/*", [&](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
-            std::string root = WebCpp::FileSystem::NormalizePath(getenv("HOME"));
+            std::string root = WebCpp::FileSystem::NormalizePath("~/");
             std::string url = request.GetUrl().GetPath();
             std::string local = (url == "/") ? root : (root + url);
             std::string parent = "";

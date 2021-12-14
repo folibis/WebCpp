@@ -33,7 +33,7 @@ std::string HttpConfig::RootFolder() const
 
 std::string HttpConfig::ToString() const
 {
-    return std::string("HttpConfig :") +
+    return std::string("HttpConfig :") + "\n" +
             "\tname: " + m_ServerName + "\n" +
             "\tHTTP protocol: " + m_HttpProtocol + "\n" +
             "\tHTTP port: " + std::to_string(m_HttpServerPort) + "\n" +
