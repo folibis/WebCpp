@@ -98,7 +98,8 @@ bool WebSocketServer::Run()
         return false;
     }
 
-    return true;
+    m_running = true;
+    return m_running;
 }
 
 bool WebSocketServer::Close(bool wait)
@@ -209,7 +210,7 @@ void WebSocketServer::OnDataReady(int connID, ByteArray &data)
 
 void WebSocketServer::OnClosed(int connID)
 {
-    LOG(std::string("client disconnected: #") + std::to_string(connID), LogWriter::LogType::Access);
+    LOG(std::string("websocket connection closed: #") + std::to_string(connID), LogWriter::LogType::Access);
     RemoveFromQueue(connID);
 }
 

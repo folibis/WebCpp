@@ -101,7 +101,8 @@ bool HttpServer::Run()
         return false;
     }
 
-    return true;
+    m_running = true;
+    return m_running;
 }
 
 bool HttpServer::Close(bool wait)
@@ -179,7 +180,7 @@ void HttpServer::OnDataReady(int connID, ByteArray &data)
 
 void HttpServer::OnClosed(int connID)
 {    
-    LOG(std::string("client disconnected: #") + std::to_string(connID), LogWriter::LogType::Access);
+    LOG(std::string("http connection closed: #") + std::to_string(connID), LogWriter::LogType::Access);
 }
 
 bool HttpServer::StartRequestThread()
