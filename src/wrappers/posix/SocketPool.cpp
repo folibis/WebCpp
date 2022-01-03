@@ -138,10 +138,9 @@ bool SocketPool::CloseSocket(size_t index)
                 }
                 m_sslClient[index] = nullptr;
             }
-
+#endif
             return true;
         }
-#endif
     }
 
     return false;
