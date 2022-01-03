@@ -1,10 +1,12 @@
 #include <signal.h>
 #include "common_webcpp.h"
 #include "FileSystem.h"
-#include "StringUtil.h"
 #include "HttpServer.h"
 #include "example_common.h"
 #include "DebugPrint.h"
+
+#define DEFAULT_USER "test"
+#define DEFAULT_PASSWORD "test"
 
 
 static WebCpp::HttpServer *httpServerPtr = nullptr;
@@ -90,7 +92,7 @@ int main(int argc, char *argv[])
         {
             auto user = request.GetRequestBody().GetValue("user").GetDataString();
             auto password = request.GetRequestBody().GetValue("password").GetDataString();
-            if(user == "test" && password == "test")
+            if(user == DEFAULT_USER && password == DEFAULT_PASSWORD)
             {
                 authenticated = true;
             }

@@ -6,11 +6,7 @@
 #include "Request.h"
 #include <string>
 #include "DebugPrint.h"
-#include "StringUtil.h"
 #include "ResponseWebSocket.h"
-#include "FcgiClient.h"
-#include "StringUtil.h"
-#include "ThreadWorker.h"
 #include "example_common.h"
 
 
@@ -58,8 +54,6 @@ int main(int argc, char *argv[])
 
     signal(SIGINT, handle_sigint);
 
-    int connID = (-1);
-    int min = 1,max = 100;
     WebCpp::HttpServer httpServer;
     WebCpp::WebSocketServer wsServer;
     httpServerPtr = &httpServer;

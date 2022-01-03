@@ -3,7 +3,6 @@
 #include "defines_webcpp.h"
 #include "HttpServer.h"
 #include "Request.h"
-#include "StringUtil.h"
 #include <iostream>
 #include "example_common.h"
 #include "DebugPrint.h"

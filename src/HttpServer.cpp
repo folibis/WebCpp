@@ -399,6 +399,7 @@ void HttpServer::ProcessRequest(Request &request)
 
 void HttpServer::ProcessKeepAlive(int connID)
 {
+
     m_server->CloseConnection(connID);
     RemoveFromQueue(connID);
 }
