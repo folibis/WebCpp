@@ -31,8 +31,6 @@
 #include <vector>
 #include "ICommunicationServer.h"
 
-#define READ_BUFFER_SIZE 1024
-
 
 namespace WebCpp
 {
@@ -40,25 +38,11 @@ namespace WebCpp
 class CommunicationTcpServer : public ICommunicationServer
 {
 public:
-    CommunicationTcpServer() noexcept;    
+    CommunicationTcpServer() noexcept;
     virtual ~CommunicationTcpServer();
 
     bool Init() override final;
     bool Connect(const std::string &address = "") override;
-    bool Run() override;
-    bool WaitFor() override;
-    bool Close(bool wait = true) override;
-    bool CloseConnection(int connID) override;
-
-protected:
-    static void* ReadThreadWrapper(void *ptr);
-    void* ReadThread();
-
-private:
-    bool m_running = false;
-    pthread_t m_readThread;
-
-    char m_readBuffer[READ_BUFFER_SIZE];
 };
 
 }

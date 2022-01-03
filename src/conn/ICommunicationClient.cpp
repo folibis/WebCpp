@@ -13,31 +13,35 @@
 
 using namespace WebCpp;
 
+ICommunicationClient::ICommunicationClient(SocketPool::Domain domain,
+                                           SocketPool::Type type,
+                                           SocketPool::Options options):
+    m_sockets(1, SocketPool::Service::Client, domain, type, options)
+{
+
+}
+
 bool ICommunicationClient::Init()
 {
-    bool retval = false;
+    bool retval;
+    ClearError();
 
     try
     {
-        ClearError();
-        m_socket = socket(AF_INET, SOCK_STREAM, 0);
-        if(m_socket == (-1))
+        if(m_sockets.Create(true) == false)
         {
-            SetLastError(std::string("Socket creating error: ") + strerror(errno), errno);
-            throw;
+            SetLastError(std::string("server socket create error: ") + m_sockets.GetLastError());
+            throw std::runtime_error(GetLastError());
         }
 
         retval = true;
     }
+
     catch(...)
     {
+        CloseConnection();
+        DebugPrint() << "ICommunicationClient::Init error: " << GetLastError() << std::endl;
         retval = false;
-        if(m_socket >= 0)
-        {
-            close(m_socket);
-            m_socket = (-1);
-        }
-        DebugPrint() << "CommunicationClient::Init error: " << GetLastError() << std::endl;
     }
 
     return retval;
@@ -45,41 +49,190 @@ bool ICommunicationClient::Init()
 
 bool ICommunicationClient::Connect(const std::string &address)
 {
-    struct hostent *hostinfo;
-    struct sockaddr_in dest_addr;
+    ClearError();
 
-    if(m_initialized == false)
+    try
     {
-        SetLastError("Connect failed: connection not initialized");
+        if(m_sockets.Connect(address) == false)
+        {
+            SetLastError(std::string("socket connect error: ") + m_sockets.GetLastError());
+            throw std::runtime_error(GetLastError());
+        }
+
+        return true;
+    }
+
+    catch(...)
+    {
+        CloseConnection();
+        DebugPrint() << "ICommunicationClient::Connect error: " << GetLastError() << std::endl;
+        return false;
+    }
+}
+
+bool ICommunicationClient::CloseConnection()
+{
+    return m_sockets.CloseSocket(0);
+}
+
+bool ICommunicationClient::Run()
+{
+    ClearError();
+
+    if(m_initialized)
+    {
+        if(pthread_create(&m_thread, nullptr, &ICommunicationClient::ReadThreadWrapper, this) != 0)
+        {
+            SetLastError(strerror(errno), errno);
+            m_running = false;
+        }
+    }
+
+    return m_running;
+}
+
+bool ICommunicationClient::Close(bool wait)
+{
+    if(m_initialized)
+    {
+        CloseConnection();
+    }
+
+    if(m_running)
+    {
+        m_running = false;
+        if(wait)
+        {
+            pthread_join(m_thread, nullptr);
+        }
+    }
+
+    return true;
+}
+
+bool ICommunicationClient::WaitFor()
+{
+    if(m_running)
+    {
+        pthread_join(m_thread, nullptr);
+    }
+    return true;
+}
+
+bool ICommunicationClient::Write(const ByteArray &data)
+{
+    ClearError();
+    bool retval = false;
+
+    if(m_initialized == false || m_connected == false)
+    {
+        SetLastError("not initialized ot not connected");
         return false;
     }
 
     try
     {
-        ParseAddress(address);
-
-        if((hostinfo = gethostbyname(m_address.c_str())) == nullptr)
+        size_t sentBytes = m_sockets.Write(data.data(), data.size());
+        if(data.size() != sentBytes)
         {
-            SetLastError(std::string("Error resolving the host name") + strerror(errno), errno);
-            throw;
+            SetLastError(std::string("Send error: ") + strerror(errno), errno);
+            throw GetLastError();
         }
-        dest_addr.sin_family = AF_INET;
-        dest_addr.sin_port = htons(m_port);
-        dest_addr.sin_addr = *((struct in_addr *)hostinfo->h_addr);
-        memset(&(dest_addr.sin_zero), 0, 8);
-
-        if(connect(m_socket, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr)) == -1)
-        {
-            SetLastError(std::string("Connect error") + strerror(errno), errno);
-            throw;
-        }
-
-        m_connected = true;
+        retval = true;
     }
-    catch (...)
+    catch(...)
     {
-        m_connected = false;
+        SetLastError("Write failed: " + GetLastError());
     }
 
-    return m_connected;
+    return retval;
+}
+
+ByteArray ICommunicationClient::Read(size_t length)
+{
+    ClearError();
+    bool readMore = true;
+    ByteArray data(BUFFER_SIZE);
+
+    try
+    {
+        size_t readSize = length > BUFFER_SIZE ? BUFFER_SIZE : length;
+        size_t all = 0;
+        size_t toRead;
+        do
+        {
+            toRead = length - all;
+            if(toRead > readSize)
+            {
+                toRead = readSize;
+            }
+            auto readBytes = m_sockets.Read(&m_readBuffer, toRead);
+            if(readBytes > 0)
+            {
+                data.insert(data.end(), m_readBuffer, m_readBuffer + readBytes);
+                all += readBytes;
+                if(all >= length)
+                {
+                    readMore = false;
+                }
+            }
+            else
+            {
+                readMore = false;
+            }
+        }
+        while(readMore);
+    }
+    catch(...)
+    {
+
+    }
+
+    return data;
+}
+
+void *ICommunicationClient::ReadThreadWrapper(void *ptr)
+{
+    ICommunicationClient *instance = static_cast<ICommunicationClient *>(ptr);
+    if(instance)
+    {
+        instance->ReadThread();
+    }
+
+    return nullptr;
+}
+
+void *ICommunicationClient::ReadThread()
+{
+    ClearError();
+
+    while(m_running)
+    {
+        try
+        {
+            if(m_sockets.Poll())
+            {
+                auto readBytes = m_sockets.Read(m_readBuffer, BUFFER_SIZE);
+                if(readBytes == ERROR)
+                {
+                    CloseConnection();
+                }
+                else if(readBytes > 0)
+                {
+                    if(m_dataReadyCallback != nullptr)
+                    {
+                        ByteArray data;
+                        data.insert(data.end(), m_readBuffer, m_readBuffer + readBytes);
+                        m_dataReadyCallback(data);
+                    }
+                }
+            }
+        }
+        catch(...)
+        {
+            SetLastError("read thread unexpected error");
+        }
+    }
+
+    return nullptr;
 }

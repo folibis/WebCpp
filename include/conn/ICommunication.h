@@ -27,10 +27,11 @@
 
 #include <string>
 #include <vector>
+#include "Socket.h"
 #include "IErrorable.h"
 #include "IRunnable.h"
 
-#define DEFAULT_ADDRESS "0.0.0.0"
+#define DEFAULT_ADDRESS "*"
 #define DEFAULT_PORT 80
 
 
@@ -40,25 +41,7 @@ namespace WebCpp
 class ICommunication : public IErrorable, public IRunnable
 {
 public:
-    enum class CommunicationProtocol
-    {
-        Undefined = 0,
-        TCP,
-        UnixDoamin,
-    };
-
-    enum class ComminicationType
-    {
-        Undefined = 0,
-        Server,
-        Client
-    };
-
     virtual bool Connect(const std::string &address = "") = 0;
-
-    CommunicationProtocol GetProtocol() const { return m_protocol; }
-    ComminicationType GetType() const { return m_type; }
-
     void SetPort(int port) { m_port = port; }
     int GetPort() const { return m_port; }
     void SetAddress(const std::string &address) { m_address = address; };
@@ -67,15 +50,10 @@ public:
     bool IsConnected() const { return m_connected; }
 
 protected:
-    int m_socket = (-1);
     bool m_initialized = false;
     bool m_connected = false;
-    CommunicationProtocol m_protocol = CommunicationProtocol::Undefined;
-    ComminicationType m_type = ComminicationType::Undefined;
     int m_port = DEFAULT_PORT;
     std::string m_address = DEFAULT_ADDRESS;
-
-    void ParseAddress(const std::string &address);
 };
 
 }

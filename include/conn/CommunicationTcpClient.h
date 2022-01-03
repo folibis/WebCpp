@@ -37,24 +37,7 @@ class CommunicationTcpClient: public ICommunicationClient
 {
 public:
     CommunicationTcpClient();
-
     bool Init() override;
-    bool Run() override;
-    bool Close(bool wait = true) override;
-    bool WaitFor() override;
-
-    bool Write(const ByteArray &data) override;
-    ByteArray Read(size_t length) override;
-
-protected:
-    static void* ReadThreadWrapper(void *ptr);
-    void* ReadThread();
-
-private:
-    pollfd m_poll;
-    bool m_running = false;
-    pthread_t m_thread;
-    char m_readBuffer[BUFFER_SIZE];
 };
 
 }

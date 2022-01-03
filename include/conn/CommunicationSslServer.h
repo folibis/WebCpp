@@ -49,27 +49,6 @@ public:
 
     bool Init() override final;
     bool Connect(const std::string &address = "") override final;
-    bool Close(bool wait = false) override final;
-    bool CloseConnection(int connID) override;
-    bool Write(int connID, ByteArray &data, size_t size) override;
-    bool Run() override;
-    bool WaitFor() override;
-
-protected:
-    bool InitSSL();
-    static void* ReadThreadWrapper(void *ptr);
-    void* ReadThread();
-
-private:
-    bool m_running = false;
-    pthread_t m_readThread;
-    pthread_mutex_t m_writeMutex = PTHREAD_MUTEX_INITIALIZER;
-
-    SSL_CTX *m_ctx = nullptr;
-    SSL *m_sslClient[MAX_CLIENTS + 1] = {};
-    const std::string m_cert;
-    const std::string m_key;
-    char m_readBuffer[READ_BUFFER_SIZE];
 };
 
 }

@@ -26,14 +26,14 @@
 #define WEBCPP_ICOMMUNICATION_SERVER_H
 
 #include <functional>
-#include <poll.h>
 #include "ICommunication.h"
 #include "functional"
 #include "common_webcpp.h"
+#include "SocketPool.h"
 
 #define MAX_CLIENTS 10
 #define QUEUE_SIZE 10
-#define WRITE_MAX_SIZE 1500
+#define READ_BUFFER_SIZE 1024
 
 
 namespace WebCpp
@@ -42,11 +42,17 @@ namespace WebCpp
 class ICommunicationServer : public ICommunication
 {
 public:
+    ICommunicationServer(SocketPool::Domain domain,
+                         SocketPool::Type type,
+                         SocketPool::Options options);
     virtual bool CloseConnection(int connID);
     virtual bool Write(int connID, ByteArray &data);
     virtual bool Write(int connID, ByteArray &data, size_t size);
     virtual bool Init() override;
     virtual bool Connect(const std::string &address = "") override;
+    bool Close(bool wait = true) override;
+    bool Run() override;
+    bool WaitFor() override;
 
     virtual bool SetNewConnectionCallback(const std::function<void(int, const std::string&)> &callback) { m_newConnectionCallback = callback; return true; };
     virtual bool SetDataReadyCallback(const std::function<void(int, ByteArray &data)> &callback) { m_dataReadyCallback = callback; return true; };
@@ -54,9 +60,13 @@ public:
 
 protected:
     virtual void CloseConnections();
-
-    struct pollfd m_fds[MAX_CLIENTS + 1];
+    SocketPool m_sockets;
     pthread_mutex_t m_writeMutex = PTHREAD_MUTEX_INITIALIZER;
+
+    static void* ReadThreadWrapper(void *ptr);
+    void* ReadThread();
+    pthread_t m_readThread;
+    char m_readBuffer[READ_BUFFER_SIZE];
 
     std::function<void(int, const std::string&)> m_newConnectionCallback = nullptr;
     std::function<void(int, ByteArray &data)> m_dataReadyCallback = nullptr;

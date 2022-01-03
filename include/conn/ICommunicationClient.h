@@ -28,6 +28,10 @@
 #include "ICommunication.h"
 #include "functional"
 #include "common_webcpp.h"
+#include "SocketPool.h"
+
+
+#define BUFFER_SIZE 1024
 
 
 namespace WebCpp
@@ -36,16 +40,27 @@ namespace WebCpp
 class ICommunicationClient : public ICommunication
 {
 public:
-    virtual bool Init() override;
-    virtual bool Connect(const std::string &address = "") override;
-    virtual bool Write(const ByteArray &data) = 0;
-    virtual ByteArray Read(size_t length) = 0;
+    ICommunicationClient(SocketPool::Domain domain, SocketPool::Type type, SocketPool::Options options);
+    bool Init() override;
+    bool Run() override;
+    bool Close(bool wait = true) override;
+    bool WaitFor() override;
+    bool Connect(const std::string &address = "") override;
+    virtual bool Write(const ByteArray &data);
+    virtual ByteArray Read(size_t length);
     virtual bool SetDataReadyCallback(const std::function<void(const ByteArray &data)> &callback) { m_dataReadyCallback = callback; return true; };
     virtual bool SetCloseConnectionCallback(const std::function<void()> &callback) { m_closeConnectionCallback = callback; return true; };
 
 protected:
+    SocketPool m_sockets;
     std::function<void(const ByteArray &data)> m_dataReadyCallback = nullptr;
     std::function<void()> m_closeConnectionCallback = nullptr;
+    bool CloseConnection();
+
+    pthread_t m_thread;
+    static void* ReadThreadWrapper(void *ptr);
+    void* ReadThread();
+    char m_readBuffer[BUFFER_SIZE];
 };
 
 }
