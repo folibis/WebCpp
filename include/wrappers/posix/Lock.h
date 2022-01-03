@@ -39,11 +39,11 @@ public:
     Lock & operator=(const Lock &other) = delete;
     Lock(Lock &&other) = delete;
     Lock & operator=(Lock &&other) = delete;
-
     bool IsSuccessful() { return m_successful; }
-
+    void Unlock();
 private:
     pthread_mutex_t &m_mutex;
+    bool m_locked = true;
     bool m_successful = true;
 };
 
