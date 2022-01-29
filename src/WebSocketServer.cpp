@@ -1,7 +1,6 @@
 #ifdef WITH_WEBSOCKET
 
 #include <cstring>
-#include <iostream>
 #include "CommunicationTcpServer.h"
 #include "CommunicationSslServer.h"
 #include "LogWriter.h"

@@ -1,8 +1,7 @@
-#include <fcntl.h>
-#include <unistd.h>
 #include "common_webcpp.h"
 #include "defines_webcpp.h"
 #include "FileSystem.h"
+#include "File.h"
 #include "Response.h"
 #include "IHttp.h"
 #include "Data.h"
@@ -167,13 +166,13 @@ bool Response::Send(ICommunicationServer *communication)
         if(FileSystem::IsFileExist(m_file))
         {
             size_t size = FileSystem::GetFileSize(m_file);
-            int fd = open(m_file.c_str(), O_RDONLY);
-            if(fd >= 0)
+            File file(m_file, File::Mode::Read);
+            if(file.IsOpened())
             {
                 size_t pos = 0;
                 while(pos < size)
                 {
-                    ssize_t bytes = read(fd, reinterpret_cast<char *>(buffer.data()), WRITE_BIFFER_SIZE);
+                    ssize_t bytes = file.Read(reinterpret_cast<char *>(buffer.data()), WRITE_BIFFER_SIZE);
                     if(bytes == ERROR)
                     {
                         break;
@@ -185,7 +184,6 @@ bool Response::Send(ICommunicationServer *communication)
                         return false;
                     }
                 }
-                close(fd);
             }
             else
             {

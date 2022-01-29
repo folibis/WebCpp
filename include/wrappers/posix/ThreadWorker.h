@@ -27,7 +27,6 @@
 
 #include <pthread.h>
 #include <functional>
-#include <unistd.h>
 #include "IErrorable.h"
 
 

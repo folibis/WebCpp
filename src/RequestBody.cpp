@@ -1,8 +1,9 @@
 #include "common_webcpp.h"
-#include <fstream>
+//#include <fstream>
 #include "StringUtil.h"
 #include "RequestBody.h"
 #include "FileSystem.h"
+#include "File.h"
 
 #define WRITE_BIFFER_SIZE 1024
 
@@ -124,9 +125,9 @@ bool RequestBody::ParseFormData(const ByteArray &data, size_t offset, const Byte
 
                         if(useTempFile && !filename.empty())
                         {
-                            std::ofstream f(m_tempFolder + "/" + filename, std::ofstream::binary | std::ofstream::trunc);
-                            f.write(reinterpret_cast<const char*>(data.data() + chunkHeaderPos + 4), range.end - 1 - (chunkHeaderPos + 4));
-                            f.close();
+                            File file(m_tempFolder + "/" + filename, File::Mode::Write);
+                            file.Write(reinterpret_cast<const char*>(data.data() + chunkHeaderPos + 4), range.end - 1 - (chunkHeaderPos + 4));
+
                             m_values.push_back(ContentValue {
                                                    name,
                                                    contentType,
@@ -324,16 +325,17 @@ ByteArray RequestBody::GetDataMultipart()
             if(FileSystem::IsFileExist(entity.fileName))
             {
                 ByteArray buffer(WRITE_BIFFER_SIZE);
-                std::ifstream stream(entity.fileName, std::ios::binary);
+                File file(entity.fileName, File::Mode::Read);
+                size_t bites = 0;
                 do
                 {
-                    stream.read(reinterpret_cast<char*>(buffer.data()), WRITE_BIFFER_SIZE);
-                    if(stream)
+                    bites = file.Read(reinterpret_cast<char*>(buffer.data()), WRITE_BIFFER_SIZE);
+                    if(bites > 0)
                     {
-                        data.insert(data.end(), buffer.begin(), buffer.begin() + stream.gcount());
+                        data.insert(data.end(), buffer.begin(), buffer.begin() + bites);
                     }
                 }
-                while(stream);
+                while(bites > 0);
             }
             else
             {

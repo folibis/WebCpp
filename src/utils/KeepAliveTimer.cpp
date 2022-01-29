@@ -1,5 +1,6 @@
 #include "Lock.h"
 #include "KeepAliveTimer.h"
+#include "Platform.h"
 
 #define TICK 100 // msec.
 
@@ -77,7 +78,7 @@ void *KeepAliveTimer::task(bool &running)
             }
         }
 
-        usleep(TICK * 1000);
+        WebCpp::SleepMs(TICK);
     }
 
     return nullptr;

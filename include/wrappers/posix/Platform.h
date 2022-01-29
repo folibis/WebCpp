@@ -22,31 +22,17 @@
 *
 */
 
-#ifndef WEBCPP_ROUTEHTTP_H
-#define WEBCPP_ROUTEHTTP_H
+#ifndef WEBCPP_PLATFORM_H
+#define WEBCPP_PLATFORM_H
 
-#include "Route.h"
-#include "Request.h"
-#include "Response.h"
-
+#include <inttypes.h>
 
 namespace WebCpp
 {
 
-class RouteHttp: public Route
-{
-public:
-    using RouteFunc = std::function<bool(const Request&request, Response &response)>;
-
-    RouteHttp(const std::string &path, Http::Method method);
-
-    bool SetFunction(const RouteFunc& f);
-    const RouteFunc& GetFunction() const;
-
-private:
-    RouteFunc m_func;
-};
+void Sleep(uint32_t delay);
+void SleepMs(uint32_t delay);
 
 }
 
-#endif // WEBCPP_ROUTEHTTP_H
+#endif // WEBCPP_PLATFORM_H

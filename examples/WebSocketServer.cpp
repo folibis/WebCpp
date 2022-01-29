@@ -10,6 +10,7 @@
 #include "DebugPrint.h"
 #include "ThreadWorker.h"
 #include "example_common.h"
+#include "Platform.h"
 
 
 static WebCpp::HttpServer *httpServerPtr = nullptr;
@@ -73,7 +74,7 @@ int main(int argc, char *argv[])
             ByteArray data = StringUtil::String2ByteArray(std::to_string(num));
             response.WriteText(data);
             wsServer.SendResponse(response);
-            sleep(1);
+            WebCpp::Sleep(1);
         }
 
         return nullptr;
