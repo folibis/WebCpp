@@ -25,7 +25,7 @@
 #ifndef WEBCPP_LOCK_H
 #define WEBCPP_LOCK_H
 
-#include <pthread.h>
+#include "Mutex.h"
 
 namespace WebCpp
 {
@@ -33,7 +33,7 @@ namespace WebCpp
 class Lock
 {
 public:
-    explicit Lock(pthread_mutex_t &mutex, bool tryLock = false);
+    explicit Lock(Mutex &mutex);
     ~Lock();
     Lock(const Lock &other) = delete;
     Lock & operator=(const Lock &other) = delete;
@@ -42,7 +42,7 @@ public:
     bool IsSuccessful() { return m_successful; }
     void Unlock();
 private:
-    pthread_mutex_t &m_mutex;
+    Mutex &m_mutex;
     bool m_locked = true;
     bool m_successful = true;
 };

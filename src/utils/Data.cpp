@@ -110,7 +110,7 @@ std::string Data::Sha1(const std::string &string)
     return checksum.final();
 }
 
-uint8_t * Data::Sha1Digest(const std::string &string)
+uint8_t* Data::Sha1Digest(const std::string &string)
 {    
     SHA1 checksum;
     checksum.update(string);

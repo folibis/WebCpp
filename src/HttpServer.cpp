@@ -187,12 +187,12 @@ void HttpServer::OnClosed(int connID)
 
 bool HttpServer::StartRequestThread()
 {
-    m_requestThreadRunning = true;
-    if(pthread_create(&m_requestThread, nullptr, &HttpServer::RequestThreadWrapper, this) != 0)
+    auto f = std::bind(&HttpServer::RequestThread, this, std::placeholders::_1);
+    m_requestThread.SetFunction(f);
+    if(m_requestThread.Start() == false)
     {
         SetLastError("failed to run request thread");
         LOG(GetLastError(), LogWriter::LogType::Error);
-        m_requestThreadRunning = false;
         return false;
     }
 
@@ -201,32 +201,20 @@ bool HttpServer::StartRequestThread()
 
 bool HttpServer::StopRequestThread()
 {
-    if(m_requestThreadRunning)
+    if(m_requestThread.IsRunning())
     {
-        m_requestThreadRunning = false;
+        m_requestThread.Stop();
         SendSignal();
-        pthread_join(m_requestThread, nullptr);
     }
     return true;
 }
 
-void *HttpServer::RequestThreadWrapper(void *ptr)
+void *HttpServer::RequestThread(bool &running)
 {
-    HttpServer *instance = static_cast<HttpServer *>(ptr);
-    if(instance != nullptr)
-    {
-        return instance->RequestThread();
-    }
-
-    return nullptr;
-}
-
-void *HttpServer::RequestThread()
-{
-    while(m_requestThreadRunning)
+    while(running)
     {
         WaitForSignal();
-        if(m_requestThreadRunning)
+        if(running)
         {
             if(CheckDataFullness())
             {
@@ -242,15 +230,15 @@ void *HttpServer::RequestThread()
 void HttpServer::SendSignal()
 {
     Lock lock(m_signalMutex);
-    pthread_cond_signal(&m_signalCondition);
+    m_signalCondition.Fire();
 }
 
 void HttpServer::WaitForSignal()
 {
     Lock lock(m_signalMutex);
-    if(IsQueueEmpty() && m_requestThreadRunning)
+    if(IsQueueEmpty() && m_requestThread.IsRunning())
     {
-        pthread_cond_wait(& m_signalCondition, &m_signalMutex);
+        m_signalCondition.Wait(m_signalMutex);
     }
 }
 

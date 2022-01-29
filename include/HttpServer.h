@@ -30,9 +30,11 @@
 #include <deque>
 #include <vector>
 #include <memory>
-#include <pthread.h>
 #include "IErrorable.h"
 #include "IRunnable.h"
+#include "ThreadWorker.h"
+#include "Mutex.h"
+#include "Signal.h"
 #include "Request.h"
 #include "Response.h"
 #include "RouteHttp.h"
@@ -77,8 +79,7 @@ protected:
 
     bool StartRequestThread();
     bool StopRequestThread();
-    static void* RequestThreadWrapper(void *ptr);
-    void* RequestThread();
+    void* RequestThread(bool &running);
 
     void SendSignal();
     void WaitForSignal();
@@ -113,13 +114,11 @@ private:
     std::shared_ptr<ICommunicationServer> m_server = nullptr;
     Http::Protocol m_protocol = Http::Protocol::Undefined;
 
-    pthread_t m_requestThread;
+    ThreadWorker m_requestThread;
+    Mutex m_queueMutex;
+    Mutex m_signalMutex;
+    Signal m_signalCondition;
 
-    pthread_mutex_t m_queueMutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t m_signalMutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t m_signalCondition = PTHREAD_COND_INITIALIZER;
-
-    bool m_requestThreadRunning = false;
     std::deque<RequestData> m_requestQueue;
     std::vector<RouteHttp> m_routes;
 

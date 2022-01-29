@@ -81,10 +81,12 @@ bool ICommunicationClient::Run()
 
     if(m_initialized)
     {
-        if(pthread_create(&m_thread, nullptr, &ICommunicationClient::ReadThreadWrapper, this) != 0)
+        auto f = std::bind(&ICommunicationClient::ReadThread, this, std::placeholders::_1);
+        m_thread.SetFunction(f);
+        m_running = m_thread.Start();
+        if(m_running == false)
         {
-            SetLastError(strerror(errno), errno);
-            m_running = false;
+            SetLastError(m_thread.GetLastError());
         }
     }
 
@@ -103,7 +105,7 @@ bool ICommunicationClient::Close(bool wait)
         m_running = false;
         if(wait)
         {
-            pthread_join(m_thread, nullptr);
+            m_thread.Wait();
         }
     }
 
@@ -114,7 +116,7 @@ bool ICommunicationClient::WaitFor()
 {
     if(m_running)
     {
-        pthread_join(m_thread, nullptr);
+        m_thread.Wait();
     }
     return true;
 }
@@ -191,22 +193,11 @@ ByteArray ICommunicationClient::Read(size_t length)
     return data;
 }
 
-void *ICommunicationClient::ReadThreadWrapper(void *ptr)
-{
-    ICommunicationClient *instance = static_cast<ICommunicationClient *>(ptr);
-    if(instance)
-    {
-        instance->ReadThread();
-    }
-
-    return nullptr;
-}
-
-void *ICommunicationClient::ReadThread()
+void *ICommunicationClient::ReadThread(bool &running)
 {
     ClearError();
 
-    while(m_running)
+    while(running)
     {
         try
         {

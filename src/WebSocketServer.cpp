@@ -216,12 +216,13 @@ void WebSocketServer::OnClosed(int connID)
 
 bool WebSocketServer::StartRequestThread()
 {
-    m_requestThreadRunning = true;
-    if(pthread_create(&m_requestThread, nullptr, &WebSocketServer::RequestThreadWrapper, this) != 0)
+    auto f = std::bind(&WebSocketServer::RequestThread, this, std::placeholders::_1);
+    m_requestThread.SetFunction(f);
+
+    if(m_requestThread.Start() == false)
     {
-        SetLastError("failed to run request thread");
+        SetLastError("failed to run request thread: " + m_requestThread.GetLastError());
         LOG(GetLastError(), LogWriter::LogType::Error);
-        m_requestThreadRunning = false;
         return false;
     }
 
@@ -230,29 +231,18 @@ bool WebSocketServer::StartRequestThread()
 
 bool WebSocketServer::StopRequestThread()
 {
-    if(m_requestThreadRunning)
+    if(m_requestThread.IsRunning())
     {
-        m_requestThreadRunning = false;
+        m_requestThread.Stop();
         SendSignal();
-        pthread_join(m_requestThread, nullptr);
+        m_requestThread.Wait();
     }
     return true;
 }
 
-void *WebSocketServer::RequestThreadWrapper(void *ptr)
+void *WebSocketServer::RequestThread(bool &running)
 {
-    WebSocketServer *instance = static_cast<WebSocketServer *>(ptr);
-    if(instance != nullptr)
-    {
-        return instance->RequestThread();
-    }
-
-    return nullptr;
-}
-
-void *WebSocketServer::RequestThread()
-{
-    while(m_requestThreadRunning)
+    while(m_requestThread.IsRunning())
     {
         WaitForSignal();
         if(CheckData())
@@ -267,13 +257,13 @@ void *WebSocketServer::RequestThread()
 void WebSocketServer::SendSignal()
 {
     Lock lock(m_signalMutex);
-    pthread_cond_signal(&m_signalCondition);
+    m_signalCondition.Fire();
 }
 
 void WebSocketServer::WaitForSignal()
 {
     Lock lock(m_signalMutex);
-    pthread_cond_wait(& m_signalCondition, &m_signalMutex);
+    m_signalCondition.Wait(m_signalMutex);
 }
 
 void WebSocketServer::PutToQueue(int connID, ByteArray &data)

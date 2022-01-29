@@ -27,9 +27,10 @@
 
 #include <functional>
 #include "ICommunication.h"
-#include "functional"
 #include "common_webcpp.h"
 #include "SocketPool.h"
+#include "ThreadWorker.h"
+#include "Mutex.h"
 
 #define MAX_CLIENTS 10
 #define QUEUE_SIZE 10
@@ -61,11 +62,10 @@ public:
 protected:
     virtual void CloseConnections();
     SocketPool m_sockets;
-    pthread_mutex_t m_writeMutex = PTHREAD_MUTEX_INITIALIZER;
+    Mutex m_writeMutex;
 
-    static void* ReadThreadWrapper(void *ptr);
-    void* ReadThread();
-    pthread_t m_readThread;
+    void* ReadThread(bool &running);
+    ThreadWorker m_readThread;
     char m_readBuffer[READ_BUFFER_SIZE];
 
     std::function<void(int, const std::string&)> m_newConnectionCallback = nullptr;

@@ -53,24 +53,25 @@ bool ICommunicationServer::Run()
 
     try
     {
-        m_running = true;
-        if(pthread_create(&m_readThread, nullptr, &ICommunicationServer::ReadThreadWrapper, this) != 0)
+        auto f = std::bind(&ICommunicationServer::ReadThread, this, std::placeholders::_1);
+        m_readThread.SetFunction(f);
+        m_running = m_readThread.Start();
+        if(m_running == false)
         {
-            SetLastError(strerror(errno), errno);
-            m_running = false;
+            SetLastError(m_readThread.GetLastError());
         }
-
-        return true;
     }
     catch(...)
     {
-        return false;
+        m_running = false;
     }
+
+    return m_running;
 }
 
 bool ICommunicationServer::WaitFor()
 {
-    pthread_join(m_readThread, nullptr);
+    m_readThread.Wait();
     return true;
 }
 
@@ -110,7 +111,7 @@ bool ICommunicationServer::Close(bool wait)
         m_running = false;
         if(wait)
         {
-            pthread_join(m_readThread, nullptr);
+            m_readThread.Wait();
         }
 
         CloseConnections();
@@ -171,24 +172,13 @@ bool ICommunicationServer::Write(int connID, ByteArray &data, size_t size)
     return retval;
 }
 
-void *ICommunicationServer::ReadThreadWrapper(void *ptr)
-{
-    ICommunicationServer *instance = static_cast<ICommunicationServer *>(ptr);
-    if(instance != nullptr)
-    {
-        return instance->ReadThread();
-    }
-
-    return nullptr;
-}
-
-void *ICommunicationServer::ReadThread()
+void *ICommunicationServer::ReadThread(bool &running)
 {
     int retval = (-1);
 
     try
     {
-        while(m_running)
+        while(running)
         {
             if(m_sockets.Poll())
             {

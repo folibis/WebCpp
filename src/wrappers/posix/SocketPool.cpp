@@ -259,6 +259,7 @@ size_t SocketPool::Accept()
                 {
                     if(AcceptSsl(new_socket, index) == false)
                     {
+                        CloseSocket(index);
                         throw std::runtime_error(GetLastError());
                     }
                 }
@@ -617,13 +618,13 @@ bool SocketPool::InitSSL()
             if (SSL_CTX_use_certificate_file(m_ctx, m_cert.c_str(), SSL_FILETYPE_PEM) <= 0)
             {
                 SetLastError(ERR_error_string(ERR_get_error(), nullptr));
-                throw std::runtime_error(GetLastError());;
+                throw std::runtime_error(GetLastError());
             }
 
             if (SSL_CTX_use_PrivateKey_file(m_ctx, m_key.c_str(), SSL_FILETYPE_PEM) <= 0 )
             {
                 SetLastError(ERR_error_string(ERR_get_error(), nullptr));
-                throw std::runtime_error(GetLastError());;
+                throw std::runtime_error(GetLastError());
             }
         }
 

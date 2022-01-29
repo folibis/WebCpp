@@ -22,8 +22,8 @@
 *
 */
 
-#ifndef WEBCPP_PERIODICALTASK_H
-#define WEBCPP_PERIODICALTASK_H
+#ifndef WEBCPP_THREAD_WORKER_H
+#define WEBCPP_THREAD_WORKER_H
 
 #include <pthread.h>
 #include <functional>
@@ -37,10 +37,12 @@ namespace WebCpp
 class ThreadWorker: public IErrorable
 {
 public:
+    using ThreadRoutine = void *(bool &);
+    using ThreadFinishRoutine = void(void *);
     ThreadWorker();
-    void SetFunction(const std::function<void *(bool &)> &func);
-    void SetFinishFunction(const std::function<void(void *)> &func);
-    void Start();
+    void SetFunction(const std::function<ThreadRoutine> &func);
+    void SetFinishFunction(const std::function<ThreadFinishRoutine> &func);
+    bool Start();
     void Stop();
     void StopNoWait();
     void Wait() const;
@@ -52,11 +54,11 @@ protected:
 
 private:
     pthread_t m_thread;
-    std::function<void *(bool &)> m_func = nullptr;
-    std::function<void(void *)> m_funcFinish = nullptr;
+    std::function<ThreadRoutine> m_func = nullptr;
+    std::function<ThreadFinishRoutine> m_funcFinish = nullptr;
     bool m_isRunning = false;
 };
 
 }
 
-#endif // WEBCPP_PERIODICALTASK_H
+#endif // WEBCPP_THREAD_WORKER_H

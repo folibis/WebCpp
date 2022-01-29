@@ -22,45 +22,27 @@
 *
 */
 
-#ifndef WEBCPP_KEEP_ALIVE_TIMER_H
-#define WEBCPP_KEEP_ALIVE_TIMER_H
+#ifndef WEBCPP_MUTEX_H
+#define WEBCPP_MUTEX_H
 
-#include <functional>
-#include <vector>
-#include <inttypes.h>
-#include <ThreadWorker.h>
-#include "Mutex.h"
+#include <pthread.h>
 
 
 namespace WebCpp
 {
 
-class KeepAliveTimer final
+class Mutex
 {
 public:
-    ~KeepAliveTimer();
-    static void run();
-    static void stop();
-    static void SetCallback(std::function<void(int)> callback);
-    static void SetTimer(uint32_t delay, int connID);
+    Mutex() = default;
+    ~Mutex() = default;
 
-protected:
-    static void *task(bool &);
+    pthread_mutex_t *GetMutex();
 
 private:
-    struct Timer
-    {
-        int connID;
-        int ticks;
-        int remain;
-    };
-
-    static std::function<void(int)> m_callback;
-    static ThreadWorker m_task;
-    static std::vector<Timer> m_timers;
-    static Mutex m_mutex;
+    pthread_mutex_t m_writeMutex = PTHREAD_MUTEX_INITIALIZER;
 };
 
 }
 
-#endif // WEBCPP_KEEP_ALIVE_TIMER_H
+#endif // WEBCPP_MUTEX_H

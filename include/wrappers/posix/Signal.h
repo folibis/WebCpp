@@ -22,45 +22,27 @@
 *
 */
 
-#ifndef WEBCPP_KEEP_ALIVE_TIMER_H
-#define WEBCPP_KEEP_ALIVE_TIMER_H
+#ifndef WEBCPP_SIGNAL_H
+#define WEBCPP_SIGNAL_H
 
-#include <functional>
-#include <vector>
-#include <inttypes.h>
-#include <ThreadWorker.h>
+#include "pthread.h"
 #include "Mutex.h"
 
 
 namespace WebCpp
 {
 
-class KeepAliveTimer final
+class Signal
 {
 public:
-    ~KeepAliveTimer();
-    static void run();
-    static void stop();
-    static void SetCallback(std::function<void(int)> callback);
-    static void SetTimer(uint32_t delay, int connID);
-
-protected:
-    static void *task(bool &);
+    Signal();
+    void Fire();
+    void Wait(Mutex &mutex);
 
 private:
-    struct Timer
-    {
-        int connID;
-        int ticks;
-        int remain;
-    };
-
-    static std::function<void(int)> m_callback;
-    static ThreadWorker m_task;
-    static std::vector<Timer> m_timers;
-    static Mutex m_mutex;
+    pthread_cond_t m_signalCondition = PTHREAD_COND_INITIALIZER;
 };
 
 }
 
-#endif // WEBCPP_KEEP_ALIVE_TIMER_H
+#endif // WEBCPP_SIGNAL_H

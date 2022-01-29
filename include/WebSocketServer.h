@@ -38,6 +38,9 @@
 #include "ICommunicationServer.h"
 #include "RequestWebSocket.h"
 #include "ResponseWebSocket.h"
+#include "ThreadWorker.h"
+#include "Mutex.h"
+#include "Signal.h"
 
 
 namespace WebCpp
@@ -103,8 +106,7 @@ protected:
 
     bool StartRequestThread();
     bool StopRequestThread();
-    static void* RequestThreadWrapper(void *ptr);
-    void* RequestThread();
+    void* RequestThread(bool &running);
 
     void SendSignal();
     void WaitForSignal();
@@ -124,12 +126,11 @@ protected:
 private:
     std::shared_ptr<ICommunicationServer> m_server = nullptr;
     Protocol m_protocol = Protocol::Undefined;
-    pthread_t m_requestThread;
-    pthread_mutex_t m_queueMutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t m_signalMutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t m_requestMutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t m_signalCondition = PTHREAD_COND_INITIALIZER;
-    bool m_requestThreadRunning = false;
+    ThreadWorker m_requestThread;
+    Mutex m_queueMutex;
+    Mutex m_signalMutex;
+    Mutex m_requestMutex;
+    Signal m_signalCondition;
     std::deque<RequestData> m_requestQueue;
     HttpConfig m_config;
     std::vector<RouteWebSocket> m_routes;

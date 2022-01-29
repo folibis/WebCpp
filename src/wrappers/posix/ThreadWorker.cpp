@@ -7,28 +7,33 @@ ThreadWorker::ThreadWorker()
     m_isRunning = false;
 }
 
-void ThreadWorker::SetFunction(const std::function<void *(bool &)> &func)
+void ThreadWorker::SetFunction(const std::function<ThreadRoutine> &func)
 {
     m_func = func;
 }
 
-void ThreadWorker::SetFinishFunction(const std::function<void (void *)> &func)
+void ThreadWorker::SetFinishFunction(const std::function<ThreadFinishRoutine> &func)
 {
     m_funcFinish = func;
 }
 
-void ThreadWorker::Start()
+bool ThreadWorker::Start()
 {
     if(m_isRunning)
-        return;
+    {
+        return true;
+    }
 
     ClearError();
     m_isRunning = true;
 
-    if(pthread_create( &m_thread, nullptr, ThreadWorker::StartThread, this) != 0)
+    if(pthread_create(&m_thread, nullptr, ThreadWorker::StartThread, this) != 0)
     {
         SetLastError("failed to starting a thread");
+        return false;
     }
+
+    return true;
 }
 
 void ThreadWorker::Stop()

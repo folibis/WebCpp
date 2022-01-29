@@ -35,6 +35,7 @@
 #include "Request.h"
 #include "Response.h"
 #include "HttpConfig.h"
+#include "Mutex.h"
 
 
 namespace WebCpp
@@ -199,7 +200,7 @@ private:
     std::map<FcgiParam, std::string> m_fcgiParams;
     std::vector<ResponseData> m_responseQueue;
     std::function<void(Response &response)> m_responseCallback;
-    pthread_mutex_t m_queueMutex = PTHREAD_MUTEX_INITIALIZER;
+    Mutex m_queueMutex;
 };
 
 }

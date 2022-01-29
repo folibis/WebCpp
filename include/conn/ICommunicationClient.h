@@ -29,6 +29,7 @@
 #include "functional"
 #include "common_webcpp.h"
 #include "SocketPool.h"
+#include "ThreadWorker.h"
 
 
 #define BUFFER_SIZE 1024
@@ -57,9 +58,8 @@ protected:
     std::function<void()> m_closeConnectionCallback = nullptr;
     bool CloseConnection();
 
-    pthread_t m_thread;
-    static void* ReadThreadWrapper(void *ptr);
-    void* ReadThread();
+    ThreadWorker m_thread;
+    void* ReadThread(bool &running);
     char m_readBuffer[BUFFER_SIZE];
 };
 
