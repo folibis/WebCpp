@@ -22,6 +22,8 @@
 *
 */
 
+// https://datatracker.ietf.org/doc/html/rfc2616#section-3.2.2
+
 #ifndef WEBCPP_URL_H
 #define WEBCPP_URL_H
 

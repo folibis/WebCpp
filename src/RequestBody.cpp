@@ -324,15 +324,15 @@ ByteArray RequestBody::GetDataMultipart()
         {
             if(FileSystem::IsFileExist(entity.fileName))
             {
-                ByteArray buffer(WRITE_BIFFER_SIZE);
+                char buffer[WRITE_BIFFER_SIZE];
                 File file(entity.fileName, File::Mode::Read);
                 size_t bites = 0;
                 do
                 {
-                    bites = file.Read(reinterpret_cast<char*>(buffer.data()), WRITE_BIFFER_SIZE);
+                    bites = file.Read(buffer, WRITE_BIFFER_SIZE);
                     if(bites > 0)
                     {
-                        data.insert(data.end(), buffer.begin(), buffer.begin() + bites);
+                        data.insert(data.end(), buffer, buffer + bites);
                     }
                 }
                 while(bites > 0);

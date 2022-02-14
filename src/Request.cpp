@@ -2,6 +2,9 @@
 #include "Request.h"
 #include "IHttp.h"
 
+#define EOL_LENGTH 2
+#define ENTRY_DELIMITER_LENGTH 4
+
 
 using namespace WebCpp;
 
@@ -32,7 +35,7 @@ bool Request::Parse(const ByteArray &data)
     }
     if(m_header.IsComplete() == false)
     {
-        if(m_header.Parse(data, m_requestLineLength + 2) == false)
+        if(m_header.Parse(data, m_requestLineLength + EOL_LENGTH) == false)
         {
             SetLastError("Request: error parsing header: " + GetLastError());
             return false;
@@ -41,7 +44,7 @@ bool Request::Parse(const ByteArray &data)
 
     if(m_header.GetBodySize() > 0)
     {
-        return ParseBody(data, m_requestLineLength + 2 + m_header.GetHeaderSize() + 4);
+        return ParseBody(data, m_requestLineLength + EOL_LENGTH + m_header.GetHeaderSize() + ENTRY_DELIMITER_LENGTH);
     }
 
     return true;
@@ -185,7 +188,7 @@ size_t Request::GetRequestLineLength() const
 size_t Request::GetRequestSize() const
 {
     // Request line + CRLF (2 bytes) + Header + CRLFCRLF (4 bytes) + Body
-    return m_requestLineLength + 2 + m_header.GetHeaderSize() + 4 + m_header.GetBodySize();
+    return m_requestLineLength + EOL_LENGTH + m_header.GetHeaderSize() + ENTRY_DELIMITER_LENGTH + m_header.GetBodySize();
 }
 
 std::string Request::GetRemote() const
