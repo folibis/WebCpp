@@ -35,6 +35,9 @@ target_link_libraries(Route PRIVATE webcpp)
 add_executable(PreRoute PreRoute.cpp)
 target_link_libraries(PreRoute PRIVATE webcpp)
 
+add_executable(LoadTest LoadTest.cpp)
+target_link_libraries(LoadTest PRIVATE webcpp)
+
 if(WEBSOCKET)
     add_executable(WebSocketServer WebSocketServer.cpp)
     target_link_libraries(WebSocketServer PRIVATE webcpp)
