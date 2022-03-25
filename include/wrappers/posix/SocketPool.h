@@ -34,6 +34,8 @@
 #endif
 
 #define POLL_TIMEOUT 500
+#define DEFAULT_HOST "*"
+#define DEFAULT_PORT 80
 
 
 namespace WebCpp
@@ -75,13 +77,17 @@ public:
     SocketPool(SocketPool&& other) = delete;
     SocketPool& operator=(SocketPool&& other) = delete;
 
+    void SetPort(int port);
+    int GetPort() const;
+    void SetHost(const std::string &host);
+    std::string GetHost() const;
     int Create(bool main = false);
     bool CloseSocket(size_t index);
     bool CloseSockets();
-    bool Bind(const std::string &address, int port);
+    bool Bind(const std::string &host, int port);
     bool Listen();
     size_t Accept();
-    bool Connect(const std::string &address);
+    bool Connect(const std::string &host, int port = 0);
     size_t Write(const void *buffer, size_t size, size_t index = 0);
     size_t Read(void *buffer, size_t size, size_t index = 0);
     bool Poll();
@@ -102,8 +108,8 @@ public:
 protected:
     int FindEmpty();
     void ParseAddress(const std::string &address);
-    bool ConnectTcp(const std::string &address);
-    bool ConnectUnix(const std::string &address);
+    bool ConnectTcp(const std::string &host, int port);
+    bool ConnectUnix(const std::string &host);
 
 #ifdef WITH_OPENSSL
     bool InitSSL();
@@ -123,8 +129,8 @@ private:
     SSL_CTX *m_ctx = nullptr;
     SSL **m_sslClient = nullptr;
 #endif
-    std::string m_address = "*";
-    int m_port = 80;
+    std::string m_host = DEFAULT_HOST;
+    int m_port = DEFAULT_PORT;
 };
 
 inline SocketPool::Options operator |(SocketPool::Options a, SocketPool::Options b)

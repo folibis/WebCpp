@@ -46,11 +46,17 @@ public:
     ICommunicationServer(SocketPool::Domain domain,
                          SocketPool::Type type,
                          SocketPool::Options options);
+
+    void SetPort(int port) override;
+    int GetPort() const override;
+    void SetHost(const std::string &host) override;
+    std::string GetHost() const override;
+
     virtual bool CloseConnection(int connID);
     virtual bool Write(int connID, ByteArray &data);
     virtual bool Write(int connID, ByteArray &data, size_t size);
     virtual bool Init() override;
-    virtual bool Connect(const std::string &address = "") override;
+    virtual bool Connect(const std::string &host = "", int port = 0) override;
     bool Close(bool wait = true) override;
     bool Run() override;
     bool WaitFor() override;

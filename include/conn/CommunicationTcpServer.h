@@ -42,7 +42,7 @@ public:
     virtual ~CommunicationTcpServer();
 
     bool Init() override final;
-    bool Connect(const std::string &address = "") override;
+    bool Connect(const std::string &address = "", int port = 0) override;
 };
 
 }

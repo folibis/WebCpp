@@ -41,7 +41,7 @@ bool CommunicationTcpServer::Init()
     return m_initialized;
 }
 
-bool CommunicationTcpServer::Connect(const std::string &address)
+bool CommunicationTcpServer::Connect(const std::string &address, int port)
 {
     ClearError();
 
@@ -51,6 +51,6 @@ bool CommunicationTcpServer::Connect(const std::string &address)
         return false;
     }
 
-    m_connected = ICommunicationServer::Connect(address);
+    m_connected = ICommunicationServer::Connect(address, port);
     return m_connected;
 }

@@ -41,7 +41,8 @@ class CommunicationSslClient: public ICommunicationClient
 {
 public:
     CommunicationSslClient(const std::string &cert, const std::string &key) noexcept;
-    bool Init() override;
+    ~CommunicationSslClient();
+    bool Init() override final;
 };
 
 }

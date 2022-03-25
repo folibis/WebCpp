@@ -336,7 +336,7 @@ std::string StringUtil::Int2Hex(int number, size_t len, const std::string &prefi
 }
 
 
-void StringUtil::Print(const ByteArray &array)
+void StringUtil::PrintHex(const ByteArray &array)
 {
 #ifndef NDEBUG
     size_t pos = 0;

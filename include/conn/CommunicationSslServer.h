@@ -48,7 +48,7 @@ public:
     CommunicationSslServer(const std::string &cert, const std::string &key) noexcept;
 
     bool Init() override final;
-    bool Connect(const std::string &address = "") override final;
+    bool Connect(const std::string &address = "", int port = 0) override final;
 };
 
 }

@@ -11,6 +11,7 @@
 #include "Lock.h"
 #include "CommunicationSslClient.h"
 
+#define DEFAULT_SSL_PORT 443
 
 
 using namespace WebCpp;
@@ -22,6 +23,12 @@ CommunicationSslClient::CommunicationSslClient(const std::string &cert, const st
                          SocketPool::Options::ReuseAddr | SocketPool::Options::Ssl)
 {
     m_sockets.SetSslCredentials(cert, key);
+    m_sockets.SetPort(DEFAULT_SSL_PORT);
+}
+
+CommunicationSslClient::~CommunicationSslClient()
+{
+    Close();
 }
 
 

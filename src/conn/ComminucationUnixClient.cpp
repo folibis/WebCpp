@@ -19,7 +19,7 @@ ComminucationUnixClient::ComminucationUnixClient(const std::string& path):
                          SocketPool::Type::Stream,
                          SocketPool::Options::ReuseAddr)
 {
-    m_address = path;
+    m_sockets.SetHost(path);
 }
 
 bool ComminucationUnixClient::Init()

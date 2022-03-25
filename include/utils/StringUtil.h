@@ -58,7 +58,7 @@ public:
     static void UrlEncode(std::string &str);
     static bool IsCharAllowed(char ch);
     static std::string Int2Hex(int number, size_t len = 0, const std::string &prefix = "");
-    static void Print(const ByteArray &array);
+    static void PrintHex(const ByteArray &array);
     static void Replace(std::string &str, const std::string &find, const std::string &replace);
     static void RandInit();
     static uint32_t GetRand(uint32_t min, uint32_t max);

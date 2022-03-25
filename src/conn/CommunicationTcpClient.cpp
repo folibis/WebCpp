@@ -20,6 +20,11 @@ CommunicationTcpClient::CommunicationTcpClient():
 
 }
 
+CommunicationTcpClient::~CommunicationTcpClient()
+{
+    Close();
+}
+
 bool CommunicationTcpClient::Init()
 {
     if(m_initialized == true)

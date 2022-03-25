@@ -296,7 +296,7 @@ bool WebSocketClient::InitConnection(const Url &url)
         return false;
     }
 
-    m_connection->SetAddress(url.GetHost());
+    m_connection->SetHost(url.GetHost());
     m_connection->SetPort(url.GetPort());
 
     if(!m_connection->Init())

@@ -36,6 +36,26 @@ SocketPool::SocketPool(size_t count, Service service, Domain domain, Type type, 
 #endif
 }
 
+void SocketPool::SetPort(int port)
+{
+    m_port = port;
+}
+
+int SocketPool::GetPort() const
+{
+    return m_port;
+}
+
+void SocketPool::SetHost(const std::string &host)
+{
+    m_host = host;
+}
+
+std::string SocketPool::GetHost() const
+{
+    return m_host;
+}
+
 SocketPool::~SocketPool()
 {
     if(m_fds != nullptr)
@@ -100,6 +120,14 @@ int SocketPool::Create(bool main)
         m_fds[index].fd = sock;
         m_fds[index].events = POLLIN;
 
+#ifdef WITH_OPENSSL
+        if((m_options & Options::Ssl) == Options::Ssl)
+        {
+            auto ssl = SSL_new(m_ctx);
+            SSL_set_fd(ssl, sock);
+            m_sslClient[index] = ssl;
+        }
+#endif
         return index;
     }
     catch(const std::runtime_error &err)
@@ -156,7 +184,7 @@ bool SocketPool::CloseSockets()
     return true;
 }
 
-bool SocketPool::Bind(const std::string &address, int port)
+bool SocketPool::Bind(const std::string &host, int port)
 {
     ClearError();
 
@@ -168,20 +196,20 @@ bool SocketPool::Bind(const std::string &address, int port)
             return false;
         }
 
-        m_address = address;
+        m_host = host;
         m_port = port;
 
         int d = SocketPool::Domain2Domain(m_domain);
         struct sockaddr_in server_sockaddr;
         server_sockaddr.sin_family = d;
         server_sockaddr.sin_port = htons(port);
-        if(address.empty() || address == "*")
+        if(m_host.empty() || m_host == "*")
         {
             server_sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
         }
         else
         {
-            server_sockaddr.sin_addr.s_addr = inet_addr(address.c_str());
+            server_sockaddr.sin_addr.s_addr = inet_addr(m_host.c_str());
         }
 
         if(bind(m_fds[0].fd, (struct sockaddr* ) &server_sockaddr, sizeof(server_sockaddr)) == ERROR)
@@ -288,7 +316,7 @@ size_t SocketPool::Accept()
     return ERROR;
 }
 
-bool SocketPool::Connect(const std::string &address)
+bool SocketPool::Connect(const std::string &host, int port)
 {
     ClearError();
 
@@ -300,24 +328,30 @@ bool SocketPool::Connect(const std::string &address)
 
     switch(m_domain)
     {
-        case Domain::Inet:
-            return ConnectTcp(address);
-        case Domain::Local:
-            return ConnectUnix(address);
-        default: break;
+    case Domain::Inet:
+        return ConnectTcp(host, port);
+    case Domain::Local:
+        return ConnectUnix(host);
+    default: break;
     }
 
     return false;
 }
 
-bool SocketPool::ConnectTcp(const std::string &address)
+bool SocketPool::ConnectTcp(const std::string &host, int port)
 {
-    ParseAddress(address);
+    ParseAddress(host);
+    if(port != 0)
+    {
+        m_port = port;
+    }
+
     struct hostent *hostinfo;
     struct sockaddr_in dest_addr;
+
     try
     {
-        if((hostinfo = gethostbyname(m_address.c_str())) == nullptr)
+        if((hostinfo = gethostbyname(m_host.c_str())) == nullptr)
         {
             SetLastError(std::string("Error resolving the host name") + strerror(errno), errno);
             throw std::runtime_error(GetLastError());
@@ -333,6 +367,19 @@ bool SocketPool::ConnectTcp(const std::string &address)
             throw std::runtime_error(GetLastError());
         }
 
+#ifdef WITH_OPENSSL
+        if((m_options & Options::Ssl) == Options::Ssl)
+        {
+            SSL *ssl = m_sslClient[0];
+            const int status = SSL_connect(ssl);
+            if(status <= 0)
+            {
+                int errorCode = SSL_get_error(ssl, status);
+                SetLastError(ERR_error_string(errorCode, nullptr));
+                throw std::runtime_error(std::string("SSL connect error: ") + GetLastError());
+            }
+        }
+#endif
         return true;
     }
     catch(const std::runtime_error &err)
@@ -347,23 +394,24 @@ bool SocketPool::ConnectTcp(const std::string &address)
     return false;
 }
 
-bool SocketPool::ConnectUnix(const std::string &address)
+bool SocketPool::ConnectUnix(const std::string &host)
 {
     socklen_t len;
     struct sockaddr_un addr;
 
-    if(!address.empty())
+    if(!host.empty())
     {
-        m_address = address;
+        m_host = host;
     }
+
     try
     {
         memset(&addr, 0, sizeof(addr));
         addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, m_address.c_str(), m_address.size());
+        strncpy(addr.sun_path, m_host.c_str(), m_host.size());
         //*addr.sun_path = '\0';
 
-        len = static_cast<socklen_t>(__builtin_offsetof(struct sockaddr_un, sun_path) + m_address.length());
+        len = static_cast<socklen_t>(__builtin_offsetof(struct sockaddr_un, sun_path) + m_host.length());
         if(connect(m_fds[0].fd, reinterpret_cast<struct sockaddr *>(&addr), len) == (-1))
         {
             SetLastError(std::string("Socket connecting error: ") + strerror(errno), errno);
@@ -716,7 +764,7 @@ void SocketPool::ParseAddress(const std::string &address)
         auto addr_arr = StringUtil::Split(address, ':');
         if(addr_arr.size() >= 1)
         {
-            m_address = addr_arr[0];
+            m_host = addr_arr[0];
             if(addr_arr.size() >= 2)
             {
                 int port;
@@ -733,11 +781,11 @@ int SocketPool::Domain2Domain(SocketPool::Domain domain)
 {
     switch(domain)
     {
-        case SocketPool::Domain::Inet:
-            return AF_INET;
-        case SocketPool::Domain::Local:
-            return AF_UNIX;
-        default: break;
+    case SocketPool::Domain::Inet:
+        return AF_INET;
+    case SocketPool::Domain::Local:
+        return AF_UNIX;
+    default: break;
     }
     return PF_UNSPEC;
 }
@@ -746,13 +794,13 @@ int SocketPool::Type2Type(SocketPool::Type type)
 {
     switch(type)
     {
-        case SocketPool::Type::Stream:
-            return SOCK_STREAM;
-        case SocketPool::Type::Datagram:
-            return SOCK_DGRAM;
-        case SocketPool::Type::Raw:
-            return SOCK_RAW;
-        default: break;
+    case SocketPool::Type::Stream:
+        return SOCK_STREAM;
+    case SocketPool::Type::Datagram:
+        return SOCK_DGRAM;
+    case SocketPool::Type::Raw:
+        return SOCK_RAW;
+    default: break;
     }
     return SOCK_STREAM;
 }
@@ -761,12 +809,12 @@ std::string SocketPool::Domain2String(Domain domain)
 {
     switch(domain)
     {
-        case Domain::Inet:
-            return "Inet";
-        case Domain::Local:
-            return "Local";
-        default:
-            break;
+    case Domain::Inet:
+        return "Inet";
+    case Domain::Local:
+        return "Local";
+    default:
+        break;
     }
 
     return "Undefined";
@@ -776,14 +824,14 @@ std::string SocketPool::Type2String(Type type)
 {
     switch(type)
     {
-        case Type::Stream:
-            return "Stream";
-        case Type::Datagram:
-            return "Datagram";
-        case Type::Raw:
-            return "Raw";
-        default:
-            break;
+    case Type::Stream:
+        return "Stream";
+    case Type::Datagram:
+        return "Datagram";
+    case Type::Raw:
+        return "Raw";
+    default:
+        break;
     }
 
     return "Undefined";
@@ -793,12 +841,12 @@ std::string SocketPool::Service2String(Service service)
 {
     switch(service)
     {
-        case Service::Server:
-            return "Server";
-        case Service::Client:
-            return "Client";
-        default:
-            break;
+    case Service::Server:
+        return "Server";
+    case Service::Client:
+        return "Client";
+    default:
+        break;
     }
 
     return "Undefined";

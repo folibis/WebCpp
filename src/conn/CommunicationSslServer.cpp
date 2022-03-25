@@ -14,6 +14,8 @@
 #include "StringUtil.h"
 #include "CommunicationSslServer.h"
 
+#define DEFAULT_SSL_PORT 443
+
 
 using namespace WebCpp;
 
@@ -23,6 +25,7 @@ CommunicationSslServer::CommunicationSslServer(const std::string &cert, const st
                          SocketPool::Options::ReuseAddr | SocketPool::Options::Ssl)
 {
     m_sockets.SetSslCredentials(cert, key);
+    m_sockets.SetPort(DEFAULT_SSL_PORT);
 }
 
 bool CommunicationSslServer::Init()
@@ -41,7 +44,7 @@ bool CommunicationSslServer::Init()
     return m_initialized;
 }
 
-bool CommunicationSslServer::Connect(const std::string &address)
+bool CommunicationSslServer::Connect(const std::string &address, int port)
 {
     ClearError();
 
@@ -51,7 +54,7 @@ bool CommunicationSslServer::Connect(const std::string &address)
         return false;
     }
 
-    m_connected = ICommunicationServer::Connect(address);
+    m_connected = ICommunicationServer::Connect(address, port);
     return m_connected;
 }
 

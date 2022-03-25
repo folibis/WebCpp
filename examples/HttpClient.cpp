@@ -33,7 +33,7 @@ int main()
     {
         std::cout << "response code: " << response.GetResponseCode() << " " << response.GetResponsePhrase() << std::endl;
 
-        StringUtil::Print(response.GetBody());
+        StringUtil::PrintHex(response.GetBody());
         httpCient.Close(false);
         return true;
     });

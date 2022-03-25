@@ -21,6 +21,26 @@ ICommunicationClient::ICommunicationClient(SocketPool::Domain domain,
 
 }
 
+void ICommunicationClient::SetPort(int port)
+{
+    m_sockets.SetPort(port);
+}
+
+int ICommunicationClient::GetPort() const
+{
+    return m_sockets.GetPort();
+}
+
+void ICommunicationClient::SetHost(const std::string &host)
+{
+    m_sockets.SetHost(host);
+}
+
+std::string ICommunicationClient::GetHost() const
+{
+    return m_sockets.GetHost();
+}
+
 bool ICommunicationClient::Init()
 {
     bool retval;
@@ -28,7 +48,7 @@ bool ICommunicationClient::Init()
 
     try
     {
-        if(m_sockets.Create(true) == false)
+        if(m_sockets.Create(true) == ERROR)
         {
             SetLastError(std::string("server socket create error: ") + m_sockets.GetLastError());
             throw std::runtime_error(GetLastError());
@@ -47,23 +67,25 @@ bool ICommunicationClient::Init()
     return retval;
 }
 
-bool ICommunicationClient::Connect(const std::string &address)
+bool ICommunicationClient::Connect(const std::string &host, int port)
 {
     ClearError();
 
     try
     {
-        if(m_sockets.Connect(address) == false)
+        if(m_sockets.Connect(host, port) == false)
         {
             SetLastError(std::string("socket connect error: ") + m_sockets.GetLastError());
             throw std::runtime_error(GetLastError());
         }
 
-        return true;
+        m_connected = true;
+        return m_connected;
     }
 
     catch(...)
     {
+        m_connected = false;
         CloseConnection();
         DebugPrint() << "ICommunicationClient::Connect error: " << GetLastError() << std::endl;
         return false;

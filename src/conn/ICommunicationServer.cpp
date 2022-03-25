@@ -21,6 +21,26 @@ ICommunicationServer::ICommunicationServer(SocketPool::Domain domain,
 
 }
 
+void ICommunicationServer::SetPort(int port)
+{
+    m_sockets.SetPort(port);
+}
+
+int ICommunicationServer::GetPort() const
+{
+    return m_sockets.GetPort();
+}
+
+void ICommunicationServer::SetHost(const std::string &host)
+{
+    m_sockets.SetHost(host);
+}
+
+std::string ICommunicationServer::GetHost() const
+{
+    return m_sockets.GetHost();
+}
+
 bool ICommunicationServer::Init()
 {
     ClearError();
@@ -75,13 +95,13 @@ bool ICommunicationServer::WaitFor()
     return true;
 }
 
-bool ICommunicationServer::Connect(const std::string &address)
+bool ICommunicationServer::Connect(const std::string &host, int port)
 {
     ClearError();
 
     try
     {
-        if(m_sockets.Bind(m_address, m_port) == false)
+        if(m_sockets.Bind(host, port) == false)
         {
             SetLastError(std::string("socket bind error: ") + m_sockets.GetLastError());
             throw std::runtime_error(GetLastError());

@@ -30,9 +30,6 @@
 #include "IErrorable.h"
 #include "IRunnable.h"
 
-#define DEFAULT_ADDRESS "*"
-#define DEFAULT_PORT 80
-
 
 namespace WebCpp
 {
@@ -40,19 +37,18 @@ namespace WebCpp
 class ICommunication : public IErrorable, public IRunnable
 {
 public:
-    virtual bool Connect(const std::string &address = "") = 0;
-    void SetPort(int port) { m_port = port; }
-    int GetPort() const { return m_port; }
-    void SetAddress(const std::string &address) { m_address = address; };
-    std::string GetAddress() const { return m_address; }
+    virtual bool Connect(const std::string &host = "", int port = 0) = 0;
+    virtual void SetPort(int) { }
+    virtual int GetPort() const { return 0; }
+    virtual void SetHost(const std::string &) { };
+    virtual std::string GetHost() const { return std::string(); }
+
     bool IsInitialized() const { return m_initialized; }
     bool IsConnected() const { return m_connected; }
 
 protected:
     bool m_initialized = false;
     bool m_connected = false;
-    int m_port = DEFAULT_PORT;
-    std::string m_address = DEFAULT_ADDRESS;
 };
 
 }

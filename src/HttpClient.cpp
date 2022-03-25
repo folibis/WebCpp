@@ -12,6 +12,11 @@ HttpClient::HttpClient()
 
 }
 
+HttpClient::~HttpClient()
+{
+    HttpClient::Close();
+}
+
 bool HttpClient::Init()
 {
     HttpConfig config;
@@ -43,6 +48,7 @@ bool HttpClient::Close(bool wait)
         retval = false;
     }
 
+    m_stateCallback = nullptr;
     SetState(State::Closed);
 
     return retval;
@@ -61,7 +67,7 @@ bool HttpClient::Open(Request &request)
     {
         if(InitConnection(request.GetUrl()) == false)
         {
-            SetLastError("init failed: " + GetLastError());
+            SetLastError("connection init failed: " + GetLastError());
             LOG(GetLastError(), LogWriter::LogType::Error);
             return false;
         }
@@ -198,17 +204,17 @@ bool HttpClient::InitConnection(const Url &url)
 
     if(m_connection == nullptr)
     {
-        SetLastError("provided scheme is incorrect or not supported");
+        SetLastError("requested scheme (" + Url::Scheme2String(url.GetScheme()) +  ") is incorrect or not supported");
         LOG(GetLastError(), LogWriter::LogType::Error);
         return false;
     }
 
-    m_connection->SetAddress(url.GetHost());
+    m_connection->SetHost(url.GetHost());
     m_connection->SetPort(url.GetPort());
 
-    if(!m_connection->Init())
+    if(m_connection->Init() == false)
     {
-        SetLastError("HttpServer init failed");
+        SetLastError("HttpServer init failed: " + m_connection->GetLastError());
         LOG(GetLastError(), LogWriter::LogType::Error);
         return false;
     }

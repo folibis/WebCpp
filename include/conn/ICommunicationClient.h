@@ -42,11 +42,17 @@ class ICommunicationClient : public ICommunication
 {
 public:
     ICommunicationClient(SocketPool::Domain domain, SocketPool::Type type, SocketPool::Options options);
+
+    void SetPort(int port) override;
+    int GetPort() const override;
+    void SetHost(const std::string &host) override;
+    std::string GetHost() const override;
+
     bool Init() override;
     bool Run() override;
     bool Close(bool wait = true) override;
     bool WaitFor() override;
-    bool Connect(const std::string &address = "") override;
+    bool Connect(const std::string &host = "", int port = 0) override;
     virtual bool Write(const ByteArray &data);
     virtual ByteArray Read(size_t length);
     virtual bool SetDataReadyCallback(const std::function<void(const ByteArray &data)> &callback) { m_dataReadyCallback = callback; return true; };

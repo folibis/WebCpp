@@ -52,6 +52,7 @@ public:
     };
 
     HttpClient();
+    virtual ~HttpClient();
     HttpClient(const HttpClient& other) = delete;
     HttpClient& operator=(const HttpClient& other) = delete;
     HttpClient(HttpClient&& other) = delete;

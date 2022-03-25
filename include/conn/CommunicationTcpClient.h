@@ -37,6 +37,7 @@ class CommunicationTcpClient: public ICommunicationClient
 {
 public:
     CommunicationTcpClient();
+    ~CommunicationTcpClient();
     bool Init() override;
 };
 
