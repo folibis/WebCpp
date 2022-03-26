@@ -57,6 +57,7 @@ bool WebCpp::HttpServer::Init(const WebCpp::HttpConfig& config)
     }
 
     m_server->SetPort(m_config.GetHttpServerPort());
+    m_server->SetHost(m_config.GetHttpServerAddress());
 
     if(!m_server->Init())
     {

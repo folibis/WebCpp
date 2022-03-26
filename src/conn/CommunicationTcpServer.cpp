@@ -14,6 +14,9 @@
 #include "SocketPool.h"
 #include "CommunicationTcpServer.h"
 
+#define DEFAULT_HTTP_PORT 80
+#define DEFAULT_HTTP_HOST "*"
+
 
 using namespace WebCpp;
 
@@ -22,6 +25,8 @@ CommunicationTcpServer::CommunicationTcpServer() noexcept:
                          SocketPool::Type::Stream,
                          SocketPool::Options::ReuseAddr)
 {
+    m_sockets.SetPort(DEFAULT_HTTP_PORT);
+    m_sockets.SetHost(DEFAULT_HTTP_HOST);
 }
 
 CommunicationTcpServer::~CommunicationTcpServer()

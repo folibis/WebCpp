@@ -15,6 +15,7 @@
 #include "CommunicationSslServer.h"
 
 #define DEFAULT_SSL_PORT 443
+#define DEFAULT_SSL_HOST "*"
 
 
 using namespace WebCpp;
@@ -26,6 +27,7 @@ CommunicationSslServer::CommunicationSslServer(const std::string &cert, const st
 {
     m_sockets.SetSslCredentials(cert, key);
     m_sockets.SetPort(DEFAULT_SSL_PORT);
+    m_sockets.SetHost(DEFAULT_SSL_HOST);
 }
 
 bool CommunicationSslServer::Init()

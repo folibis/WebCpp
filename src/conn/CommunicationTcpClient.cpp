@@ -9,6 +9,8 @@
 #include <cstring>
 #include "CommunicationTcpClient.h"
 
+#define DEFAULT_HTTP_PORT 80
+
 
 using namespace WebCpp;
 
@@ -17,6 +19,7 @@ CommunicationTcpClient::CommunicationTcpClient():
                          SocketPool::Type::Stream,
                          SocketPool::Options::ReuseAddr)
 {
+    m_sockets.SetPort(DEFAULT_HTTP_PORT);
 
 }
 

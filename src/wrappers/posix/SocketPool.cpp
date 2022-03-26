@@ -66,8 +66,8 @@ SocketPool::~SocketPool()
 #ifdef WITH_OPENSSL
     if((m_options & Options::Ssl) == Options::Ssl)
     {
-        if(m_sslClient != nullptr)
         {
+        if(m_sslClient != nullptr)
             delete []m_sslClient;
             m_sslClient = nullptr;
         }
@@ -196,13 +196,19 @@ bool SocketPool::Bind(const std::string &host, int port)
             return false;
         }
 
-        m_host = host;
-        m_port = port;
+        if(!host.empty())
+        {
+            m_host = host;
+        }
+        if(port > 0)
+        {
+            m_port = port;
+        }
 
         int d = SocketPool::Domain2Domain(m_domain);
         struct sockaddr_in server_sockaddr;
         server_sockaddr.sin_family = d;
-        server_sockaddr.sin_port = htons(port);
+        server_sockaddr.sin_port = htons(m_port);
         if(m_host.empty() || m_host == "*")
         {
             server_sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
