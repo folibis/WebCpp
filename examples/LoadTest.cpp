@@ -22,6 +22,7 @@
 size_t clientCount = DEFAULT_CLIENT_COUNT;
 std::string resource = DEFAULT_RESOURCE;
 long delay = DEFAULT_DELAY;
+int testCount = TEST_COUNT;
 bool g_running = true;
 static int g_id = 0;
 
@@ -65,7 +66,7 @@ void *ThreadRoutine(bool &running)
                 {
                     usleep(delay * 1000);
                     cnt ++;
-                    if(cnt >= TEST_COUNT)
+                    if(cnt >= testCount)
                     {
                         running = false;
                     }
@@ -98,7 +99,12 @@ int main(int argc, char *argv[])
 
     if(cmdline.Exists("-h"))
     {
-        cmdline.PrintUsage(false, false);
+        std::vector<std::string> adds;
+        adds.push_back("-c: count of clients, default: " + std::to_string(DEFAULT_CLIENT_COUNT));
+        adds.push_back("-r: URL of the resource to test, default: " + std::string(DEFAULT_RESOURCE));
+        adds.push_back("-d: delay between requests, ms, default: " + std::to_string(DEFAULT_DELAY));
+        adds.push_back("-n: count of tests, default: " + std::to_string(TEST_COUNT));
+        cmdline.PrintUsage(false, false, adds);
         exit(0);
     }
 
@@ -116,6 +122,11 @@ int main(int argc, char *argv[])
     if(StringUtil::String2int(cmdline.Get("-d"), v))
     {
         delay = v;
+    }
+
+    if(StringUtil::String2int(cmdline.Get("-n"), v))
+    {
+        testCount = v;
     }
 
     std::vector<WebCpp::ThreadWorker> workers;

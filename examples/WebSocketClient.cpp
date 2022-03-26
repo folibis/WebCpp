@@ -24,7 +24,9 @@ int main(int argc, char *argv[])
 
     if(cmdline.Exists("-h"))
     {
-        cmdline.PrintUsage(false, true, "-a: address to connect");
+        std::vector<std::string> adds;
+        adds.push_back("-a: address to connect");
+        cmdline.PrintUsage(false, true, adds);
         exit(0);
     }
     cmdline.Set("-a", address);
