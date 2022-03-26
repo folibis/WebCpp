@@ -104,6 +104,24 @@ Placeholder | Notes | Example
 [optional] | optional value | /user/[num] will work for /user, /user/2
 \* | any value, any length | /\*.php will work for /index.php, /subfolder/index.php and whatever
 
+**HTTPS:**
+
+WebCpp supports HTTPS requests using OpenSSL library. If you want to test that you need a private SSL key and a certificate.
+You can generate a self-signed certificate using the following command:
+
+```bash
+cd ~/.ssh
+openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout server.key -out server.cert
+```
+And then set the path to the sertificate and the key:
+
+```cpp
+WebCpp::HttpServer httpServer;
+
+WebCpp::HttpConfig config;
+config.SetSslSertificate("~/.ssh/server.cert");
+config.SetSslKey("~/.ssh/server.key");
+```
 
 **WebSocket handling:**
 
