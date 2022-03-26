@@ -92,7 +92,7 @@ public:
         return (m_values.size() > 0);
     }
 
-    void PrintUsage(bool ws = true, bool http = false, const std::string &adds = "")
+    void PrintUsage(bool ws = true, bool http = false, const std::vector<std::string> &adds = std::vector<std::string>())
     {
         std::cout << "Usage: " << WebCpp::FileSystem::ExtractFileName(m_exe) << " [options]" << std::endl;
         std::cout << "where [options] are:" << std::endl;
@@ -106,9 +106,9 @@ public:
             std::cout << "\t-pw: WebSocket port" << std::endl;
             std::cout << "\t-rw: WebSocket protocol [WS,WSS]" << std::endl;
         }
-        if(!adds.empty())
+        for(auto &a: adds)
         {
-            std::cout << "\t" << adds << std::endl;
+            std::cout << "\t" << a << std::endl;
         }
         std::cout << "\t-v: verbose output" << std::endl;
         std::cout << "\t-h: print this message and exit" << std::endl;
