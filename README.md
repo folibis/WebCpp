@@ -38,7 +38,7 @@ WebCpp::HttpServer server;
 
 WebCpp::HttpConfig config;
 config.SetRoot(PUBLIC_DIR);
-config.SetProtocol("HTTP");
+config.SetProtocol(WebCpp::Http::Protocol::HTTP);
 config.SetServerPort(8080);
 
 if(server.Init(config))
@@ -129,7 +129,7 @@ config.SetSslKey("~/.ssh/server.key");
 WebCpp::WebSocketServer wsServer;
 
 WebCpp::HttpConfig config;
-config.SetWsProtocol("ws");
+config.SetWsProtocol(WebCpp::Http::Protocol::WS);
 config.SetWsServerPort(8081);    
     
 if(wsServer.Init(config))
