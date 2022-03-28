@@ -11,22 +11,15 @@
 
 static WebCpp::HttpServer *ptr = nullptr;
 
-static const char* pageTpl = "<html> \
-        <head> \
-        <title>File server</title> \
-        <meta content=\"text/html;charset=utf-8\" http-equiv=\"Content-Type\"> \
-        <meta content=\"utf-8\" http-equiv=\"encoding\"> \
-        <style> \
-        .row span { display: inline-block; padding:5px 10px; width:300px; } \
-        </style> \
-        </head> \
-        <body> \
-        [body] \
-        </body> \
-        </html>";
-
-static const char* tableTpl = "<h4>Index of: [folder]</h4><hr><div><a href='[backlink]'>Go parent</a></div><div>[rows]</div>";
-static const char* rowTpl = "<div class='row'><span><a href='[link]'>[name]</a></span><span>[size]</span><span>[modified]</span></div>";
+static const char* pageTpl =
+#include "templates/fileserverpage.txt"
+;
+static const char* tableTpl =
+#include "templates/fileservertable.txt"
+;
+static const char* rowTpl =
+#include "templates/fileservertablerow.txt"
+;
 
 void handle_sigint(int)
 {

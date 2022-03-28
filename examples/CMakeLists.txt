@@ -23,7 +23,8 @@ target_link_libraries(SimpleHttpServer PRIVATE webcpp)
 add_executable(HttpServer HttpServer.cpp)
 target_link_libraries(HttpServer PRIVATE webcpp)
 
-add_executable(FileServer FileServer.cpp)
+file(GLOB TPL . templates/*.txt)
+add_executable(FileServer FileServer.cpp ${TPL})
 target_link_libraries(FileServer PRIVATE webcpp)
 
 add_executable(Form Form.cpp)

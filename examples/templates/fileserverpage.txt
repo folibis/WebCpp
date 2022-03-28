@@ -1,0 +1,12 @@
+"<head>\
+ <title>File server</title>\
+ <meta content='text/html;charset=utf-8' http-equiv='Content-Type'>\
+ <meta content='utf-8' http-equiv='encoding'>\
+ <style>\
+  .row span { display: inline-block; padding:5px 10px; width:300px; }\
+ </style>\
+</head>\
+<body>\
+ [body]\
+</body>\
+</html>"

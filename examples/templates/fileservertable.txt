@@ -1,0 +1,1 @@
+"<h4>Index of: [folder]</h4><hr><div><a href='[backlink]'>Go parent</a></div><div>[rows]</div>"
