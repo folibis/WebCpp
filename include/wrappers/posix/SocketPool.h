@@ -88,7 +88,7 @@ public:
     bool Listen();
     size_t Accept();
     bool Connect(const std::string &host, int port = 0);
-    size_t Write(const void *buffer, size_t size, size_t index = 0);
+    size_t Write(const uint8_t *buffer, size_t size, size_t index = 0);
     size_t Read(void *buffer, size_t size, size_t index = 0);
     bool Poll();
     size_t GetCount() const;

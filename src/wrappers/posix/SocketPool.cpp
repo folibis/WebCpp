@@ -117,6 +117,7 @@ int SocketPool::Create(bool main)
             }
         }
 
+        fcntl(sock, F_SETFL, O_NONBLOCK);
         m_fds[index].fd = sock;
         m_fds[index].events = POLLIN;
 
@@ -438,7 +439,7 @@ bool SocketPool::ConnectUnix(const std::string &host)
     return false;
 }
 
-size_t SocketPool::Write(const void *buffer, size_t size, size_t index)
+size_t SocketPool::Write(const uint8_t *buffer, size_t size, size_t index)
 {
     ClearError();
 
@@ -458,9 +459,10 @@ size_t SocketPool::Write(const void *buffer, size_t size, size_t index)
         {
 #ifdef WITH_OPENSSL
             SSL *ssl = m_sslClient[index];
+            size_t pos = 0;
             do
             {
-                sent = SSL_write(ssl, buffer, size);
+                sent = SSL_write(ssl, buffer + pos, size - pos);
                 if(sent <= 0)
                 {
                     int errorCode = SSL_get_error(ssl, sent);
@@ -476,7 +478,11 @@ size_t SocketPool::Write(const void *buffer, size_t size, size_t index)
                 }
                 else
                 {
-                    again = false;
+                    pos += sent;
+                    if(pos >= size)
+                    {
+                        again = false;
+                    }
                 }
             }
             while(again);
@@ -484,10 +490,10 @@ size_t SocketPool::Write(const void *buffer, size_t size, size_t index)
         }
         else
         {
-
+            size_t pos = 0;
             do
             {
-                sent = send(fd, buffer, size, MSG_NOSIGNAL);
+                sent = send(fd, buffer + pos, size - pos, MSG_NOSIGNAL);
                 if(sent == ERROR)
                 {
                     if(errno == EAGAIN)
@@ -501,7 +507,11 @@ size_t SocketPool::Write(const void *buffer, size_t size, size_t index)
                 }
                 else
                 {
-                    again = false;
+                    pos += sent;
+                    if(pos >= size)
+                    {
+                        again = false;
+                    }
                 }
             }
             while(again);
