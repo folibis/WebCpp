@@ -11,6 +11,7 @@
 #include "SocketPool.h"
 #include "StringUtil.h"
 
+#define MAIN_SOCKET_INDEX 0
 #define QUEUE_SIZE 10
 
 
@@ -82,7 +83,7 @@ int SocketPool::Create(bool main)
 
     try
     {
-        size_t index = main ? 0 : FindEmpty();
+        size_t index = main ? MAIN_SOCKET_INDEX : FindEmpty();
         if(index == (-1))
         {
             SetLastError("No free room for socket");
@@ -127,6 +128,17 @@ int SocketPool::Create(bool main)
             auto ssl = SSL_new(m_ctx);
             SSL_set_fd(ssl, sock);
             m_sslClient[index] = ssl;
+            if(index == 0)
+            {
+                if(m_service == Service::Client)
+                {
+                    SSL_set_connect_state(ssl);
+                }
+                else if(m_service == Service::Server)
+                {
+                    SSL_set_accept_state(ssl);
+                }
+            }
         }
 #endif
         return index;
@@ -191,7 +203,7 @@ bool SocketPool::Bind(const std::string &host, int port)
 
     try
     {
-        if(m_fds[0].fd == (-1))
+        if(m_fds[MAIN_SOCKET_INDEX].fd == (-1))
         {
             SetLastError("create main socket first");
             return false;
@@ -219,7 +231,7 @@ bool SocketPool::Bind(const std::string &host, int port)
             server_sockaddr.sin_addr.s_addr = inet_addr(m_host.c_str());
         }
 
-        if(bind(m_fds[0].fd, (struct sockaddr* ) &server_sockaddr, sizeof(server_sockaddr)) == ERROR)
+        if(bind(m_fds[MAIN_SOCKET_INDEX].fd, (struct sockaddr* ) &server_sockaddr, sizeof(server_sockaddr)) == ERROR)
         {
             throw std::runtime_error(std::string("socket bind error: ") + strerror(errno));
         }
@@ -244,13 +256,13 @@ bool SocketPool::Listen()
 
     try
     {
-        if(m_fds[0].fd == (-1))
+        if(m_fds[MAIN_SOCKET_INDEX].fd == (-1))
         {
             SetLastError("create main socket first");
             return false;
         }
 
-        if(listen(m_fds[0].fd, QUEUE_SIZE) == ERROR)
+        if(listen(m_fds[MAIN_SOCKET_INDEX].fd, QUEUE_SIZE) == ERROR)
         {
             throw std::runtime_error(std::string("socket listen error: ") + strerror(errno));
         }
@@ -275,12 +287,12 @@ size_t SocketPool::Accept()
 
     try
     {
-        if(m_fds[0].fd == (-1))
+        if(m_fds[MAIN_SOCKET_INDEX].fd == (-1))
         {
             throw std::runtime_error("create main socket first");
         }
 
-        int new_socket = accept(m_fds[0].fd, NULL, NULL);
+        int new_socket = accept(m_fds[MAIN_SOCKET_INDEX].fd, NULL, NULL);
         if(new_socket != ERROR)
         {
             int index = FindEmpty();
@@ -327,7 +339,7 @@ bool SocketPool::Connect(const std::string &host, int port)
 {
     ClearError();
 
-    if(m_fds[0].fd == (-1))
+    if(m_fds[MAIN_SOCKET_INDEX].fd == (-1))
     {
         SetLastError("create main socket first");
         return false;
@@ -368,7 +380,7 @@ bool SocketPool::ConnectTcp(const std::string &host, int port)
         dest_addr.sin_addr = *((struct in_addr *)hostinfo->h_addr);
         memset(&(dest_addr.sin_zero), 0, 8);
 
-        if(connect(m_fds[0].fd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr)) == -1)
+        if(connect(m_fds[MAIN_SOCKET_INDEX].fd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr)) == -1)
         {
             SetLastError(std::string("Socket connecting error: ") + strerror(errno), errno);
             throw std::runtime_error(GetLastError());
@@ -377,7 +389,7 @@ bool SocketPool::ConnectTcp(const std::string &host, int port)
 #ifdef WITH_OPENSSL
         if((m_options & Options::Ssl) == Options::Ssl)
         {
-            SSL *ssl = m_sslClient[0];
+            SSL *ssl = m_sslClient[MAIN_SOCKET_INDEX];
             const int status = SSL_connect(ssl);
             if(status <= 0)
             {
@@ -419,7 +431,7 @@ bool SocketPool::ConnectUnix(const std::string &host)
         //*addr.sun_path = '\0';
 
         len = static_cast<socklen_t>(__builtin_offsetof(struct sockaddr_un, sun_path) + m_host.length());
-        if(connect(m_fds[0].fd, reinterpret_cast<struct sockaddr *>(&addr), len) == (-1))
+        if(connect(m_fds[MAIN_SOCKET_INDEX].fd, reinterpret_cast<struct sockaddr *>(&addr), len) == (-1))
         {
             SetLastError(std::string("Socket connecting error: ") + strerror(errno), errno);
             throw std::runtime_error(GetLastError());
