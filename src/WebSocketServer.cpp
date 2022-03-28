@@ -36,14 +36,14 @@ bool WebSocketServer::Init(WebCpp::HttpConfig config)
     ClearError();
     m_config = config;
 
-    m_protocol = WebSocketServer::String2Protocol(m_config.GetWsProtocol());
+    m_protocol = m_config.GetWsProtocol();
     switch(m_protocol)
     {
-        case Protocol::WS:
+        case Http::Protocol::WS:
             m_server = std::make_shared<CommunicationTcpServer>();
             break;
 #ifdef WITH_OPENSSL
-        case Protocol::WSS:
+        case Http::Protocol::WSS:
             m_server = std::make_shared<CommunicationSslServer>(m_config.GetSslSertificate(), m_config.GetSslKey());
             break;
 #endif
@@ -158,36 +158,9 @@ bool WebSocketServer::SendResponse(const ResponseWebSocket &response)
     return false;
 }
 
-WebSocketServer::Protocol WebSocketServer::GetProtocol() const
+Http::Protocol WebSocketServer::GetProtocol() const
 {
     return m_protocol;
-}
-
-WebSocketServer::Protocol WebSocketServer::String2Protocol(const std::string &str)
-{
-    std::string s = str;
-    StringUtil::ToUpper(s);
-
-    switch(_(s.c_str()))
-    {
-        case _("WS"): return WebSocketServer::Protocol::WS;
-        case _("WSS"): return WebSocketServer::Protocol::WSS;
-        default: break;
-    }
-
-    return WebSocketServer::Protocol::Undefined;
-}
-
-std::string WebSocketServer::Protocol2String(WebSocketServer::Protocol protocol)
-{
-    switch(protocol)
-    {
-        case WebSocketServer::Protocol::WS: return "HTTP";
-        case WebSocketServer::Protocol::WSS: return "HTTPS";
-        default: break;
-    }
-
-    return "";
 }
 
 std::string WebSocketServer::ToString() const

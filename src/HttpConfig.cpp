@@ -36,9 +36,9 @@ std::string HttpConfig::ToString() const
 {
     return std::string("HttpConfig :") + "\n" +
             "\tname: " + m_ServerName + "\n" +
-            "\tHTTP protocol: " + m_HttpProtocol + "\n" +
+            "\tHTTP protocol: " + Http::Protocol2String(m_HttpProtocol) + "\n" +
             "\tHTTP port: " + std::to_string(m_HttpServerPort) + "\n" +
-            "\tWebSocket protocol: " + m_WsProtocol + "\n" +
+            "\tWebSocket protocol: " + Http::Protocol2String(m_WsProtocol) + "\n" +
             "\tWebSocket port: " + std::to_string(m_WsServerPort) + "\n" +
             "\tRoot : " + m_rootFolder + "\n";
 }

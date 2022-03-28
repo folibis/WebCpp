@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 #include "common_webcpp.h"
+#include "IHttp.h"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -65,16 +66,17 @@ private:
     PROPERTY(bool, HttpEnabled, true)
     PROPERTY(std::string, HttpServerAddress, "")
     PROPERTY(int, HttpServerPort, 8080)
-    PROPERTY(std::string, HttpProtocol, "HTTP")
+    PROPERTY(Http::Protocol, HttpProtocol, Http::Protocol::HTTP)
     PROPERTY(int, KeepAliveTimeout, 2000)
     PROPERTY(std::string, SslSertificate, "cert.pem")
     PROPERTY(std::string, SslKey, "key.pem")
     PROPERTY(bool, TempFile, false)
     PROPERTY(bool, WsProcessDefault, true)
     PROPERTY(int, WsServerPort, 8081)
-    PROPERTY(std::string, WsProtocol, "ws")
-    PROPERTY(size_t, MaxBodySize, 2097152) // 2M
-    PROPERTY(size_t, MaxBodyFileSize, 20971520) // 20M
+    PROPERTY(Http::Protocol, WsProtocol, Http::Protocol::WS)
+    PROPERTY(size_t, MaxBodySize, 2_Mb)
+    PROPERTY(size_t, MaxBodyFileSize, 20_Mb)
+
 };
 
 }

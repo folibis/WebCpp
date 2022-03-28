@@ -31,7 +31,7 @@ bool WebCpp::HttpServer::Init(const WebCpp::HttpConfig& config)
     ClearError();
     m_config = config;
 
-    m_protocol = Http::String2Protocol(m_config.GetHttpProtocol());
+    m_protocol = m_config.GetHttpProtocol();
 
     switch(m_protocol)
     {

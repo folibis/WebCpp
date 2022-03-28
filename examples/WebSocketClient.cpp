@@ -17,7 +17,7 @@
 int main(int argc, char *argv[])
 {
     int port_ws = DEFAULT_WS_PORT;
-    std::string ws_protocol = DEFAULT_WS_PROTOCOL;
+    WebCpp::Http::Protocol ws_protocol = DEFAULT_WS_PROTOCOL;
 
     std::string address = "ws://127.0.0.1:8081/ws";
     auto cmdline = CommandLine::Parse(argc, argv);
@@ -35,7 +35,12 @@ int main(int argc, char *argv[])
     {
         port_ws = v;
     }
-    cmdline.Set("-rw", ws_protocol);
+    std::string s;
+    cmdline.Set("-rw", s);
+    if(!s.empty())
+    {
+        ws_protocol = WebCpp::Http::String2Protocol(s);
+    }
 
     WebCpp::HttpConfig config;
     config.SetRoot(PUB);

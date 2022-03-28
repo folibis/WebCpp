@@ -49,12 +49,6 @@ namespace WebCpp
 class WebSocketServer: public IErrorable, public IRunnable
 {
 public:
-    enum class Protocol
-    {
-        Undefined = 0,
-        WS,
-        WSS,
-    };
     WebSocketServer();
     virtual ~WebSocketServer();
     WebSocketServer(const WebSocketServer& other) = delete;
@@ -73,10 +67,7 @@ public:
 
     bool SendResponse(const ResponseWebSocket &response);
 
-    Protocol GetProtocol() const;
-    static Protocol String2Protocol(const std::string &str);
-    static std::string Protocol2String(Protocol protocol);
-
+    Http::Protocol GetProtocol() const;
     std::string ToString() const;
 
 protected:
@@ -125,7 +116,7 @@ protected:
 
 private:
     std::shared_ptr<ICommunicationServer> m_server = nullptr;
-    Protocol m_protocol = Protocol::Undefined;
+    Http::Protocol m_protocol = Http::Protocol::Undefined;
     ThreadWorker m_requestThread;
     Mutex m_queueMutex;
     Mutex m_signalMutex;

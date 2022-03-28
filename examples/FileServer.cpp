@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     signal(SIGINT, handle_sigint);
 
     int port_http = DEFAULT_HTTP_PORT;
-    std::string http_protocol = DEFAULT_HTTP_PROTOCOL;
+    WebCpp::Http::Protocol http_protocol = DEFAULT_HTTP_PROTOCOL;
 
     auto cmdline = CommandLine::Parse(argc, argv);
 
@@ -65,7 +65,11 @@ int main(int argc, char *argv[])
         port_http = v;
     }
 
-    cmdline.Set("-rh", http_protocol);
+    std::string s;
+    if(cmdline.Set("-rh", s) == true)
+    {
+        http_protocol = WebCpp::Http::String2Protocol(s);
+    }
 
     WebCpp::HttpConfig config;
     config.SetHttpProtocol(http_protocol);

@@ -11,8 +11,8 @@
 #define PUB PUBLIC_DIR
 #define DEFAULT_HTTP_PORT 8080
 #define DEFAULT_WS_PORT 8081
-#define DEFAULT_HTTP_PROTOCOL "HTTP"
-#define DEFAULT_WS_PROTOCOL "WS"
+#define DEFAULT_HTTP_PROTOCOL WebCpp::Http::Protocol::HTTP
+#define DEFAULT_WS_PROTOCOL WebCpp::Http::Protocol::WS
 #define SSL_CERT "~/.ssh/server.cert"
 #define SSL_KEY "~/.ssh/server.key"
 
