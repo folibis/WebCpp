@@ -27,11 +27,12 @@
 
 #include <poll.h>
 #include <stddef.h>
-#include "IErrorable.h"
 #ifdef WITH_OPENSSL
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #endif
+#include "IErrorable.h"
+#include "Mutex.h"
 
 #define POLL_TIMEOUT 500
 #define DEFAULT_HOST "*"
@@ -110,6 +111,11 @@ protected:
     void ParseAddress(const std::string &address);
     bool ConnectTcp(const std::string &host, int port);
     bool ConnectUnix(const std::string &host);
+    template <typename T>
+    bool IsContains(T v1, T v2)
+    {
+        return ((v1 & v2) == v2);
+    }
 
 #ifdef WITH_OPENSSL
     bool InitSSL();
@@ -131,6 +137,7 @@ private:
 #endif
     std::string m_host = DEFAULT_HOST;
     int m_port = DEFAULT_PORT;
+    Mutex m_writeMutex;
 };
 
 inline SocketPool::Options operator |(SocketPool::Options a, SocketPool::Options b)

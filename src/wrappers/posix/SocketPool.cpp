@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include "SocketPool.h"
 #include "StringUtil.h"
+#include "Lock.h"
 
 #define MAIN_SOCKET_INDEX 0
 #define QUEUE_SIZE 10
@@ -30,7 +31,7 @@ SocketPool::SocketPool(size_t count, Service service, Domain domain, Type type, 
         m_fds[i].fd = (-1);
     }
 #ifdef WITH_OPENSSL
-    if((m_options & Options::Ssl) == Options::Ssl)
+    if(IsContains(m_options, Options::Ssl))
     {
         m_sslClient = new SSL*[count];
     }
@@ -65,11 +66,11 @@ SocketPool::~SocketPool()
         m_fds = nullptr;
     }
 #ifdef WITH_OPENSSL
-    if((m_options & Options::Ssl) == Options::Ssl)
+    if(IsContains(m_options, Options::Ssl))
     {
         {
-        if(m_sslClient != nullptr)
-            delete []m_sslClient;
+            if(m_sslClient != nullptr)
+                delete []m_sslClient;
             m_sslClient = nullptr;
         }
     }
@@ -91,7 +92,7 @@ int SocketPool::Create(bool main)
         }
 
 #ifdef WITH_OPENSSL
-        if((m_options & Options::Ssl) == Options::Ssl)
+        if(IsContains(m_options, Options::Ssl))
         {
             if(InitSSL() == false)
             {
@@ -109,7 +110,7 @@ int SocketPool::Create(bool main)
             throw std::runtime_error(std::string("socket create error: ") + strerror(errno));
         }
 
-        if((m_options & Options::ReuseAddr) == Options::ReuseAddr)
+        if(IsContains(m_options, Options::ReuseAddr))
         {
             int opt = 1;
             if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == ERROR)
@@ -123,7 +124,7 @@ int SocketPool::Create(bool main)
         m_fds[index].events = POLLIN;
 
 #ifdef WITH_OPENSSL
-        if((m_options & Options::Ssl) == Options::Ssl)
+        if(IsContains(m_options, Options::Ssl))
         {
             auto ssl = SSL_new(m_ctx);
             SSL_set_fd(ssl, sock);
@@ -169,7 +170,7 @@ bool SocketPool::CloseSocket(size_t index)
             m_fds[index].fd = (-1);
             m_fds[index].events = 0;
 #ifdef WITH_OPENSSL
-            if((m_options & Options::Ssl) == Options::Ssl)
+            if(IsContains(m_options, Options::Ssl))
             {
                 SSL *ssl = m_sslClient[index];
                 if(ssl != nullptr)
@@ -302,7 +303,7 @@ size_t SocketPool::Accept()
                 m_fds[index].fd = new_socket;
                 m_fds[index].events = POLLIN;
 #ifdef WITH_OPENSSL
-                if((m_options & Options::Ssl) == Options::Ssl)
+                if(IsContains(m_options, Options::Ssl))
                 {
                     if(AcceptSsl(new_socket, index) == false)
                     {
@@ -347,11 +348,11 @@ bool SocketPool::Connect(const std::string &host, int port)
 
     switch(m_domain)
     {
-    case Domain::Inet:
-        return ConnectTcp(host, port);
-    case Domain::Local:
-        return ConnectUnix(host);
-    default: break;
+        case Domain::Inet:
+            return ConnectTcp(host, port);
+        case Domain::Local:
+            return ConnectUnix(host);
+        default: break;
     }
 
     return false;
@@ -380,14 +381,43 @@ bool SocketPool::ConnectTcp(const std::string &host, int port)
         dest_addr.sin_addr = *((struct in_addr *)hostinfo->h_addr);
         memset(&(dest_addr.sin_zero), 0, 8);
 
-        if(connect(m_fds[MAIN_SOCKET_INDEX].fd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr)) == -1)
+        int ret = connect(m_fds[MAIN_SOCKET_INDEX].fd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr));
+
+        if(ret == -1)
         {
-            SetLastError(std::string("Socket connecting error: ") + strerror(errno), errno);
-            throw std::runtime_error(GetLastError());
+            if(errno == EINPROGRESS)
+            {
+                m_fds[MAIN_SOCKET_INDEX].events = POLLOUT | POLLERR;
+                ret = poll(&m_fds[MAIN_SOCKET_INDEX], 1, 1000);
+                if(ret == 0)
+                {
+                    SetLastError(std::string("Socket connecting timeout"));
+                    throw std::runtime_error(GetLastError());
+                }
+                else if(ret < 0)
+                {
+                    SetLastError(std::string("Socket connecting error: ") + strerror(errno), errno);
+                    throw std::runtime_error(GetLastError());
+                }
+                else
+                {
+                    if((m_fds[MAIN_SOCKET_INDEX].revents & POLLOUT) == 0)
+                    {
+                        SetLastError(std::string("Socket not available: ") + strerror(errno), errno);
+                        throw std::runtime_error(GetLastError());
+                    }
+                }
+            }
+            else
+            {
+                SetLastError(std::string("Socket connecting error: ") + strerror(errno), errno);
+                throw std::runtime_error(GetLastError());
+            }
         }
 
+
 #ifdef WITH_OPENSSL
-        if((m_options & Options::Ssl) == Options::Ssl)
+        if(IsContains(m_options, Options::Ssl))
         {
             SSL *ssl = m_sslClient[MAIN_SOCKET_INDEX];
             const int status = SSL_connect(ssl);
@@ -454,8 +484,9 @@ bool SocketPool::ConnectUnix(const std::string &host)
 size_t SocketPool::Write(const uint8_t *buffer, size_t size, size_t index)
 {
     ClearError();
+    Lock lock(m_writeMutex);
 
-    ssize_t sent = (-1);
+    size_t total = (-1);
     try
     {
         int fd = m_fds[index].fd;
@@ -467,14 +498,14 @@ size_t SocketPool::Write(const uint8_t *buffer, size_t size, size_t index)
 
         bool again = false;
 
-        if((m_options & Options::Ssl) == Options::Ssl)
+        if(IsContains(m_options, Options::Ssl))
         {
 #ifdef WITH_OPENSSL
             SSL *ssl = m_sslClient[index];
-            size_t pos = 0;
+            total = 0;
             do
             {
-                sent = SSL_write(ssl, buffer + pos, size - pos);
+                size_t sent = SSL_write(ssl, buffer + total, size - total);
                 if(sent <= 0)
                 {
                     int errorCode = SSL_get_error(ssl, sent);
@@ -490,8 +521,12 @@ size_t SocketPool::Write(const uint8_t *buffer, size_t size, size_t index)
                 }
                 else
                 {
-                    pos += sent;
-                    if(pos >= size)
+                    total += sent;
+                    if(total >= size)
+                    {
+                        again = false;
+                    }
+                    else
                     {
                         again = false;
                     }
@@ -502,10 +537,10 @@ size_t SocketPool::Write(const uint8_t *buffer, size_t size, size_t index)
         }
         else
         {
-            size_t pos = 0;
+            total = 0;
             do
             {
-                sent = send(fd, buffer + pos, size - pos, MSG_NOSIGNAL);
+                size_t sent = send(fd, buffer + total, size - total, MSG_NOSIGNAL);
                 if(sent == ERROR)
                 {
                     if(errno == EAGAIN)
@@ -519,10 +554,14 @@ size_t SocketPool::Write(const uint8_t *buffer, size_t size, size_t index)
                 }
                 else
                 {
-                    pos += sent;
-                    if(pos >= size)
+                    total += sent;
+                    if(total >= size)
                     {
                         again = false;
+                    }
+                    else
+                    {
+                        again = true;
                     }
                 }
             }
@@ -538,7 +577,7 @@ size_t SocketPool::Write(const uint8_t *buffer, size_t size, size_t index)
         SetLastError("socket write error");
     }
 
-    return sent;
+    return total;
 }
 
 size_t SocketPool::Read(void *buffer, size_t size, size_t index)
@@ -555,7 +594,7 @@ size_t SocketPool::Read(void *buffer, size_t size, size_t index)
             return (-1);
         }
 
-        if((m_options & Options::Ssl) == Options::Ssl)
+        if(IsContains(m_options, Options::Ssl))
         {
 #ifdef WITH_OPENSSL
             SSL *ssl = m_sslClient[index];
@@ -616,6 +655,10 @@ size_t SocketPool::Read(void *buffer, size_t size, size_t index)
 
 bool SocketPool::Poll()
 {
+    for(size_t i = 0;i < m_count;i ++)
+    {
+        m_fds[i].events = POLLIN | POLLERR;
+    }
     auto retval = poll(m_fds, m_count, POLL_TIMEOUT);
     return (retval > 0);
 }
@@ -809,11 +852,11 @@ int SocketPool::Domain2Domain(SocketPool::Domain domain)
 {
     switch(domain)
     {
-    case SocketPool::Domain::Inet:
-        return AF_INET;
-    case SocketPool::Domain::Local:
-        return AF_UNIX;
-    default: break;
+        case SocketPool::Domain::Inet:
+            return AF_INET;
+        case SocketPool::Domain::Local:
+            return AF_UNIX;
+        default: break;
     }
     return PF_UNSPEC;
 }
@@ -822,13 +865,13 @@ int SocketPool::Type2Type(SocketPool::Type type)
 {
     switch(type)
     {
-    case SocketPool::Type::Stream:
-        return SOCK_STREAM;
-    case SocketPool::Type::Datagram:
-        return SOCK_DGRAM;
-    case SocketPool::Type::Raw:
-        return SOCK_RAW;
-    default: break;
+        case SocketPool::Type::Stream:
+            return SOCK_STREAM;
+        case SocketPool::Type::Datagram:
+            return SOCK_DGRAM;
+        case SocketPool::Type::Raw:
+            return SOCK_RAW;
+        default: break;
     }
     return SOCK_STREAM;
 }
@@ -837,12 +880,12 @@ std::string SocketPool::Domain2String(Domain domain)
 {
     switch(domain)
     {
-    case Domain::Inet:
-        return "Inet";
-    case Domain::Local:
-        return "Local";
-    default:
-        break;
+        case Domain::Inet:
+            return "Inet";
+        case Domain::Local:
+            return "Local";
+        default:
+            break;
     }
 
     return "Undefined";
@@ -852,14 +895,14 @@ std::string SocketPool::Type2String(Type type)
 {
     switch(type)
     {
-    case Type::Stream:
-        return "Stream";
-    case Type::Datagram:
-        return "Datagram";
-    case Type::Raw:
-        return "Raw";
-    default:
-        break;
+        case Type::Stream:
+            return "Stream";
+        case Type::Datagram:
+            return "Datagram";
+        case Type::Raw:
+            return "Raw";
+        default:
+            break;
     }
 
     return "Undefined";
@@ -869,12 +912,12 @@ std::string SocketPool::Service2String(Service service)
 {
     switch(service)
     {
-    case Service::Server:
-        return "Server";
-    case Service::Client:
-        return "Client";
-    default:
-        break;
+        case Service::Server:
+            return "Server";
+        case Service::Client:
+            return "Client";
+        default:
+            break;
     }
 
     return "Undefined";
