@@ -1,8 +1,8 @@
 #include <signal.h>
 #include <string>
-#include <iostream>
 #include <unistd.h>
 #include <chrono>
+#include <sstream>
 #include "common_webcpp.h"
 #include "HttpClient.h"
 #include "Request.h"
@@ -14,7 +14,7 @@
 #include "ThreadWorker.h"
 #include "example_common.h"
 
-#define DEFAULT_CLIENT_COUNT 2
+#define DEFAULT_CLIENT_COUNT 10
 #define DEFAULT_RESOURCE "http://httpbin.org/get"
 #define DEFAULT_DELAY 100
 #define TEST_COUNT 100
@@ -44,24 +44,35 @@ void *ThreadRoutine(bool &running)
         WebCpp::HttpConfig config;
         config.SetTempFile(true);
         config.SetMaxBodyFileSize(10_Mb);
+        std::chrono::steady_clock::time_point start;
+        std::chrono::steady_clock::time_point end;
+        long total_duration = 0;
+
+        WebCpp::DebugPrint::AllowPrint = true;
 
         if(httpCient.Init(config))
         {
-            httpCient.SetResponseCallback([&httpCient,id](const WebCpp::Response &response) -> bool
+            httpCient.SetResponseCallback([&httpCient,id,&start,&end,&total_duration](const WebCpp::Response &response) -> bool
             {
-                std::cout
+                end = std::chrono::steady_clock::now();
+                long dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+                total_duration += dur;
+                std::stringstream stream;
+                stream
                         << id
                         << ": response code: "
                         << response.GetResponseCode()
                         << ", size:  " << response.GetHeader().GetRequestSize()
+                        << ", duration: " << dur << " µs."
                         << std::endl;
-
+                std::cout << stream.str();
                 //StringUtil::PrintHex(response.GetBody());
                 return true;
             });
 
             while(running && g_running)
             {
+                start = std::chrono::steady_clock::now();
                 if(httpCient.Open(WebCpp::Http::Method::GET, resource) == true)
                 {
                     usleep(delay * 1000);
@@ -73,12 +84,21 @@ void *ThreadRoutine(bool &running)
                 }
                 else
                 {
+
                     std::cout << "thread " << id << " failed to send request: " << httpCient.GetLastError() << std::endl;
                     running = false;
                 }
             }
 
             httpCient.Close(false);
+            std::stringstream stream;
+            stream
+                    << "thread " << id << ": "
+                    << cnt << " request"
+                    << ", total: " << total_duration << " µs."
+                    << ", average: " << (cnt > 0 ? (total_duration / cnt) : 0) << " µs./req."
+                    << std::endl;
+            std::cout << stream.str();
         }
     }
     catch(...)
@@ -86,7 +106,9 @@ void *ThreadRoutine(bool &running)
         running = false;
     }
 
-    std::cout << "finishing thread " << id << std::endl;
+    std::stringstream stream;
+    stream << "finishing thread " << id << std::endl;
+    std::cout << stream.str();
 
     return nullptr;
 }
