@@ -103,7 +103,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/wrappers/${PLATFORM}
     )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE -pthread)
+target_link_libraries(${PROJECT_NAME} PRIVATE -pthread ${EXTERNAL_LIBS})
 
 if(EXAMPLES)
     add_subdirectory(examples/)
