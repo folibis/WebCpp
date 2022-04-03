@@ -12,6 +12,8 @@ std::string Http::Protocol2String(Protocol protocol)
     {
         case Protocol::HTTP: return "HTTP";
         case Protocol::HTTPS: return "HTTPS";
+        case Protocol::WS: return "WS";
+        case Protocol::WSS: return "WSS";
         default: break;
     }
 
@@ -27,7 +29,9 @@ Http::Protocol Http::String2Protocol(const std::string &str)
     {
         case _("HTTP"): return Protocol::HTTP;
         case _("HTTPS"): return Protocol::HTTPS;
-        defaut: break;
+        case _("WS"): return Protocol::WS;
+        case _("WSS"): return Protocol::WSS;
+        default: break;
     }
 
     return Protocol::Undefined;
