@@ -94,7 +94,13 @@ bool ICommunicationClient::Connect(const std::string &host, int port)
 
 bool ICommunicationClient::CloseConnection()
 {
-    return m_sockets.CloseSocket(0);
+    bool retval = m_sockets.CloseSocket(0);
+    if(m_closeConnectionCallback != nullptr)
+    {
+        m_closeConnectionCallback();
+    }
+
+    return retval;
 }
 
 bool ICommunicationClient::Run()
@@ -221,22 +227,30 @@ void *ICommunicationClient::ReadThread(bool &running)
 
     while(running)
     {
+        m_sockets.SetPollRead();
         try
         {
             if(m_sockets.Poll())
             {
-                auto readBytes = m_sockets.Read(m_readBuffer, BUFFER_SIZE);
-                if(readBytes == ERROR)
+                if(m_sockets.IsPollError(0))
                 {
                     CloseConnection();
                 }
-                else if(readBytes > 0)
+                else
                 {
-                    if(m_dataReadyCallback != nullptr)
+                    auto readBytes = m_sockets.Read(m_readBuffer, BUFFER_SIZE);
+                    if(readBytes == ERROR)
                     {
-                        ByteArray data;
-                        data.insert(data.end(), m_readBuffer, m_readBuffer + readBytes);
-                        m_dataReadyCallback(data);
+                        CloseConnection();
+                    }
+                    else if(readBytes > 0)
+                    {
+                        if(m_dataReadyCallback != nullptr)
+                        {
+                            ByteArray data;
+                            data.insert(data.end(), m_readBuffer, m_readBuffer + readBytes);
+                            m_dataReadyCallback(data);
+                        }
                     }
                 }
             }

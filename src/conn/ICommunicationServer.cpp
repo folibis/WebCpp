@@ -198,13 +198,18 @@ void *ICommunicationServer::ReadThread(bool &running)
 
     try
     {
+        m_sockets.SetPollRead();
         while(running)
         {
             if(m_sockets.Poll())
             {
                 for (int i = 0; i < m_sockets.GetCount(); i++)
                 {
-                    if(m_sockets.HasData(i))
+                    if(m_sockets.IsPollError(i))
+                    {
+                        CloseConnection(i);
+                    }
+                    else if(m_sockets.HasData(i))
                     {
                         if (i == 0) // new client connected
                         {
