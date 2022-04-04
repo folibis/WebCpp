@@ -89,14 +89,18 @@ public:
     bool Connect(const std::string &host, int port = 0);
     size_t Write(const uint8_t *buffer, size_t size, size_t index = 0);
     size_t Read(void *buffer, size_t size, size_t index = 0);
+
+    void SetPollRead();
+    void SetPollWrite();
     bool Poll();
+    bool HasData(size_t index) const;
+    bool IsPollError(size_t index) const;
 
     void SetPort(int port);
     int GetPort() const;
     void SetHost(const std::string &host);
     std::string GetHost() const;
     size_t GetCount() const;
-    bool HasData(size_t index) const;
     int GetConnectTimeout() const;
     void SetConnectTimeout(int timeout);
     std::string GetRemoteAddress(size_t index) const;

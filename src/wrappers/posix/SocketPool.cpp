@@ -633,14 +633,37 @@ size_t SocketPool::Read(void *buffer, size_t size, size_t index)
     return read;
 }
 
-bool SocketPool::Poll()
+void SocketPool::SetPollRead()
 {
     for(size_t i = 0;i < m_count;i ++)
     {
-        m_fds[i].events = POLLIN | POLLERR;
+        m_fds[i].events = POLLIN;
     }
+}
+
+void SocketPool::SetPollWrite()
+{
+    for(size_t i = 0;i < m_count;i ++)
+    {
+        m_fds[i].events = POLLOUT;
+    }
+}
+
+bool SocketPool::Poll()
+{
     auto retval = poll(m_fds, m_count, POLL_TIMEOUT);
     return (retval > 0);
+}
+
+bool SocketPool::HasData(size_t index) const
+{
+    return (m_fds[index].revents == POLLIN);
+}
+
+bool SocketPool::IsPollError(size_t index) const
+{
+    auto ev = m_fds[index].revents;
+    return ev == POLLERR || ev == POLLHUP || ev == POLLNVAL;
 }
 
 void SocketPool::SetPort(int port)
@@ -666,11 +689,6 @@ std::string SocketPool::GetHost() const
 size_t SocketPool::GetCount() const
 {
     return m_count;
-}
-
-bool SocketPool::HasData(size_t index) const
-{
-    return (m_fds[index].revents == POLLIN);
 }
 
 int SocketPool::GetConnectTimeout() const
