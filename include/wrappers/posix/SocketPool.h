@@ -37,6 +37,8 @@
 #define POLL_TIMEOUT 500
 #define DEFAULT_HOST "*"
 #define DEFAULT_PORT 80
+#define DEFAULT_SSL_PORT 430
+#define DEFAULT_CONNECT_TIMEOUT 1000
 
 
 namespace WebCpp
@@ -78,10 +80,6 @@ public:
     SocketPool(SocketPool&& other) = delete;
     SocketPool& operator=(SocketPool&& other) = delete;
 
-    void SetPort(int port);
-    int GetPort() const;
-    void SetHost(const std::string &host);
-    std::string GetHost() const;
     int Create(bool main = false);
     bool CloseSocket(size_t index);
     bool CloseSockets();
@@ -92,14 +90,20 @@ public:
     size_t Write(const uint8_t *buffer, size_t size, size_t index = 0);
     size_t Read(void *buffer, size_t size, size_t index = 0);
     bool Poll();
+
+    void SetPort(int port);
+    int GetPort() const;
+    void SetHost(const std::string &host);
+    std::string GetHost() const;
     size_t GetCount() const;
     bool HasData(size_t index) const;
+    int GetConnectTimeout() const;
+    void SetConnectTimeout(int timeout);
     std::string GetRemoteAddress(size_t index) const;
+    std::string ToString() const;
 #ifdef WITH_OPENSSL
     void SetSslCredentials(const std::string &cert, const std::string &key);
 #endif
-
-    std::string ToString() const;
     static int Domain2Domain(SocketPool::Domain domain);
     static int Type2Type(SocketPool::Type type);
     static std::string Domain2String(SocketPool::Domain domain);
@@ -138,6 +142,7 @@ private:
     std::string m_host = DEFAULT_HOST;
     int m_port = DEFAULT_PORT;
     Mutex m_writeMutex;
+    int m_connectTimeout = DEFAULT_CONNECT_TIMEOUT;
 };
 
 inline SocketPool::Options operator |(SocketPool::Options a, SocketPool::Options b)

@@ -38,26 +38,6 @@ SocketPool::SocketPool(size_t count, Service service, Domain domain, Type type, 
 #endif
 }
 
-void SocketPool::SetPort(int port)
-{
-    m_port = port;
-}
-
-int SocketPool::GetPort() const
-{
-    return m_port;
-}
-
-void SocketPool::SetHost(const std::string &host)
-{
-    m_host = host;
-}
-
-std::string SocketPool::GetHost() const
-{
-    return m_host;
-}
-
 SocketPool::~SocketPool()
 {
     if(m_fds != nullptr)
@@ -388,7 +368,7 @@ bool SocketPool::ConnectTcp(const std::string &host, int port)
             if(errno == EINPROGRESS)
             {
                 m_fds[MAIN_SOCKET_INDEX].events = POLLOUT | POLLERR;
-                ret = poll(&m_fds[MAIN_SOCKET_INDEX], 1, 1000);
+                ret = poll(&m_fds[MAIN_SOCKET_INDEX], 1, m_connectTimeout);
                 if(ret == 0)
                 {
                     SetLastError(std::string("Socket connecting timeout"));
@@ -663,6 +643,26 @@ bool SocketPool::Poll()
     return (retval > 0);
 }
 
+void SocketPool::SetPort(int port)
+{
+    m_port = port;
+}
+
+int SocketPool::GetPort() const
+{
+    return m_port;
+}
+
+void SocketPool::SetHost(const std::string &host)
+{
+    m_host = host;
+}
+
+std::string SocketPool::GetHost() const
+{
+    return m_host;
+}
+
 size_t SocketPool::GetCount() const
 {
     return m_count;
@@ -671,6 +671,16 @@ size_t SocketPool::GetCount() const
 bool SocketPool::HasData(size_t index) const
 {
     return (m_fds[index].revents == POLLIN);
+}
+
+int SocketPool::GetConnectTimeout() const
+{
+    return m_connectTimeout;
+}
+
+void SocketPool::SetConnectTimeout(int timeout)
+{
+    m_connectTimeout = timeout;
 }
 
 std::string SocketPool::GetRemoteAddress(size_t index) const
@@ -692,13 +702,6 @@ std::string SocketPool::GetRemoteAddress(size_t index) const
     return "";
 }
 
-#ifdef WITH_OPENSSL
-void SocketPool::SetSslCredentials(const std::string &cert, const std::string &key)
-{
-    m_cert = cert;
-    m_key = key;
-}
-
 std::string SocketPool::ToString() const
 {
     return std::string("SocketPool: " +
@@ -706,6 +709,13 @@ std::string SocketPool::ToString() const
                        Domain2String(m_domain) + ", "  +
                        Type2String(m_type) +
                        std::string(((m_options & Options::Ssl) == Options::Ssl) ? ", Ssl" : ""));
+}
+
+#ifdef WITH_OPENSSL
+void SocketPool::SetSslCredentials(const std::string &cert, const std::string &key)
+{
+    m_cert = cert;
+    m_key = key;
 }
 
 bool SocketPool::InitSSL()
