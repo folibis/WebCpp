@@ -27,7 +27,7 @@
  * appropriade directory using simple folders/files list
 */
 
-#include <signal.h>
+#include <csignal>
 #include "common_webcpp.h"
 #include "HttpServer.h"
 #include "Request.h"

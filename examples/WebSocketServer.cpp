@@ -28,7 +28,7 @@
  * Included HTTP server provides a simple test page.
 */
 
-#include <signal.h>
+#include <csignal>
 #include "common_webcpp.h"
 #include "defines_webcpp.h"
 #include "HttpServer.h"

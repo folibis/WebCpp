@@ -27,7 +27,7 @@
  * and calculates the average execution time.
 */
 
-#include <signal.h>
+#include <csignal>
 #include <string>
 #include <unistd.h>
 #include <chrono>

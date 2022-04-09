@@ -28,7 +28,7 @@
 */
 
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include "defines_webcpp.h"
 #include "common_webcpp.h"
 #include "StringUtil.h"

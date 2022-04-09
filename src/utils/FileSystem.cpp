@@ -1,6 +1,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
-#include <linux/limits.h>
+#include <climits>
 #include <dirent.h>
 #include <iostream>
 #include <cstring>
@@ -223,7 +223,7 @@ bool FileSystem::CreateFolder(const std::string &path)
             }
             else
             {
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
                 if(mkdir(fullpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0)
 #else
                 if(mkdir(fullpath.c_str()) != 0)
