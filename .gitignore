@@ -3,3 +3,5 @@ external/**
 test/ssl/**
 bin/
 zlib*
+.idea
+cmake-build*

@@ -26,7 +26,7 @@
  * Form - a simple HTTP server demonstrating POST message processing
 */
 
-#include <signal.h>
+#include <csignal>
 #include "common_webcpp.h"
 #include "HttpServer.h"
 #include "Request.h"

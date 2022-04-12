@@ -27,7 +27,7 @@
  * to the remote server
 */
 
-#include <signal.h>
+#include <csignal>
 #include "common_webcpp.h"
 #include "HttpClient.h"
 #include "Request.h"

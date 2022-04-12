@@ -27,7 +27,7 @@
  * for authentication purposes.
 */
 
-#include <signal.h>
+#include <csignal>
 #include "common_webcpp.h"
 #include "FileSystem.h"
 #include "HttpServer.h"

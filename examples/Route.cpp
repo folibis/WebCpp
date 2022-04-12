@@ -1,4 +1,4 @@
-#include <signal.h>
+#include <csignal>
 #include "common_webcpp.h"
 #include "HttpServer.h"
 #include "example_common.h"
