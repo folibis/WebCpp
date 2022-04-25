@@ -205,7 +205,7 @@ bool WebSocketServer::StopRequestThread()
 {
     if(m_requestThread.IsRunning())
     {
-        m_requestThread.Stop();
+        m_requestThread.StopNoWait();
         SendSignal();
         m_requestThread.Wait();
     }
