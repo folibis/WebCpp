@@ -128,11 +128,8 @@ bool ICommunicationServer::Close(bool wait)
 {
     if(m_running == true)
     {
+        m_readThread.Stop(false);
         m_running = false;
-        if(wait)
-        {
-            m_readThread.Wait();
-        }
 
         CloseConnections();
     }

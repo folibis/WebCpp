@@ -42,7 +42,7 @@ public:
     void SetFunction(const std::function<ThreadRoutine> &func);
     void SetFinishFunction(const std::function<ThreadFinishRoutine> &func);
     bool Start();
-    void Stop();
+    void Stop(bool wait = false);
     void StopNoWait();
     void Wait() const;
     bool IsRunning() const { return m_isRunning; }

@@ -36,12 +36,15 @@ bool ThreadWorker::Start()
     return true;
 }
 
-void ThreadWorker::Stop()
+void ThreadWorker::Stop(bool wait)
 {
     if(m_isRunning)
     {
         m_isRunning = false;
-        pthread_join(m_thread, nullptr);
+        if(wait)
+        {
+            pthread_join(m_thread, nullptr);
+        }
     }
 }
 
