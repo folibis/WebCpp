@@ -38,8 +38,6 @@ namespace WebCpp
 class HttpHeader
 {
 public:
-
-
     enum class HeaderRole
     {
         Undefined = 0,
@@ -147,7 +145,7 @@ public:
     size_t GetHeaderSize() const;
     size_t GetBodySize() const;
     size_t GetRequestSize() const;
-
+    void SetChunckedSize(size_t size);
     HeaderRole GetRole() const;
 
     void SetVersion(const std::string &version);
@@ -181,6 +179,7 @@ private:
     size_t m_headerSize = 0;
     std::string m_remoteAddress;
     int m_remotePort = (-1);
+    size_t m_chunkedSize = 0;
 };
 
 }

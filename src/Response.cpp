@@ -78,7 +78,7 @@ bool Response::AddFile(const std::string &file, const std::string &charset)
     return retval;
 }
 
-bool Response::SendNotFound()
+bool Response::NotFound()
 {
     m_responseCode = 404;
     m_responsePhrase = Response::ResponseCode2String(m_responseCode);
@@ -86,7 +86,7 @@ bool Response::SendNotFound()
     return true;
 }
 
-bool Response::SendRedirect(const std::string &url)
+bool Response::Redirect(const std::string &url)
 {
     m_responseCode = 301;
     m_responsePhrase = Response::ResponseCode2String(m_responseCode);
@@ -261,6 +261,8 @@ bool Response::Parse(const ByteArray &data, size_t* all, size_t* downoaded)
                                 return false;
                             }
                         }
+
+                        m_header.SetChunckedSize(m_body.size());
 
                         return true;
                     }

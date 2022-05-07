@@ -73,13 +73,12 @@ public:
 protected:
     struct RequestData
     {
-        RequestData(int connID, const std::string &remote, const HttpConfig &config)
+        RequestData(int connID, const std::string &remote)
         {
             this->connID= connID;
             readyForDispatch = false;
             handshake = false;
             request.SetConnectionID(connID);
-            request.SetConfig(config);
             request.GetHeader().SetRemote(remote);
         }
 
@@ -123,7 +122,7 @@ private:
     Mutex m_requestMutex;
     Signal m_signalCondition;
     std::deque<RequestData> m_requestQueue;
-    HttpConfig m_config;
+    HttpConfig &m_config;
     std::vector<RouteWebSocket> m_routes;
 };
 

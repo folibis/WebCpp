@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
         ws_protocol = WebCpp::Http::String2Protocol(s);
     }
 
-    WebCpp::HttpConfig config;
+    WebCpp::HttpConfig &config = WebCpp::HttpConfig::Instance();
     config.SetRoot(PUB);
     config.SetWsProtocol(ws_protocol);
     config.SetWsServerPort(port_ws);
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
         }
     });
 
-    if(wsClient.Init(config) == false)
+    if(wsClient.Init() == false)
     {
         WebCpp::DebugPrint() << "init error: " << wsClient.GetLastError() << std::endl;
         return 1;

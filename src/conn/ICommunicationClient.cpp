@@ -82,7 +82,6 @@ bool ICommunicationClient::Connect(const std::string &host, int port)
         m_connected = true;
         return m_connected;
     }
-
     catch(...)
     {
         m_connected = false;
@@ -94,11 +93,16 @@ bool ICommunicationClient::Connect(const std::string &host, int port)
 
 bool ICommunicationClient::CloseConnection()
 {
-    bool retval = m_sockets.CloseSocket(0);
-    if(m_closeConnectionCallback != nullptr)
+    bool retval = false;
+    if(m_sockets.IsSocketValid(0))
     {
-        m_closeConnectionCallback();
+        retval = m_sockets.CloseSocket(0);
+        if(m_closeConnectionCallback != nullptr)
+        {
+            m_closeConnectionCallback();
+        }
     }
+    m_connected = false;
 
     return retval;
 }
@@ -123,7 +127,7 @@ bool ICommunicationClient::Run()
 
 bool ICommunicationClient::Close(bool wait)
 {
-    if(m_initialized)
+    if(m_initialized && m_connected)
     {
         CloseConnection();
     }
@@ -131,10 +135,7 @@ bool ICommunicationClient::Close(bool wait)
     if(m_running)
     {
         m_running = false;
-        if(wait)
-        {
-            m_thread.Wait();
-        }
+        m_thread.Stop(wait);
     }
 
     return true;

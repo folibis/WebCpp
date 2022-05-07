@@ -79,14 +79,14 @@ int main(int argc, char *argv[])
     WebCpp::HttpServer httpServer;
     httpServerPtr = &httpServer;
 
-    WebCpp::HttpConfig config;
+    WebCpp::HttpConfig &config = WebCpp::HttpConfig::Instance();
     config.SetRoot(PUB);
     config.SetHttpProtocol(http_protocol);
     config.SetHttpServerPort(port_http);
     config.SetSslSertificate(SSL_CERT);
     config.SetSslKey(SSL_KEY);
 
-    if(httpServer.Init(config))
+    if(httpServer.Init())
     {
         WebCpp::DebugPrint() << "HTTP POST server" << std::endl;
         httpServer.OnGet("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 
             if(retval == false)
             {
-                response.SendNotFound();
+                response.NotFound();
             }
 
             return retval;

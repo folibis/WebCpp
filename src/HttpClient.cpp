@@ -7,7 +7,8 @@
 
 using namespace WebCpp;
 
-HttpClient::HttpClient()
+HttpClient::HttpClient():
+    m_config(WebCpp::HttpConfig::Instance())
 {
 
 }
@@ -19,16 +20,6 @@ HttpClient::~HttpClient()
 
 bool HttpClient::Init()
 {
-    HttpConfig config;
-    return Init(config);
-}
-
-bool HttpClient::Init(const HttpConfig &config)
-{
-    ClearError();
-
-    m_config = config;
-
     return true;
 }
 
@@ -42,7 +33,7 @@ bool HttpClient::Close(bool wait)
     ClearError();
     bool retval = true;
 
-    if(m_connection->Close(wait) == true)
+    if(m_connection->Close(wait) == false)
     {
         SetLastError("close failed: " + m_connection->GetLastError());
         retval = false;

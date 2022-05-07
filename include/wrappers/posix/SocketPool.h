@@ -83,6 +83,7 @@ public:
     int Create(bool main = false);
     bool CloseSocket(size_t index);
     bool CloseSockets();
+    bool IsSocketValid(size_t index);
     bool Bind(const std::string &host, int port);
     bool Listen();
     size_t Accept();

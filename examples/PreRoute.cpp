@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     WebCpp::HttpServer httpServer;
     httpServerPtr = &httpServer;
 
-    WebCpp::HttpConfig config;
+    WebCpp::HttpConfig &config = WebCpp::HttpConfig::Instance();
     config.SetRoot(PUB);
     config.SetHttpProtocol(http_protocol);
     config.SetHttpServerPort(port_http);
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
     bool authenticated = false;
 
-    if(httpServer.Init(config))
+    if(httpServer.Init())
     {
         WebCpp::DebugPrint() << "HTTP prerouting test server" << std::endl;
 
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
                 retval = response.AddFile("auth.html");
                 if(retval == false)
                 {
-                    response.SendNotFound();
+                    response.NotFound();
                 }
             }
             return !authenticated;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
                 authenticated = true;
             }
 
-            response.SendRedirect("/");
+            response.Redirect("/");
             return true;
         });
 
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
                 retval = response.AddFile(file);
                 if(retval == false)
                 {
-                    response.SendNotFound();
+                    response.NotFound();
                 }
                 else
                 {

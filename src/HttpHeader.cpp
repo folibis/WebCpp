@@ -65,10 +65,17 @@ size_t HttpHeader::GetBodySize() const
     if(m_complete)
     {
         auto str = GetHeader(HeaderType::ContentLength);
-        int num;
-        if(StringUtil::String2int(str, num))
+        if(str.empty() == false)
         {
-            size = num;
+            int num;
+            if(StringUtil::String2int(str, num))
+            {
+                size = num;
+            }
+        }
+        else
+        {
+            size = m_chunkedSize;
         }
     }
 
@@ -77,7 +84,12 @@ size_t HttpHeader::GetBodySize() const
 
 size_t HttpHeader::GetRequestSize() const
 {
-    return GetHeaderSize() + GetBodySize() + 4; // header + delimiter(CRLFCRLF, 4 bytes) + body
+    return GetHeaderSize() + 4 + GetBodySize(); // header + delimiter(CRLFCRLF, 4 bytes) + body
+}
+
+void HttpHeader::SetChunckedSize(size_t size)
+{
+    m_chunkedSize = size;
 }
 
 HttpHeader::HeaderRole HttpHeader::GetRole() const

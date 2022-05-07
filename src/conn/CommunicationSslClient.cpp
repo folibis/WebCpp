@@ -11,8 +11,6 @@
 #include "Lock.h"
 #include "CommunicationSslClient.h"
 
-#define DEFAULT_SSL_PORT 443
-
 
 using namespace WebCpp;
 

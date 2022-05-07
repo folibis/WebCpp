@@ -79,7 +79,7 @@ protected:
 
 private:
     std::shared_ptr<ICommunicationClient> m_connection = nullptr;
-    HttpConfig m_config;
+    HttpConfig &m_config;
     State m_state;
     ByteArray m_buffer;
     std::function<void(State)> m_stateCallback = nullptr;

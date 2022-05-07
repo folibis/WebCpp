@@ -140,9 +140,12 @@ bool ICommunicationServer::Close(bool wait)
 bool ICommunicationServer::CloseConnection(int connID)
 {   
     bool retval = m_sockets.CloseSocket(connID);
-    if(m_closeConnectionCallback != nullptr)
+    if(retval)
     {
-        m_closeConnectionCallback(connID);
+        if(m_closeConnectionCallback != nullptr)
+        {
+            m_closeConnectionCallback(connID);
+        }
     }
 
     return retval;

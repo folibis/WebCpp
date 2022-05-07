@@ -35,6 +35,7 @@
 #include "ThreadWorker.h"
 #include "Mutex.h"
 #include "Signal.h"
+#include "Session.h"
 #include "Request.h"
 #include "Response.h"
 #include "RouteHttp.h"
@@ -66,8 +67,6 @@ public:
     void SetPreRouteFunc(const RouteHttp::RouteFunc &callback);
     void SetPostRouteFunc(const RouteHttp::RouteFunc &callback);
 
-    Http::Protocol GetProtocol() const;
-
     bool SendResponse(Response &response);
 
     std::string ToString() const;
@@ -89,40 +88,20 @@ protected:
     bool CheckDataFullness();
     std::unique_ptr<Request> GetNextRequest();
     void RemoveFromQueue(int connID);
+
     void ProcessRequest(Request &request);
     void ProcessKeepAlive(int connID);    
 
 private:
-    struct RequestData
-    {
-        RequestData(int connID, const std::string &remote):
-            request(new Request())
-        {
-            this->connID = connID;
-            this->remote = remote;
-            request->SetConnectionID(connID);
-            request->SetRemote(remote);
-            readyForDispatch = false;
-        }
-        int connID;
-        ByteArray data;
-        std::unique_ptr<Request> request;
-        bool readyForDispatch;
-        std::string remote;
-    };
-
     std::shared_ptr<ICommunicationServer> m_server = nullptr;
     Http::Protocol m_protocol = Http::Protocol::Undefined;
-
+    Session m_sessions;
     ThreadWorker m_requestThread;
     Mutex m_queueMutex;
     Mutex m_signalMutex;
     Signal m_signalCondition;
-
-    std::deque<RequestData> m_requestQueue;
     std::vector<RouteHttp> m_routes;
-
-    HttpConfig m_config;
+    HttpConfig &m_config;
     RouteHttp::RouteFunc m_preRoute = nullptr;
     RouteHttp::RouteFunc m_postRoute = nullptr;
 };

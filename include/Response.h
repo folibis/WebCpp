@@ -58,8 +58,8 @@ public:
     void Write(const ByteArray &data, size_t start = 0);
     void Write(const std::string &data);
     bool AddFile(const std::string &file, const std::string &charset = "utf-8");
-    bool SendNotFound();
-    bool SendRedirect(const std::string &url);
+    bool NotFound();
+    bool Redirect(const std::string &url);
     void SetResponseCode(uint16_t code);
     void SetResponseCode(uint16_t code, const std::string &phrase);
     uint16_t GetResponseCode() const;

@@ -178,6 +178,16 @@ bool SocketPool::CloseSockets()
     return true;
 }
 
+bool SocketPool::IsSocketValid(size_t index)
+{
+    if(index < m_count)
+    {
+        return (m_fds[index].fd != (-1));
+    }
+
+    return false;
+}
+
 bool SocketPool::Bind(const std::string &host, int port)
 {
     ClearError();
@@ -466,14 +476,14 @@ size_t SocketPool::Write(const uint8_t *buffer, size_t size, size_t index)
     ClearError();
     Lock lock(m_writeMutex);
 
-    size_t total = (-1);
+    size_t total = 0;
     try
     {
         int fd = m_fds[index].fd;
-        if(fd == (-1))
+        if(fd == ERROR)
         {
             SetLastError("wrong socket");
-            return (-1);
+            return ERROR;
         }
 
         bool again = false;
@@ -571,7 +581,7 @@ size_t SocketPool::Read(void *buffer, size_t size, size_t index)
         if(fd == (-1))
         {
             SetLastError("wrong socket");
-            return (-1);
+            return ERROR;
         }
 
         if(IsContains(m_options, Options::Ssl))
@@ -605,7 +615,7 @@ size_t SocketPool::Read(void *buffer, size_t size, size_t index)
             bool again = false;
             do
             {
-                read = recv(fd, buffer, size, MSG_DONTWAIT);
+                read = recv(fd, buffer, size, 0);
                 if (read < 0)
                 {
                     if (errno == EWOULDBLOCK)
@@ -616,6 +626,10 @@ size_t SocketPool::Read(void *buffer, size_t size, size_t index)
                     {
                         throw std::runtime_error(std::string("socket read error: ") + strerror(errno));
                     }
+                }
+                else if(read == 0)
+                {
+                    return ERROR;
                 }
             }
             while(again);

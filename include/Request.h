@@ -44,8 +44,7 @@ class Request: public IErrorable
 {
 public:
     Request();
-    Request(const HttpConfig &config);
-    Request(int connID, HttpConfig &config, const std::string &remote);
+    Request(int connID, const std::string &remote);
     Request(const Request& other) = delete;
     Request& operator=(const Request& other) = delete;
     Request(Request&& other) = default;
@@ -84,7 +83,6 @@ protected:
 private:
     int m_connID;
     Url m_url;
-    HttpConfig m_config;
     HttpHeader m_header;
     Http::Method m_method = Http::Method::Undefined;
     std::string m_httpVersion = "HTTP/1.1";

@@ -14,13 +14,6 @@ Request::Request():
 
 }
 
-Request::Request(const HttpConfig &config):
-    m_config(config),
-    m_header(HttpHeader::HeaderRole::Request)
-{
-
-}
-
 bool Request::Parse(const ByteArray &data)
 {
     ClearError();
@@ -80,9 +73,8 @@ bool Request::ParseRequestLine(const ByteArray &data, size_t &pos)
 }
 
 
-Request::Request(int connID, HttpConfig& config, const std::string &remote):
+Request::Request(int connID, const std::string &remote):
     m_connID(connID),
-    m_config(config),
     m_header(HttpHeader::HeaderRole::Request)
 {
 }
@@ -95,16 +87,6 @@ int Request::GetConnectionID() const
 void Request::SetConnectionID(int connID)
 {
     m_connID = connID;
-}
-
-const HttpConfig &Request::GetConfig() const
-{
-    return m_config;
-}
-
-void Request::SetConfig(const HttpConfig &config)
-{
-    m_config = config;
 }
 
 const Url &Request::GetUrl() const
@@ -145,8 +127,9 @@ std::string Request::GetHttpVersion() const
 
 bool Request::ParseBody(const ByteArray &data, size_t headerSize)
 {
+    WebCpp::HttpConfig &config = WebCpp::HttpConfig::Instance();
     auto contentType = m_header.GetHeader(HttpHeader::HeaderType::ContentType);
-    if(m_requestBody.Parse(data, headerSize, ByteArray(contentType.begin(), contentType.end()), m_config.GetTempFile()) == false)
+    if(m_requestBody.Parse(data, headerSize, ByteArray(contentType.begin(), contentType.end()), config.GetTempFile()) == false)
     {
         SetLastError("body parsing error: " + m_requestBody.GetLastError());
         return false;
