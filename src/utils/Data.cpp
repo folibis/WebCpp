@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include "Sha1.h"
+#include "Sha256.h"
 #include "Data.h"
 
 static const std::string base64_chars =
@@ -115,6 +116,12 @@ uint8_t* Data::Sha1Digest(const std::string &string)
     SHA1 checksum;
     checksum.update(string);
     return checksum.digest();
+}
+
+std::string Data::Sha256(const std::string &string)
+{
+    SHA256 hash;
+    return hash.Hash(string.c_str());
 }
 
 
