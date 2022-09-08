@@ -21,7 +21,7 @@ Currently supported:
 - FastCGI basic support (tested with php-fpm)
 
 Requirements:
-- Linux (Windows support comming soon)
+- Linux (Windows support coming soon)
 - Gcc >= 4.8.3
 - CMake
 - OpenSSL & OpenSSL headers (optionally)
@@ -99,7 +99,7 @@ server.OnGet("/(user|users)/{user:alpha}/[{action:string}/]", [](const WebCpp::R
 Placeholder | Notes | Example
 ------------ | ------------- | -------------
 (value1\|value2) | miltiple values | /(user\|users) will work for /user, /users
-{variable} | capturing variable | /user/{name} will work for /user/john and the variable can be retrived in a handler using `request.GetArg("name")`
+{variable} | capturing variable | /user/{name} will work for /user/john and the variable can be retrieved in a handler using `request.GetArg("name")`
 {variable:xxx} | variable type | xxx is one of [alpha, numeric, string, upper, lower, any], that allows to narrow down a variable type
 [optional] | optional value | /user/[num] will work for /user, /user/2
 \* | any value, any length | /\*.php will work for /index.php, /subfolder/index.php and whatever
@@ -113,7 +113,7 @@ You can generate a self-signed certificate using the following command:
 cd ~/.ssh
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout server.key -out server.cert
 ```
-And then set the path to the sertificate and the key:
+And then set the path to the certificate and the key:
 
 ```cpp
 WebCpp::HttpServer httpServer;
