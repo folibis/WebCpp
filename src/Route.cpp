@@ -6,11 +6,12 @@
 
 using namespace WebCpp;
 
-Route::Route(const std::string &path, Http::Method method)
+Route::Route(const std::string &path, Http::Method method, bool useAuth)
 {
     m_method = method;
     Parse(path);
     m_path = path;
+    m_useAuth = useAuth;
 }
 
 const std::string& Route::GetPath() const
@@ -90,9 +91,14 @@ bool Route::IsMatch(Request &request)
     return true;
 }
 
+bool Route::IsUseAuth() const
+{
+    return m_useAuth;
+}
+
 std::string Route::ToString() const
 {
-    return "Route (method: " + Http::Method2String(m_method) + ", path: " + m_path + ")";
+    return "Route (method: " + Http::Method2String(m_method) + ", path: " + m_path + ", auth: " + (m_useAuth ? "true" : "false") + ")";
 }
 
 bool Route::Parse(const std::string &path)

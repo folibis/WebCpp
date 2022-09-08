@@ -115,9 +115,9 @@ bool HttpServer::WaitFor()
     return m_server->WaitFor();
 }
 
-HttpServer &HttpServer::OnGet(const std::string &path, const RouteHttp::RouteFunc &f)
+HttpServer &HttpServer::OnGet(const std::string &path, const RouteHttp::RouteFunc &f, bool needAuth)
 {
-    RouteHttp route(path, Http::Method::GET);
+    RouteHttp route(path, Http::Method::GET, needAuth);
     LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
     route.SetFunction(f);
     m_routes.push_back(std::move(route));
@@ -125,9 +125,9 @@ HttpServer &HttpServer::OnGet(const std::string &path, const RouteHttp::RouteFun
     return *this;
 }
 
-HttpServer &HttpServer::OnPost(const std::string &path, const RouteHttp::RouteFunc &f)
+HttpServer &HttpServer::OnPost(const std::string &path, const RouteHttp::RouteFunc &f, bool needAuth)
 {
-    RouteHttp route(path, Http::Method::POST);
+    RouteHttp route(path, Http::Method::POST, needAuth);
     LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
     route.SetFunction(f);
     m_routes.push_back(std::move(route));
@@ -142,6 +142,11 @@ void HttpServer::SetPreRouteFunc(const RouteHttp::RouteFunc &callback)
 void HttpServer::SetPostRouteFunc(const RouteHttp::RouteFunc &callback)
 {
     m_postRoute = callback;
+}
+
+void HttpServer::SetAuthHandler(const AuthHandler &f)
+{
+    m_authHandler = f;
 }
 
 bool HttpServer::SendResponse(Response &response)
@@ -282,8 +287,10 @@ void *HttpServer::RequestThread(bool &running)
 void HttpServer::ProcessRequest(Request &request)
 {
     bool processed = false;
+    bool isFinal = false;
 
     Response response(request.GetConnectionID(), m_config);
+    response.SetSession(request.GetSession());
 
     if(m_config.GetKeepAliveTimeout() > 0)
     {
@@ -301,6 +308,29 @@ void HttpServer::ProcessRequest(Request &request)
         {
             if(route.IsMatch(request))
             {
+                if(route.IsUseAuth() == true)
+                {
+                    auto session = request.GetSession();
+                    if(session->authProvider.IsInitialized() == false)
+                    {
+                        session->authProvider.Init();
+                    }
+                    bool authSuccessful = false;
+
+                    if(request.CheckAuth() == true)
+                    {
+                        if(m_authHandler != nullptr)
+                        {
+                            authSuccessful = m_authHandler(request, session->authProvider.GetPreferred());
+                        }
+                    }
+
+                    if(authSuccessful == false)
+                    {
+                        response.NotAuthenticated();
+                        isFinal = true;
+                    }
+                }
                 auto &f = route.GetFunction();
                 if(f != nullptr)
                 {
@@ -317,14 +347,17 @@ void HttpServer::ProcessRequest(Request &request)
         }
     }
 
-    if(m_postRoute != nullptr)
+    if(isFinal == false)
     {
-        processed = m_postRoute(request, response);
-    }
+        if(m_postRoute != nullptr)
+        {
+            processed = m_postRoute(request, response);
+        }
 
-    if(processed == false)
-    {
-        response.NotFound();
+        if(processed == false)
+        {
+            response.NotFound();
+        }
     }
 
     LOG("#" + std::to_string(request.GetConnectionID()) + ": " +  request.GetUrl().GetPath() + (processed ? ", processed" : ", not processed"), LogWriter::LogType::Access);

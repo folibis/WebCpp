@@ -35,6 +35,7 @@
 #include "Url.h"
 #include "IHttp.h"
 #include "IErrorable.h"
+#include "IAuth.h"
 
 
 namespace WebCpp
@@ -74,8 +75,10 @@ public:
     std::string GetRemote() const;
     void SetRemote(const std::string &remote);
     bool Send(const std::shared_ptr<ICommunicationClient> &communication);
+    void Clear();
     void SetSession(Session *session);
     Session* GetSession() const;
+    bool CheckAuth();
     std::string ToString() const;
 
 protected:
@@ -91,7 +94,7 @@ private:
     Http::Method m_method = Http::Method::Undefined;
     std::string m_httpVersion = "HTTP/1.1";
     size_t m_requestLineLength = 0;
-    std::map<std::string, std::string> m_args;    
+    std::map<std::string, std::string> m_args;
     RequestBody m_requestBody;
     std::string m_remote;
     Session *m_session = nullptr;

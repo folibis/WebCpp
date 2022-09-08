@@ -38,7 +38,7 @@ class RouteHttp: public Route
 public:
     using RouteFunc = std::function<bool(const Request&request, Response &response)>;
 
-    RouteHttp(const std::string &path, Http::Method method);
+    RouteHttp(const std::string &path, Http::Method method, bool useAuth = false);
 
     bool SetFunction(const RouteFunc& f);
     const RouteFunc& GetFunction() const;

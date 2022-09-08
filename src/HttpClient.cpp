@@ -3,12 +3,14 @@
 #include "LogWriter.h"
 #include "HttpClient.h"
 #include "Response.h"
+#include "AuthFactory.h"
 
 
 using namespace WebCpp;
 
 HttpClient::HttpClient():
-    m_config(WebCpp::HttpConfig::Instance())
+    m_config(WebCpp::HttpConfig::Instance()),
+    m_authProvider(AuthProvider::Type::Client)
 {
 
 }
@@ -39,7 +41,6 @@ bool HttpClient::Close(bool wait)
         retval = false;
     }
 
-    m_stateCallback = nullptr;
     SetState(State::Closed);
 
     return retval;
@@ -50,18 +51,16 @@ bool HttpClient::WaitFor()
     return m_connection->WaitFor();
 }
 
-bool HttpClient::Open(Request &request)
+bool HttpClient::Open()
 {
     ClearError();
 
-    if(m_connection == nullptr)
+    if(InitConnection(m_request.GetUrl()) == false)
     {
-        if(InitConnection(request.GetUrl()) == false)
-        {
-            SetLastError("connection init failed: " + GetLastError());
-            LOG(GetLastError(), LogWriter::LogType::Error);
-            return false;
-        }
+        SetLastError("connection init failed: " + GetLastError());
+        LOG(GetLastError(), LogWriter::LogType::Error);
+        SetState(State::Undefined);
+        return false;
     }
 
     if(m_connection->IsConnected() == false)
@@ -70,6 +69,7 @@ bool HttpClient::Open(Request &request)
         {
             SetLastError("connection faied: " + m_connection->GetLastError());
             LOG(GetLastError(), LogWriter::LogType::Error);
+            SetState(State::Undefined);
             return false;
         }
 
@@ -80,18 +80,19 @@ bool HttpClient::Open(Request &request)
     {
         SetLastError("read routine failed: " + m_connection->GetLastError());
         LOG(GetLastError(), LogWriter::LogType::Error);
+        SetState(State::Undefined);
         return false;
     }
 
-    if(request.Send(m_connection) == false)
+    if(m_request.Send(m_connection) == false)
     {
-        SetLastError("request sending error: " + request.GetLastError());
+        SetLastError("request sending error: " + m_request.GetLastError());
         LOG(GetLastError(), LogWriter::LogType::Error);
+        SetState(State::Undefined);
         return false;
     }
 
     SetState(State::DataSent);
-
     return true;
 }
 
@@ -99,18 +100,30 @@ bool HttpClient::Open(Http::Method method, const std::string &url, const std::ma
 {
     ClearError();
 
-    Request request;
-    auto &p_url = request.GetUrl();
+    if(m_state == State::DataSent)
+    {
+        SetLastError("Already opened");
+        return false;
+    }
+
+    m_request.Clear();
+
+    auto &p_url = m_request.GetUrl();
     p_url.Parse(url);
     if(p_url.IsInitiaized())
     {
-        request.SetMethod(method);
+        m_request.SetMethod(method);
         for(auto &header: headers)
         {
-            request.GetHeader().SetHeader(header.first, header.second);
+            m_request.GetHeader().SetHeader(header.first, header.second);
         }
 
-        return Open(request);
+        if(m_authRequired)
+        {
+            AddAuthHeaders();
+        }
+
+        return Open();
     }
     else
     {
@@ -119,6 +132,11 @@ bool HttpClient::Open(Http::Method method, const std::string &url, const std::ma
     }
 
     return false;
+}
+
+void HttpClient::SetKeepOpen(bool value)
+{
+    m_keepOpen = value;
 }
 
 void HttpClient::SetResponseCallback(const std::function<bool (const Response &)> &func)
@@ -136,9 +154,19 @@ void HttpClient::SetProgressCallback(const std::function<void (size_t, size_t)> 
     m_progressCallback = func;
 }
 
+void HttpClient::SetAuthCallback(const std::function<bool (const Request &, AuthProvider &)> &func)
+{
+    m_authCallback = func;
+}
+
 HttpClient::State HttpClient::GetState() const
 {
     return m_state;
+}
+
+void HttpClient::ClearAuth()
+{
+    m_authProvider.Clear();
 }
 
 void HttpClient::OnDataReady(const ByteArray &data)
@@ -149,11 +177,49 @@ void HttpClient::OnDataReady(const ByteArray &data)
     size_t all, downloaded;
     if(response.Parse(m_buffer, &all, &downloaded))
     {
-        SetState(State::DataReady);
-
-        if(m_responseCallback != nullptr)
+        if(response.GetResponseCode() == 401)
         {
-            m_responseCallback(response);
+            LOG("Authentication required", LogWriter::LogType::Info);
+            m_authRequired = true;
+            m_authProvider.Clear();
+
+            if(m_authCallback != nullptr)
+            {
+                auto list = response.GetHeader().GetAllHeaders("WWW-Authenticate");
+                for(auto &scheme: list)
+                {
+                    m_authProvider.Parse(scheme);
+                }
+
+                if(m_authCallback(m_request, m_authProvider) == true)
+                {
+                    AddAuthHeaders();
+                    if(Open() == false)
+                    {
+                        SetLastError("request with auth sending error: " + m_request.GetLastError());
+                        LOG(GetLastError(), LogWriter::LogType::Error);
+                    }
+
+                    SetState(State::DataSent);
+                }
+            }
+        }
+        else
+        {
+            SetState(State::DataReady);
+            if(m_responseCallback != nullptr)
+            {
+                m_responseCallback(response);
+            }
+
+            if(m_keepOpen == false)
+            {
+                Close(false);
+            }
+            else
+            {
+                SetState(State::Undefined);
+            }
         }
 
         m_buffer.clear();
@@ -168,29 +234,26 @@ void HttpClient::OnDataReady(const ByteArray &data)
 void HttpClient::OnClosed()
 {
     m_buffer.clear();
-    m_connection->Close();
     SetState(State::Closed);
 }
 
 bool HttpClient::InitConnection(const Url &url)
 {
-    if(m_connection != nullptr)
+    if(m_connection == nullptr || m_connection->IsInitialized() == false)
     {
-        m_connection->Close();
-    }
-
-    switch(url.GetScheme())
-    {
-        case Url::Scheme::HTTP:
-            m_connection = std::make_shared<CommunicationTcpClient>();
-            break;
+        switch(url.GetScheme())
+        {
+            case Url::Scheme::HTTP:
+                m_connection = std::make_shared<CommunicationTcpClient>();
+                break;
 #ifdef WITH_OPENSSL
-        case Url::Scheme::HTTPS:
-            m_connection = std::make_shared<CommunicationSslClient>(m_config.GetSslSertificate(), m_config.GetSslKey());
-            break;
+            case Url::Scheme::HTTPS:
+                m_connection = std::make_shared<CommunicationSslClient>(m_config.GetSslSertificate(), m_config.GetSslKey());
+                break;
 #endif
-        default:
-            break;
+            default:
+                break;
+        }
     }
 
     if(m_connection == nullptr)
@@ -228,4 +291,25 @@ void HttpClient::SetState(State state)
     {
         m_stateCallback(m_state);
     }
+}
+
+bool HttpClient::AddAuthHeaders()
+{
+    IAuth *preferredScheme = nullptr;
+    for(auto &scheme: m_authProvider.Get())
+    {
+        if(scheme->IsPreferred())
+        {
+            preferredScheme = scheme.get();
+            break;
+        }
+    }
+
+    if(preferredScheme != nullptr)
+    {
+        preferredScheme->AddAuthHeaders(m_request);
+        return true;
+    }
+
+    return false;
 }

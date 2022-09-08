@@ -5,6 +5,7 @@
 #include "Response.h"
 #include "IHttp.h"
 #include "Data.h"
+#include "SessionManager.h"
 #include "DebugPrint.h"
 
 #define WRITE_BIFFER_SIZE 1024
@@ -100,6 +101,23 @@ bool Response::Unauthorized()
     m_responseCode = 401;
     m_responsePhrase = Response::ResponseCode2String(m_responseCode);
     AddHeader(HttpHeader::HeaderType::ContentLength, "0");
+    return true;
+}
+
+bool Response::NotAuthenticated()
+{
+    m_responseCode = 401;
+    m_responsePhrase = "Unauthorized";
+
+    if(m_session != nullptr)
+    {
+        auto &list = m_session->authProvider;
+        for(auto &auth: list.Get())
+        {
+            AddHeader(HttpHeader::HeaderType::WWWAuthenticate, auth->GetChallenge());
+        }
+    }
+
     return true;
 }
 
@@ -559,4 +577,14 @@ ByteArray Response::BuildStatusLine() const
 ByteArray Response::BuildHeaders() const
 {
     return m_header.ToByteArray();
+}
+
+void Response::SetSession(Session *session)
+{
+    m_session = session;
+}
+
+Session *Response::GetSession() const
+{
+    return m_session;
 }

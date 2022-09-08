@@ -78,6 +78,7 @@ public:
     std::string GetTempFolder() const;
     ByteArray ToByteArray();
     std::string BuildContentType() const;
+    void Clear();
 
 protected:
     std::map<std::string, std::string> ParseHeaders(const ByteArray &header) const;

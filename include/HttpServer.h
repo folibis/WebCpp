@@ -35,7 +35,7 @@
 #include "ThreadWorker.h"
 #include "Mutex.h"
 #include "Signal.h"
-#include "Session.h"
+#include "SessionManager.h"
 #include "Request.h"
 #include "Response.h"
 #include "RouteHttp.h"
@@ -61,11 +61,12 @@ public:
     bool Close(bool wait = true) override;
     bool WaitFor() override;
 
-    HttpServer& OnGet(const std::string &path, const RouteHttp::RouteFunc &f);
-    HttpServer& OnPost(const std::string &path, const RouteHttp::RouteFunc &f);
-
+    HttpServer& OnGet(const std::string &path, const RouteHttp::RouteFunc &f, bool needAuth = false);
+    HttpServer& OnPost(const std::string &path, const RouteHttp::RouteFunc &f, bool needAuth = false);
     void SetPreRouteFunc(const RouteHttp::RouteFunc &callback);
     void SetPostRouteFunc(const RouteHttp::RouteFunc &callback);
+    using AuthHandler = std::function<bool(const Request &request, IAuth *authMethod)>;
+    void SetAuthHandler(const AuthHandler &f);
 
     bool SendResponse(Response &response);
 
@@ -95,7 +96,7 @@ protected:
 private:
     std::shared_ptr<ICommunicationServer> m_server = nullptr;
     Http::Protocol m_protocol = Http::Protocol::Undefined;
-    Session m_sessions;
+    SessionManager m_sessions;
     ThreadWorker m_requestThread;
     Mutex m_queueMutex;
     Mutex m_signalMutex;
@@ -104,6 +105,7 @@ private:
     HttpConfig &m_config;
     RouteHttp::RouteFunc m_preRoute = nullptr;
     RouteHttp::RouteFunc m_postRoute = nullptr;
+    AuthHandler m_authHandler = nullptr;
 };
 
 }

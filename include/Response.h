@@ -37,6 +37,7 @@
 namespace WebCpp
 {
 
+class Session;
 class Response: public IErrorable
 {
 public:
@@ -61,6 +62,7 @@ public:
     bool NotFound();
     bool Redirect(const std::string &url);
     bool Unauthorized();
+    bool NotAuthenticated();
     void SetResponseCode(uint16_t code);
     void SetResponseCode(uint16_t code, const std::string &phrase);
     uint16_t GetResponseCode() const;
@@ -73,6 +75,9 @@ public:
     void SetShouldSend(bool value);
     bool Send(ICommunicationServer *communication);
     bool Parse(const ByteArray &data, size_t *all = nullptr, size_t *downoaded = nullptr);
+
+    void SetSession(Session *session);
+    Session* GetSession() const;
 
     static std::string HeaderType2String(Response::HeaderType headerType);
     static Response::HeaderType String2HeaderType(const std::string &str);
@@ -108,6 +113,7 @@ private:
     std::string m_mimeType = "";   
     std::string  m_file;
     bool m_shouldSend = true;
+    Session *m_session = nullptr;
 };
 
 }

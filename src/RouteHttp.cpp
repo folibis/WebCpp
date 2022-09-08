@@ -3,8 +3,8 @@
 
 using namespace WebCpp;
 
-RouteHttp::RouteHttp(const std::string &path, Http::Method method) :
-    Route(path, method)
+RouteHttp::RouteHttp(const std::string &path, Http::Method method, bool useAuth) :
+    Route(path, method, useAuth)
 {
 
 }

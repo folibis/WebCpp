@@ -159,9 +159,11 @@ public:
     int GetCount() const;
     std::string GetHeader(HeaderType headerType) const;
     std::string GetHeader(const std::string &headerType) const;
+    std::vector<std::string> GetAllHeaders(const std::string &headerType) const;
     const std::vector<HttpHeader::Header> &GetHeaders() const;
     void SetHeader(HeaderType type, const std::string &value);
     void SetHeader(const std::string &name, const std::string &value);
+    void Clear();
 
     static HttpHeader::HeaderType String2HeaderType(const std::string &str);
     static std::string HeaderType2String(HttpHeader::HeaderType headerType);
