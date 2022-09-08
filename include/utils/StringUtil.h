@@ -26,6 +26,7 @@
 #define WEBCPP_STRINGUTIL_H
 
 #include "common_webcpp.h"
+#include <map>
 
 
 class StringUtil
@@ -64,6 +65,7 @@ public:
     static uint32_t GetRand(uint32_t min, uint32_t max);
     static bool Compare(const ByteArray &arr1, const ByteArray &arr2);
     static std::string GenerateRandomString(size_t length = 20, bool uppercase = true, bool special = true);
+    static std::map<std::string, std::string> ParseParamString(const std::string &str, size_t start = 0);
 };
 
 #endif // WEBCPP_STRINGUTIL_H

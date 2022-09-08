@@ -37,6 +37,7 @@
 #define POLL_TIMEOUT 500
 #define DEFAULT_HOST "*"
 #define DEFAULT_PORT 80
+#define DEFAULT_SSL_HOST "*"
 #define DEFAULT_SSL_PORT 430
 #define DEFAULT_CONNECT_TIMEOUT 1000
 
@@ -83,6 +84,7 @@ public:
     int Create(bool main = false);
     bool CloseSocket(size_t index);
     bool CloseSockets();
+    bool IsSocketValid(size_t index);
     bool Bind(const std::string &host, int port);
     bool Listen();
     size_t Accept();

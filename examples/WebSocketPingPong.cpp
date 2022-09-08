@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
     httpServerPtr = &httpServer;
     wsServerPtr = &wsServer;
 
-    WebCpp::HttpConfig config;
+    WebCpp::HttpConfig &config = WebCpp::HttpConfig::Instance();
     config.SetRoot(PUB);
     config.SetHttpProtocol(http_protocol);
     config.SetHttpServerPort(port_http);
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     config.SetSslSertificate(SSL_CERT);
     config.SetSslKey(SSL_KEY);
 
-    if(httpServer.Init(config))
+    if(httpServer.Init())
     {
         WebCpp::DebugPrint() << "WebSocket ping-pong test server" << std::endl;
         WebCpp::DebugPrint() << "HTTP server Init(): ok " << std::endl;
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
             }
             if(retval == false)
             {
-                response.SendNotFound();
+                response.NotFound();
             }
 
             return retval;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
         WebCpp::DebugPrint() << "HTTP server Init() failed: " << httpServer.GetLastError() << std::endl;
     }
 
-    if(wsServer.Init(config))
+    if(wsServer.Init())
     {
         WebCpp::DebugPrint() << "WS server Init(): ok " << std::endl;
         wsServer.OnMessage("/ws", [&](const WebCpp::Request &request, WebCpp::ResponseWebSocket &response, const ByteArray &data) -> bool

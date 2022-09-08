@@ -23,18 +23,21 @@
 */
 
 /*
- * Form - a simple HTTP server demonstrating POST message processing
+ * BasicAuthServer - a simple HTTP server with Basic authentication
+ *
 */
 
 #include <csignal>
 #include "common_webcpp.h"
+#include "defines_webcpp.h"
 #include "HttpServer.h"
 #include "Request.h"
-#include "StringUtil.h"
-#include "Data.h"
-#include "FileSystem.h"
+#include <iostream>
 #include "example_common.h"
 #include "DebugPrint.h"
+
+#define USER "foo"
+#define PASSWORD "bar"
 
 
 static WebCpp::HttpServer *httpServerPtr = nullptr;
@@ -88,56 +91,42 @@ int main(int argc, char *argv[])
 
     if(httpServer.Init())
     {
-        WebCpp::DebugPrint() << "HTTP POST server" << std::endl;
+        WebCpp::DebugPrint() << "HTTP simple test server with Basic auth" << std::endl;
+        httpServer.SetAuthHandler([](const WebCpp::Request &request, WebCpp::IAuth *authMethod) -> bool
+        {
+            WebCpp::DebugPrint() << "authenticated using "
+                                 << authMethod->GetSchemeName() << " scheme"
+                                 << " with credentials ("
+                                 << "user: " << authMethod->GetUser()
+                                 << ". password: " << authMethod->GetPassword() << ")"
+                                 << std::endl;
+            if(authMethod->GetUser() == USER &&
+                    authMethod->GetPassword() == PASSWORD)
+            {
+                return true;
+            }
+
+            return false;
+        });
+
         httpServer.OnGet("/[{file}]", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
         {
-            bool retval = false;
             std::string file = request.GetArg("file");
             WebCpp::DebugPrint() << "OnGet(), file: " << file << std::endl;
+            response.Write("<h3>Congratulations, you're successfully autenticated!</h3>");
 
-            if(!file.empty())
-            {
-                retval = response.AddFile(file);
-            }
-            else
-            {
-                retval = response.AddFile("form.html");
-            }
-
-            if(retval == false)
-            {
-                response.NotFound();
-            }
-
-            return retval;
-        });
-
-        httpServer.OnPost("/form", [](const WebCpp::Request &request, WebCpp::Response &response) -> bool
-        {
-            bool retval = true;
-
-            auto &body = request.GetRequestBody();
-            auto file1 = body.GetValue("file1");
-            auto file2 = body.GetValue("file2");
-            WebCpp::DebugPrint() << "OnPost()" << std::endl;
-
-            response.AddHeader("Content-Type","text/html;charset=utf-8");
-            response.Write("<div>Hello, " + body.GetValue("name").GetDataString() + " " + body.GetValue("surname").GetDataString() + "</div>");
-            response.Write("<div>file 1 '" + file1.fileName + "'" + " with length: " + std::to_string(file1.data.size()) + " and mimetype: '" + file1.contentType + "' was successfully uploaded</div>");
-            response.Write("<div>file 2 '" + file2.fileName + "'" + " with length: " + std::to_string(file2.data.size()) + " and mimetype: '" + file2.contentType + "' was successfully uploaded</div>");
-
-            return retval;
-        });
+            return true;
+        }, true);
 
         httpServer.Run();
-        WebCpp::DebugPrint() << "Starting... Press Ctrl-C to terminate" << std::endl;
-        httpServer.WaitFor();
-        return 0;
     }
     else
     {
         WebCpp::DebugPrint() << "HTTP server Init() failed: " << httpServer.GetLastError() << std::endl;
     }
 
-    return 1;
+    WebCpp::DebugPrint() << "Starting... Press Ctrl-C to terminate" << std::endl;
+    httpServer.WaitFor();
+
+    return 0;
 }

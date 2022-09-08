@@ -9,17 +9,34 @@ using namespace WebCpp;
 
 HttpConfig::HttpConfig()
 {
-    Init();
+
 }
 
-void HttpConfig::Init()
+HttpConfig &HttpConfig::Instance()
+{
+    static HttpConfig instance;
+    if(instance.m_initialized == false)
+    {
+        instance.Init();
+    }
+
+    return instance;
+}
+
+bool HttpConfig::Init()
 {
     if(Load() == false)
     {
         DebugPrint() << "error while loading settings" << std::endl;
+        m_initialized = false;
+    }
+    else
+    {
+        SetRootFolder();
+        m_initialized = true;
     }
 
-    SetRootFolder();
+    return m_initialized;
 }
 
 bool HttpConfig::Load()

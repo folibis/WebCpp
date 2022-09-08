@@ -58,7 +58,7 @@ protected:
 
 private:
     std::shared_ptr<ICommunicationClient> m_connection = nullptr;
-    HttpConfig m_config;
+    HttpConfig &m_config;
     std::function<void(bool)> m_connectCallback = nullptr;
     std::function<void(void)> m_closeCallback = nullptr;
     std::function<void(const std::string &)> m_errorCallback = nullptr;

@@ -5,6 +5,7 @@
 #include "Response.h"
 #include "IHttp.h"
 #include "Data.h"
+#include "SessionManager.h"
 #include "DebugPrint.h"
 
 #define WRITE_BIFFER_SIZE 1024
@@ -78,7 +79,7 @@ bool Response::AddFile(const std::string &file, const std::string &charset)
     return retval;
 }
 
-bool Response::SendNotFound()
+bool Response::NotFound()
 {
     m_responseCode = 404;
     m_responsePhrase = Response::ResponseCode2String(m_responseCode);
@@ -86,12 +87,37 @@ bool Response::SendNotFound()
     return true;
 }
 
-bool Response::SendRedirect(const std::string &url)
+bool Response::Redirect(const std::string &url)
 {
     m_responseCode = 301;
     m_responsePhrase = Response::ResponseCode2String(m_responseCode);
     AddHeader(HttpHeader::HeaderType::Location, url);
     AddHeader(HttpHeader::HeaderType::ContentLength, "0");
+    return true;
+}
+
+bool Response::Unauthorized()
+{
+    m_responseCode = 401;
+    m_responsePhrase = Response::ResponseCode2String(m_responseCode);
+    AddHeader(HttpHeader::HeaderType::ContentLength, "0");
+    return true;
+}
+
+bool Response::NotAuthenticated()
+{
+    m_responseCode = 401;
+    m_responsePhrase = "Unauthorized";
+
+    if(m_session != nullptr)
+    {
+        auto &list = m_session->authProvider;
+        for(auto &auth: list.Get())
+        {
+            AddHeader(HttpHeader::HeaderType::WWWAuthenticate, auth->GetChallenge());
+        }
+    }
+
     return true;
 }
 
@@ -261,6 +287,8 @@ bool Response::Parse(const ByteArray &data, size_t* all, size_t* downoaded)
                                 return false;
                             }
                         }
+
+                        m_header.SetChunckedSize(m_body.size());
 
                         return true;
                     }
@@ -549,4 +577,14 @@ ByteArray Response::BuildStatusLine() const
 ByteArray Response::BuildHeaders() const
 {
     return m_header.ToByteArray();
+}
+
+void Response::SetSession(Session *session)
+{
+    m_session = session;
+}
+
+Session *Response::GetSession() const
+{
+    return m_session;
 }

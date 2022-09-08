@@ -15,7 +15,8 @@
 
 using namespace WebCpp;
 
-WebSocketServer::WebSocketServer()
+WebSocketServer::WebSocketServer():
+    m_config(WebCpp::HttpConfig::Instance())
 {
 
 }
@@ -27,14 +28,7 @@ WebSocketServer::~WebSocketServer()
 
 bool WebSocketServer::Init()
 {
-    WebCpp::HttpConfig config;
-    return Init(config);
-}
-
-bool WebSocketServer::Init(WebCpp::HttpConfig config)
-{
     ClearError();
-    m_config = config;
 
     m_protocol = m_config.GetWsProtocol();
     switch(m_protocol)
@@ -270,7 +264,7 @@ void WebSocketServer::InitConnection(int connID, const std::string &remote)
         }
     }
 
-    m_requestQueue.push_back(RequestData(connID, remote, m_config));
+    m_requestQueue.push_back(RequestData(connID, remote));
 }
 
 bool WebSocketServer::CheckData()
@@ -441,7 +435,7 @@ bool WebSocketServer::ProcessRequest(Request &request)
         }
         else
         {
-            response.SendNotFound();
+            response.NotFound();
         }
     }
 

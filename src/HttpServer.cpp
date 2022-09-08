@@ -15,21 +15,15 @@
 
 using namespace WebCpp;
 
-HttpServer::HttpServer()
+HttpServer::HttpServer():
+    m_config(WebCpp::HttpConfig::Instance())
 {
 
 }
 
-bool HttpServer::Init()
-{
-    WebCpp::HttpConfig config;
-    return Init(config);
-}
-
-bool WebCpp::HttpServer::Init(const WebCpp::HttpConfig& config)
+bool WebCpp::HttpServer::Init()
 {
     ClearError();
-    m_config = config;
 
     m_protocol = m_config.GetHttpProtocol();
 
@@ -121,9 +115,9 @@ bool HttpServer::WaitFor()
     return m_server->WaitFor();
 }
 
-HttpServer &HttpServer::OnGet(const std::string &path, const RouteHttp::RouteFunc &f)
+HttpServer &HttpServer::OnGet(const std::string &path, const RouteHttp::RouteFunc &f, bool needAuth)
 {
-    RouteHttp route(path, Http::Method::GET);
+    RouteHttp route(path, Http::Method::GET, needAuth);
     LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
     route.SetFunction(f);
     m_routes.push_back(std::move(route));
@@ -131,9 +125,9 @@ HttpServer &HttpServer::OnGet(const std::string &path, const RouteHttp::RouteFun
     return *this;
 }
 
-HttpServer &HttpServer::OnPost(const std::string &path, const RouteHttp::RouteFunc &f)
+HttpServer &HttpServer::OnPost(const std::string &path, const RouteHttp::RouteFunc &f, bool needAuth)
 {
-    RouteHttp route(path, Http::Method::POST);
+    RouteHttp route(path, Http::Method::POST, needAuth);
     LOG("register route: " + route.ToString(), LogWriter::LogType::Info);
     route.SetFunction(f);
     m_routes.push_back(std::move(route));
@@ -150,6 +144,11 @@ void HttpServer::SetPostRouteFunc(const RouteHttp::RouteFunc &callback)
     m_postRoute = callback;
 }
 
+void HttpServer::SetAuthHandler(const AuthHandler &f)
+{
+    m_authHandler = f;
+}
+
 bool HttpServer::SendResponse(Response &response)
 {
     if(response.IsShouldSend())
@@ -164,15 +163,14 @@ bool HttpServer::SendResponse(Response &response)
     return true;
 }
 
-std::string HttpServer::ToString() const
-{
-    return m_config.ToString();
-}
-
 void HttpServer::OnConnected(int connID, const std::string &remote)
 {
     LOG(std::string("client connected: #") + std::to_string(connID) + ", " + remote, LogWriter::LogType::Access);
     PutToQueue(connID, remote);
+    if(m_config.GetKeepAliveTimeout() > 0)
+    {
+        KeepAliveTimer::SetTimer(m_config.GetKeepAliveTimeout(), connID);
+    }
 }
 
 void HttpServer::OnDataReady(int connID, ByteArray &data)
@@ -183,6 +181,7 @@ void HttpServer::OnDataReady(int connID, ByteArray &data)
 
 void HttpServer::OnClosed(int connID)
 {    
+    m_sessions.RemoveSession(connID);
     LOG(std::string("http connection closed: #") + std::to_string(connID), LogWriter::LogType::Access);
 }
 
@@ -211,24 +210,6 @@ bool HttpServer::StopRequestThread()
     return true;
 }
 
-void *HttpServer::RequestThread(bool &running)
-{
-    while(running)
-    {
-        WaitForSignal();
-        if(running)
-        {
-            if(CheckDataFullness())
-            {
-                auto request = GetNextRequest();
-                ProcessRequest(*request);
-            }
-        }
-    }
-
-    return nullptr;
-}
-
 void HttpServer::SendSignal()
 {
     Lock lock(m_signalMutex);
@@ -247,31 +228,19 @@ void HttpServer::WaitForSignal()
 void HttpServer::PutToQueue(int connID, const std::string &remote)
 {
     Lock lock(m_queueMutex);
-    m_requestQueue.push_back(RequestData(connID, remote));
+    m_sessions.AddNewSession(connID, remote);
 }
 
 void HttpServer::AppendData(int connID, const ByteArray &data)
 {
     Lock lock(m_queueMutex);
-
-    for(auto &req: m_requestQueue)
-    {
-        if(req.connID == connID)
-        {
-            req.data.insert(req.data.end(), data.begin(), data.end());
-            if(req.request == nullptr)
-            {
-                req.request.reset(new Request(req.connID, m_config, req.remote));
-            }
-            break;
-        }
-    }
+    m_sessions.AppendData(connID, data);
 }
 
 bool HttpServer::IsQueueEmpty()
 {
     Lock lock(m_queueMutex);
-    return m_requestQueue.empty();
+    return m_sessions.IsEmpty();
 }
 
 bool HttpServer::CheckDataFullness()
@@ -279,27 +248,7 @@ bool HttpServer::CheckDataFullness()
     Lock lock(m_queueMutex);
     bool retval = false;
 
-    for(RequestData& requestData: m_requestQueue)
-    {
-        if(requestData.request != nullptr && requestData.data.size() > 0)
-        {
-            if(requestData.request->Parse(requestData.data))
-            {
-                size_t size = requestData.request->GetRequestSize();
-                if(requestData.data.size() >= size)
-                {
-                    requestData.readyForDispatch = true;
-                    requestData.data.clear();
-                    retval = true;
-                    break;
-                }
-            }
-            else
-            {
-                SetLastError("parsing error: " + requestData.request->GetLastError());
-            }
-        }
-    }
+    retval = m_sessions.Process();
 
     return retval;
 }
@@ -307,43 +256,46 @@ bool HttpServer::CheckDataFullness()
 std::unique_ptr<Request> HttpServer::GetNextRequest()
 {
     Lock lock(m_queueMutex);
-
-    for (auto it = m_requestQueue.begin(); it != m_requestQueue.end(); ++it)
-    {
-        if(it->readyForDispatch == true)
-        {
-            RequestData &data = (*it);
-            data.readyForDispatch = false;
-            return std::unique_ptr<Request>(std::move(it->request));
-        }
-    }
-
-    return nullptr; // should never be called
+    return m_sessions.GetReadyRequest();
 }
 
 void HttpServer::RemoveFromQueue(int connID)
 {
     Lock lock(m_queueMutex);
-    for (auto it = m_requestQueue.begin(); it != m_requestQueue.end(); ++it)
+
+    m_sessions.RemoveSession(connID);
+}
+
+void *HttpServer::RequestThread(bool &running)
+{
+    while(running)
     {
-        if(it->connID == connID)
+        WaitForSignal();
+        if(running)
         {
-            m_requestQueue.erase(it);
-            break;
+            if(CheckDataFullness())
+            {
+                auto request = GetNextRequest();
+                ProcessRequest(*request);
+            }
         }
     }
+
+    return nullptr;
 }
 
 void HttpServer::ProcessRequest(Request &request)
 {
     bool processed = false;
+    bool isFinal = false;
+
+    Response response(request.GetConnectionID(), m_config);
+    response.SetSession(request.GetSession());
 
     if(m_config.GetKeepAliveTimeout() > 0)
     {
         KeepAliveTimer::SetTimer(m_config.GetKeepAliveTimeout(), request.GetConnectionID());
     }
-
-    Response response(request.GetConnectionID(), m_config);
 
     if(m_preRoute != nullptr)
     {
@@ -356,6 +308,29 @@ void HttpServer::ProcessRequest(Request &request)
         {
             if(route.IsMatch(request))
             {
+                if(route.IsUseAuth() == true)
+                {
+                    auto session = request.GetSession();
+                    if(session->authProvider.IsInitialized() == false)
+                    {
+                        session->authProvider.Init();
+                    }
+                    bool authSuccessful = false;
+
+                    if(request.CheckAuth() == true)
+                    {
+                        if(m_authHandler != nullptr)
+                        {
+                            authSuccessful = m_authHandler(request, session->authProvider.GetPreferred());
+                        }
+                    }
+
+                    if(authSuccessful == false)
+                    {
+                        response.NotAuthenticated();
+                        isFinal = true;
+                    }
+                }
                 auto &f = route.GetFunction();
                 if(f != nullptr)
                 {
@@ -372,17 +347,20 @@ void HttpServer::ProcessRequest(Request &request)
         }
     }
 
-    if(m_postRoute != nullptr)
+    if(isFinal == false)
     {
-        processed = m_postRoute(request, response);
+        if(m_postRoute != nullptr)
+        {
+            processed = m_postRoute(request, response);
+        }
+
+        if(processed == false)
+        {
+            response.NotFound();
+        }
     }
 
-    if(processed == false)
-    {
-        response.SendNotFound();
-    }
-
-    LOG(request.GetUrl().GetPath() + (processed ? ", processed" : ", not processed"), LogWriter::LogType::Access);
+    LOG("#" + std::to_string(request.GetConnectionID()) + ": " +  request.GetUrl().GetPath() + (processed ? ", processed" : ", not processed"), LogWriter::LogType::Access);
 
     SendResponse(response);
 }
@@ -394,3 +372,7 @@ void HttpServer::ProcessKeepAlive(int connID)
     RemoveFromQueue(connID);
 }
 
+std::string HttpServer::ToString() const
+{
+    return m_config.ToString();
+}

@@ -9,20 +9,14 @@
 
 using namespace WebCpp;
 
-WebSocketClient::WebSocketClient()
+WebSocketClient::WebSocketClient():
+    m_config(WebCpp::HttpConfig::Instance())
 {
 
 }
 
 bool WebSocketClient::Init()
 {
-    HttpConfig config;
-    return Init(config);
-}
-
-bool WebSocketClient::Init(const HttpConfig &config)
-{
-    m_config = config;
     return true;
 }
 

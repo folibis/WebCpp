@@ -284,6 +284,14 @@ std::string RequestBody::BuildContentType() const
     return str;
 }
 
+void RequestBody::Clear()
+{
+    m_values.clear();
+    m_contentType = ContentType::Undefined;
+    m_tempFolder = "";
+    m_boundary = "";
+}
+
 ByteArray RequestBody::GetDataUrlUncoded() const
 {
     std::string data;

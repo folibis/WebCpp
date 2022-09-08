@@ -65,10 +65,17 @@ size_t HttpHeader::GetBodySize() const
     if(m_complete)
     {
         auto str = GetHeader(HeaderType::ContentLength);
-        int num;
-        if(StringUtil::String2int(str, num))
+        if(str.empty() == false)
         {
-            size = num;
+            int num;
+            if(StringUtil::String2int(str, num))
+            {
+                size = num;
+            }
+        }
+        else
+        {
+            size = m_chunkedSize;
         }
     }
 
@@ -77,7 +84,12 @@ size_t HttpHeader::GetBodySize() const
 
 size_t HttpHeader::GetRequestSize() const
 {
-    return GetHeaderSize() + GetBodySize() + 4; // header + delimiter(CRLFCRLF, 4 bytes) + body
+    return GetHeaderSize() + 4 + GetBodySize(); // header + delimiter(CRLFCRLF, 4 bytes) + body
+}
+
+void HttpHeader::SetChunckedSize(size_t size)
+{
+    m_chunkedSize = size;
 }
 
 HttpHeader::HeaderRole HttpHeader::GetRole() const
@@ -315,6 +327,18 @@ void HttpHeader::SetHeader(const std::string &name, const std::string &value)
     m_headers.push_back(std::move(header));
 }
 
+void HttpHeader::Clear()
+{
+    m_role = HeaderRole::Undefined;
+    m_complete = false;
+    m_headers.clear();
+    m_version = "HTTP/1.1";
+    m_headerSize = 0;
+    m_remoteAddress = "";
+    m_remotePort = (-1);
+    m_chunkedSize = 0;
+}
+
 std::string HttpHeader::GetHeader(HeaderType headerType) const
 {
     return GetHeader(HttpHeader::HeaderType2String(headerType));
@@ -331,6 +355,20 @@ std::string HttpHeader::GetHeader(const std::string &headerType) const
     }
 
     return "";
+}
+
+std::vector<std::string> HttpHeader::GetAllHeaders(const std::string &headerType) const
+{
+    std::vector<std::string> value;
+    for(auto &header: m_headers)
+    {
+        if(header.name == headerType)
+        {
+            value.push_back(header.value);
+        }
+    }
+
+    return value;
 }
 
 std::string HttpHeader::GetVersion() const

@@ -68,11 +68,11 @@ int main()
         std::cout << "downloaded :" << downoaded << " of " <<all << "\r";
     });
 
-    WebCpp::HttpConfig config;
+    WebCpp::HttpConfig &config = WebCpp::HttpConfig::Instance();
     config.SetTempFile(true);
     config.SetMaxBodyFileSize(120_Mb);
 
-    if(httpCient.Init(config))
+    if(httpCient.Init())
     {
 #ifdef WITH_OPENSSL
         std::string address("https://www.google.com");

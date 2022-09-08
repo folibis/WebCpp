@@ -47,17 +47,20 @@ namespace WebCpp
 class HttpConfig
 {
 public:
-    HttpConfig();
-    void Init();
+    static HttpConfig& Instance();
+    bool Init();
     bool Load();
 
     std::string RootFolder() const;
     std::string ToString() const;
 
 protected:
+    HttpConfig();
     void SetRootFolder();
     void OnChanged(const std::string &value);
+
 private:
+    bool m_initialized = false;
     std::string m_rootFolder;
 
     PROPERTY(std::string, ServerName, WEBCPP_CANONICAL_NAME)
@@ -67,7 +70,7 @@ private:
     PROPERTY(std::string, HttpServerAddress, "")
     PROPERTY(int, HttpServerPort, 8080)
     PROPERTY(Http::Protocol, HttpProtocol, Http::Protocol::HTTP)
-    PROPERTY(int, KeepAliveTimeout, 2000)
+    PROPERTY(int, KeepAliveTimeout, 10000)
     PROPERTY(std::string, SslSertificate, "cert.pem")
     PROPERTY(std::string, SslKey, "key.pem")
     PROPERTY(bool, TempFile, false)

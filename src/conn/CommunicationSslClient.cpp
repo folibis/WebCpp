@@ -11,8 +11,6 @@
 #include "Lock.h"
 #include "CommunicationSslClient.h"
 
-#define DEFAULT_SSL_PORT 443
-
 
 using namespace WebCpp;
 
@@ -38,7 +36,7 @@ bool CommunicationSslClient::Init()
     if(m_initialized == true)
     {
         SetLastError("already initialized");
-        return false;
+        return true;
     }
 
     m_initialized = ICommunicationClient::Init();

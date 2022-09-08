@@ -34,6 +34,7 @@
 #include "Request.h"
 #include "Response.h"
 #include "Url.h"
+#include "AuthProvider.h"
 
 
 namespace WebCpp {
@@ -64,28 +65,37 @@ public:
     bool Close(bool wait = true) override;
     bool WaitFor() override;
 
-    bool Open(Request &request);
     bool Open(Http::Method method, const std::string &url, const std::map<std::string, std::string> &headers = {});
+    void SetKeepOpen(bool value);
+
     void SetResponseCallback(const std::function<bool(const Response&)> &func);
     void SetStateCallback(const std::function<void(State)> &func);
     void SetProgressCallback(const std::function<void(size_t,size_t)> &func);
+    void SetAuthCallback(const std::function<bool(const Request&, AuthProvider&)> &func);
     State GetState() const;
+    void ClearAuth();
 
 protected:
+    bool Open();
     void OnDataReady(const ByteArray &data);
     void OnClosed();
     bool InitConnection(const Url &url);
     void SetState(State state);
+    bool AddAuthHeaders();
 
 private:
+    Request m_request;
     std::shared_ptr<ICommunicationClient> m_connection = nullptr;
-    HttpConfig m_config;
-    State m_state;
+    HttpConfig &m_config;
+    State m_state = State::Undefined;
     ByteArray m_buffer;
     std::function<void(State)> m_stateCallback = nullptr;
     std::function<bool(const Response&)> m_responseCallback = nullptr;
     std::function<void(size_t,size_t)> m_progressCallback = nullptr;
-
+    std::function<bool(const Request&, AuthProvider&)> m_authCallback = nullptr;
+    AuthProvider m_authProvider;
+    bool m_authRequired = false;
+    bool m_keepOpen = false;
 };
 
 }

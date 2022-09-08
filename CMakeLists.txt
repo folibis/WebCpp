@@ -40,8 +40,8 @@ else()
     message(FATAL_ERROR "Incorrect platform, exiting...")
 endif()
 
-file(GLOB SRC . src/*.cpp src/conn/*.cpp src/utils/*.cpp src/wrappers/${PLATFORM}/*.cpp)
-file(GLOB INC . include/*.h include/common/*.h include/conn/*.h include/utils/*.h include/wrappers/${PLATFORM}/*.h)
+file(GLOB SRC . src/*.cpp src/conn/*.cpp src/utils/*.cpp src/auth/*.cpp src/wrappers/${PLATFORM}/*.cpp)
+file(GLOB INC . include/*.h include/common/*.h include/conn/*.h include/utils/*.h include/auth/*.h include/wrappers/${PLATFORM}/*.h)
 
 add_library(${PROJECT_NAME} SHARED ${SRC} ${INC})
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -100,6 +100,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/common
     ${CMAKE_CURRENT_SOURCE_DIR}/include/conn
     ${CMAKE_CURRENT_SOURCE_DIR}/include/utils
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/auth
     ${CMAKE_CURRENT_SOURCE_DIR}/include/wrappers/${PLATFORM}
     )
 

@@ -35,17 +35,18 @@
 #include "Url.h"
 #include "IHttp.h"
 #include "IErrorable.h"
+#include "IAuth.h"
 
 
 namespace WebCpp
 {
 
+class Session;
 class Request: public IErrorable
 {
 public:
     Request();
-    Request(const HttpConfig &config);
-    Request(int connID, HttpConfig &config, const std::string &remote);
+    Request(int connID, const std::string &remote);
     Request(const Request& other) = delete;
     Request& operator=(const Request& other) = delete;
     Request(Request&& other) = default;
@@ -74,6 +75,10 @@ public:
     std::string GetRemote() const;
     void SetRemote(const std::string &remote);
     bool Send(const std::shared_ptr<ICommunicationClient> &communication);
+    void Clear();
+    void SetSession(Session *session);
+    Session* GetSession() const;
+    bool CheckAuth();
     std::string ToString() const;
 
 protected:
@@ -81,17 +86,18 @@ protected:
     bool ParseBody(const ByteArray &data, size_t headerSize);
     ByteArray BuildRequestLine() const;
     ByteArray BuildHeaders() const;
+
 private:
     int m_connID;
     Url m_url;
-    HttpConfig m_config;
     HttpHeader m_header;
     Http::Method m_method = Http::Method::Undefined;
     std::string m_httpVersion = "HTTP/1.1";
     size_t m_requestLineLength = 0;
-    std::map<std::string, std::string> m_args;    
+    std::map<std::string, std::string> m_args;
     RequestBody m_requestBody;
     std::string m_remote;
+    Session *m_session = nullptr;
 };
 
 }

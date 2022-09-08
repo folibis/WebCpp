@@ -39,7 +39,7 @@ namespace WebCpp
 class Route
 {
 public:
-    Route(const std::string &path, Http::Method method);
+    Route(const std::string &path, Http::Method method, bool useAuth = false);
     Route(const Route& other) = delete;
     Route& operator=(const Route& other) = delete;
     Route(Route&& other) = default;
@@ -47,6 +47,8 @@ public:
 
     const std::string& GetPath() const;
     bool IsMatch(Request &request);
+    bool IsUseAuth() const;
+
     std::string ToString() const;
 
 protected:
@@ -134,6 +136,7 @@ private:
     std::vector<Token> m_tokens;
     Http::Method m_method;
     std::string m_path;
+    bool m_useAuth = false;
 };
 
 }

@@ -1,6 +1,8 @@
 #include <algorithm>
 #include "Request.h"
 #include "IHttp.h"
+#include "Session.h"
+
 
 #define EOL_LENGTH 2
 #define ENTRY_DELIMITER_LENGTH 4
@@ -9,13 +11,6 @@
 using namespace WebCpp;
 
 Request::Request():
-    m_header(HttpHeader::HeaderRole::Request)
-{
-
-}
-
-Request::Request(const HttpConfig &config):
-    m_config(config),
     m_header(HttpHeader::HeaderRole::Request)
 {
 
@@ -80,9 +75,8 @@ bool Request::ParseRequestLine(const ByteArray &data, size_t &pos)
 }
 
 
-Request::Request(int connID, HttpConfig& config, const std::string &remote):
+Request::Request(int connID, const std::string &remote):
     m_connID(connID),
-    m_config(config),
     m_header(HttpHeader::HeaderRole::Request)
 {
 }
@@ -95,16 +89,6 @@ int Request::GetConnectionID() const
 void Request::SetConnectionID(int connID)
 {
     m_connID = connID;
-}
-
-const HttpConfig &Request::GetConfig() const
-{
-    return m_config;
-}
-
-void Request::SetConfig(const HttpConfig &config)
-{
-    m_config = config;
 }
 
 const Url &Request::GetUrl() const
@@ -145,8 +129,9 @@ std::string Request::GetHttpVersion() const
 
 bool Request::ParseBody(const ByteArray &data, size_t headerSize)
 {
+    WebCpp::HttpConfig &config = WebCpp::HttpConfig::Instance();
     auto contentType = m_header.GetHeader(HttpHeader::HeaderType::ContentType);
-    if(m_requestBody.Parse(data, headerSize, ByteArray(contentType.begin(), contentType.end()), m_config.GetTempFile()) == false)
+    if(m_requestBody.Parse(data, headerSize, ByteArray(contentType.begin(), contentType.end()), config.GetTempFile()) == false)
     {
         SetLastError("body parsing error: " + m_requestBody.GetLastError());
         return false;
@@ -218,15 +203,16 @@ bool Request::Send(const std::shared_ptr<ICommunicationClient> &communication)
     const ByteArray &rl = BuildRequestLine();
     header.insert(header.end(), rl.begin(), rl.end());
 
+    auto &hd = GetHeader();
     if(body.size() > 0)
     {
-        GetHeader().SetHeader(HttpHeader::HeaderType::ContentType, m_requestBody.BuildContentType());
-        GetHeader().SetHeader(HttpHeader::HeaderType::ContentLength, std::to_string(body.size()));
+        hd.SetHeader(HttpHeader::HeaderType::ContentType, m_requestBody.BuildContentType());
+        hd.SetHeader(HttpHeader::HeaderType::ContentLength, std::to_string(body.size()));
     }
 
-    GetHeader().SetHeader(HttpHeader::HeaderType::UserAgent, WEBCPP_CANONICAL_NAME);
-    GetHeader().SetHeader(HttpHeader::HeaderType::Host, m_url.GetHost());
-    GetHeader().SetHeader(HttpHeader::HeaderType::Accept, "*/*");
+    hd.SetHeader(HttpHeader::HeaderType::UserAgent, WEBCPP_CANONICAL_NAME);
+    hd.SetHeader(HttpHeader::HeaderType::Host, m_url.GetHost());
+    hd.SetHeader(HttpHeader::HeaderType::Accept, "*/*");
 
     std::string encoding = "";
 #ifdef WITH_ZLIB
@@ -234,7 +220,7 @@ bool Request::Send(const std::shared_ptr<ICommunicationClient> &communication)
 #endif
     if(!encoding.empty())
     {
-        GetHeader().SetHeader(HttpHeader::HeaderType::AcceptEncoding, encoding);
+        hd.SetHeader(HttpHeader::HeaderType::AcceptEncoding, encoding);
     }
 
     const ByteArray &h = m_header.ToByteArray();
@@ -258,6 +244,41 @@ bool Request::Send(const std::shared_ptr<ICommunicationClient> &communication)
     }
 
     return true;
+}
+
+void Request::Clear()
+{
+    m_connID = (-1);
+    m_url.Clear();
+    m_header.Clear();
+    m_requestLineLength = 0;
+    m_args.clear();
+    m_requestBody.Clear();
+    m_remote = "";
+    m_session = nullptr;
+}
+
+void Request::SetSession(Session *session)
+{
+    m_session = session;
+}
+
+Session *Request::GetSession() const
+{
+    return m_session;
+}
+
+bool Request::CheckAuth()
+{
+    bool retval = false;
+    if(m_session != nullptr)
+    {
+        auto &auth = m_session->authProvider;
+        auto header = m_header.GetHeader(HttpHeader::HeaderType::Authorization);
+        retval = auth.Check(header);
+    }
+
+    return retval;
 }
 
 ByteArray Request::BuildRequestLine() const
