@@ -370,6 +370,7 @@ void StringUtil::PrintHex(const ByteArray &array)
         std::cout << "| " << txt << std::endl;
         pos += 16;
     }
+    std::cout << std::dec;
 #else
     std::cout << StringUtil::ByteArray2String(array) << std::endl;
 #endif
@@ -380,14 +381,14 @@ void StringUtil::Replace(std::string &str, const std::string &find, const std::s
     size_t index = 0;
     while (true)
     {
-         index = str.find(find, index);
-         if(index == std::string::npos)
-         {
-             break;
-         }
+        index = str.find(find, index);
+        if(index == std::string::npos)
+        {
+            break;
+        }
 
-         str.replace(index, find.size(), replace);
-         index += replace.size();
+        str.replace(index, find.size(), replace);
+        index += replace.size();
     }
 }
 
@@ -473,6 +474,116 @@ std::string StringUtil::GenerateRandomString(size_t length, bool uppercase, bool
         }
 
         retval += ch;
+    }
+
+    return retval;
+}
+
+enum class ParserState
+{
+    Undefined = 0,
+    Name,
+    Value,
+    ValueQuoted,
+};
+
+std::map<std::string, std::string> StringUtil::ParseParamString(const std::string &str, size_t start)
+{
+    std::map<std::string, std::string> retval;
+    size_t len = str.length();
+    size_t pos = start;
+    ParserState state = ParserState::Undefined;
+    std::string name = "";
+    std::string value = "";
+
+    while(pos < len)
+    {
+        auto ch = str.at(pos);
+        switch(ch)
+        {
+            case '=':
+                switch(state)
+                {
+                    case ParserState::Name:
+                        state = ParserState::Value;
+                        break;
+                    case ParserState::Value:
+                    case ParserState::ValueQuoted:
+                        value += ch;
+                        break;
+                    default: break;
+                }
+
+                break;
+            case '"':
+            case '\'':
+                switch(state)
+                {
+                    case ParserState::Value:
+                        state = ParserState::ValueQuoted;
+                        break;
+                    case ParserState::ValueQuoted:
+                        retval[name] = value;
+                        name = "";
+                        value = "";
+                        state = ParserState::Undefined;
+                        break;
+                    default:
+                        break;
+                }
+
+                break;
+            case ' ':
+                switch(state)
+                {
+                    case ParserState::Value:
+                    case ParserState::ValueQuoted:
+                        value += ch;
+                        break;
+                    default:
+                        break;
+                }
+
+                break;
+            case ',':
+                switch(state)
+                {
+                    case ParserState::Value:
+                        state = ParserState::Undefined;
+                        retval[name] = value;
+                        name = "";
+                        value = "";
+                        break;
+                    case ParserState::ValueQuoted:
+                        value += ch;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                switch(state)
+                {
+                    case ParserState::Undefined:
+                        state = ParserState::Name;
+                        name += ch;
+                        break;
+                    case ParserState::Name:
+                        name += ch;
+                        break;
+                    case ParserState::Value:
+                    case ParserState::ValueQuoted:
+                        value += ch;
+                        break;
+                }
+                break;
+        }
+        pos ++;
+    }
+
+    if(name.empty() == false && value.empty() == false)
+    {
+        retval[name] = value;
     }
 
     return retval;

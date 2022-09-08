@@ -2,36 +2,36 @@
 #define IAUTH_H
 
 #include <vector>
-#include "Request.h"
+#include <map>
+#include <string>
 
 
 namespace WebCpp {
 
+class Request;
 class IAuth
 {
 public:
     virtual bool Init() = 0;
-    virtual bool Parse(const Request &request) = 0;
+    virtual bool ParseFromClient(const std::string &token) = 0;
+    virtual bool ParseFromServer(const std::string &token) = 0;
     virtual std::string GetChallenge() const = 0;
+    virtual std::string GetSchemeName() const = 0;
+    virtual bool AddAuthHeaders(Request &request) = 0;
 
-    using CreateCallback = IAuth *(*)();
-    static bool Register(const char *name, CreateCallback callback);
-    static IAuth* Create(const std::string &name);
-    static const std::map<std::string, CreateCallback>& Get();
+    virtual std::string GetUser() const;
+    virtual bool SetUser(const std::string &user);
+    virtual std::string GetPassword() const;
+    virtual bool SetPassword(const std::string &password);
+    virtual void SetPreferred(bool value);
+    virtual bool IsPreferred() const;
 
-private:
-    static std::map<std::string, CreateCallback> m_auth;
+protected:
+    std::string m_user = "";
+    std::string m_password = "";
+    bool m_preferred = false;
 };
 
 }
-
-#define IAUTH_IMPL(T) IAuth *T::CreateMethod() { return new T(); }
-
-#define REGISTER_AUTH(N, T) bool T::m_registered = IAuth::Register(N, &T::CreateMethod);\
-IAUTH_IMPL(T)
-
-#define IAUTH_DECL protected: \
-static IAuth *CreateMethod(); \
-static bool m_registered; \
 
 #endif // IAUTH_H

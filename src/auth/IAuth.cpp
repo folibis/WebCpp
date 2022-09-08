@@ -1,44 +1,41 @@
 #include "IAuth.h"
+#include "StringUtil.h"
 
 
 using namespace WebCpp;
 
-std::map<std::string, IAuth::CreateCallback> IAuth::m_auth;
-
-bool IAuth::Register(const char *name, CreateCallback callback)
+std::string IAuth::GetUser() const
 {
-    std::string n(name);
-    if(n.size() > 0)
-    {
-        StringUtil::ToLower(n);
-        n[0] = toupper(n[0]);
-
-        if(m_auth.find(n) == m_auth.end())
-        {
-            m_auth.insert(std::pair<std::string, IAuth::CreateCallback>(n, callback));
-            return true;
-        }
-    }
-
-    return false;
+    return m_user;
 }
 
-IAuth *IAuth::Create(const std::string &name)
+bool IAuth::SetUser(const std::string &user)
 {
-    std::string n = name;
-    StringUtil::ToLower(n);
-    n[0] = toupper(n[0]);
+    m_user = user;
+    m_preferred = true;
 
-    auto it = m_auth.find(n);
-    if(it == m_auth.end())
-    {
-        return nullptr;
-    }
-
-    return it->second();
+    return true;
 }
 
-const std::map<std::string, IAuth::CreateCallback>& IAuth::Get()
+std::string IAuth::GetPassword() const
 {
-    return m_auth;
+    return m_password;
+}
+
+bool IAuth::SetPassword(const std::string &password)
+{
+    m_password = password;
+    m_preferred = true;
+
+    return true;
+}
+
+void IAuth::SetPreferred(bool value)
+{
+    m_preferred = value;
+}
+
+bool IAuth::IsPreferred() const
+{
+    return m_preferred;
 }
