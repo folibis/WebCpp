@@ -57,3 +57,9 @@ endif()
 
 add_executable(HttpClient HttpClient.cpp)
 target_link_libraries(HttpClient PRIVATE webcpp)
+
+add_executable(BasicAuthServer BasicAuthServer.cpp)
+target_link_libraries(BasicAuthServer PRIVATE webcpp)
+
+add_executable(BasicAuthClient BasicAuthClient.cpp)
+target_link_libraries(BasicAuthClient PRIVATE webcpp)
