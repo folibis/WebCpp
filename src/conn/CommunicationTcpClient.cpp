@@ -33,7 +33,7 @@ bool CommunicationTcpClient::Init()
     if(m_initialized == true)
     {
         SetLastError("already initialized");
-        return false;
+        return true;
     }
 
     m_initialized = ICommunicationClient::Init();

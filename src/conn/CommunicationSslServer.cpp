@@ -14,9 +14,6 @@
 #include "StringUtil.h"
 #include "CommunicationSslServer.h"
 
-#define DEFAULT_SSL_PORT 443
-#define DEFAULT_SSL_HOST "*"
-
 
 using namespace WebCpp;
 

@@ -103,6 +103,7 @@ bool ICommunicationClient::CloseConnection()
         }
     }
     m_connected = false;
+    m_initialized = false;
 
     return retval;
 }
