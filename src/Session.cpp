@@ -100,3 +100,25 @@ bool Session::IsEmpty() const
 {
     return m_sesions.empty();
 }
+
+bool Session::InitAuth()
+{
+    try
+    {
+        auto &list = IAuth::Get();
+        for(auto &pair: list)
+        {
+            auto ptr = pair.second();
+            if(ptr != nullptr)
+            {
+                if(ptr->Init() == true)
+                {
+                    m_auth.push_back(std::unique_ptr<IAuth>(ptr));
+                }
+            }
+        }
+    }
+    catch(...) { m_auth.clear(); return false; }
+
+    return true;
+}

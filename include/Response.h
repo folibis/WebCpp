@@ -60,6 +60,7 @@ public:
     bool AddFile(const std::string &file, const std::string &charset = "utf-8");
     bool NotFound();
     bool Redirect(const std::string &url);
+    bool Unauthorized();
     void SetResponseCode(uint16_t code);
     void SetResponseCode(uint16_t code, const std::string &phrase);
     uint16_t GetResponseCode() const;

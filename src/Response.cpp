@@ -95,6 +95,14 @@ bool Response::Redirect(const std::string &url)
     return true;
 }
 
+bool Response::Unauthorized()
+{
+    m_responseCode = 401;
+    m_responsePhrase = Response::ResponseCode2String(m_responseCode);
+    AddHeader(HttpHeader::HeaderType::ContentLength, "0");
+    return true;
+}
+
 void Response::SetResponseCode(uint16_t code)
 {
     m_responseCode = code;

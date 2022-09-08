@@ -243,6 +243,16 @@ bool Request::Send(const std::shared_ptr<ICommunicationClient> &communication)
     return true;
 }
 
+void Request::SetSession(Session *session)
+{
+    m_session = session;
+}
+
+Session *Request::GetSession() const
+{
+    return m_session;
+}
+
 ByteArray Request::BuildRequestLine() const
 {
     const HttpHeader &header = GetHeader();

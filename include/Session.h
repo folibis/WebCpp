@@ -3,12 +3,13 @@
 
 #include <map>
 #include "IErrorable.h"
-#include "Request.h"
+#include "IAuth.h"
 
 
 namespace WebCpp
 {
 
+class Request;
 class Session : public IErrorable
 {
 public:
@@ -19,6 +20,7 @@ public:
     std::unique_ptr<Request> GetReadyRequest();
     bool RemoveSession(int connID);
     bool IsEmpty() const;
+    bool InitAuth();
 
 private:
     struct SessionItem
@@ -38,6 +40,7 @@ private:
     };
 
     std::map<int, SessionItem> m_sesions;
+    std::vector<std::unique_ptr<IAuth>> m_auth;
 };
 
 }

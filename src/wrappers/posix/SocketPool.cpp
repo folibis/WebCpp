@@ -371,52 +371,62 @@ bool SocketPool::ConnectTcp(const std::string &host, int port)
         dest_addr.sin_addr = *((struct in_addr *)hostinfo->h_addr);
         memset(&(dest_addr.sin_zero), 0, 8);
 
-        int ret = connect(m_fds[MAIN_SOCKET_INDEX].fd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr));
-
-        if(ret == -1)
+        int ret = (-1);
+        do
         {
-            if(errno == EINPROGRESS)
+            ret = connect(m_fds[MAIN_SOCKET_INDEX].fd, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr));
+
+            if(ret == -1)
             {
-                m_fds[MAIN_SOCKET_INDEX].events = POLLOUT | POLLERR;
-                ret = poll(&m_fds[MAIN_SOCKET_INDEX], 1, m_connectTimeout);
-                if(ret == 0)
+                if(errno == EINPROGRESS)
                 {
-                    SetLastError(std::string("Socket connecting timeout"));
-                    throw std::runtime_error(GetLastError());
+                    m_fds[MAIN_SOCKET_INDEX].events = POLLOUT | POLLERR;
+                    int pollret = poll(&m_fds[MAIN_SOCKET_INDEX], 1, m_connectTimeout);
+                    if(pollret == 0)
+                    {
+                        SetLastError(std::string("Socket connecting timeout"));
+                        throw std::runtime_error(GetLastError());
+                    }
+                    else if(pollret < 0)
+                    {
+                        SetLastError(std::string("Socket connecting error: ") + strerror(errno), errno);
+                        throw std::runtime_error(GetLastError());
+                    }
+                    else
+                    {
+                        if((m_fds[MAIN_SOCKET_INDEX].revents & POLLOUT) == 0)
+                        {
+                            SetLastError(std::string("Socket not available: ") + strerror(errno), errno);
+                            throw std::runtime_error(GetLastError());
+                        }
+                    }
                 }
-                else if(ret < 0)
+                else
                 {
                     SetLastError(std::string("Socket connecting error: ") + strerror(errno), errno);
                     throw std::runtime_error(GetLastError());
                 }
-                else
-                {
-                    if((m_fds[MAIN_SOCKET_INDEX].revents & POLLOUT) == 0)
-                    {
-                        SetLastError(std::string("Socket not available: ") + strerror(errno), errno);
-                        throw std::runtime_error(GetLastError());
-                    }
-                }
             }
-            else
-            {
-                SetLastError(std::string("Socket connecting error: ") + strerror(errno), errno);
-                throw std::runtime_error(GetLastError());
-            }
-        }
-
+        } while(ret == (-1));
 
 #ifdef WITH_OPENSSL
         if(IsContains(m_options, Options::Ssl))
         {
             SSL *ssl = m_sslClient[MAIN_SOCKET_INDEX];
-            const int status = SSL_connect(ssl);
-            if(status <= 0)
+            int status = (-1);
+            do
             {
-                int errorCode = SSL_get_error(ssl, status);
-                SetLastError(ERR_error_string(errorCode, nullptr));
-                throw std::runtime_error(std::string("SSL connect error: ") + GetLastError());
-            }
+                status = SSL_connect(ssl);
+                if(status <= 0)
+                {
+                    int errorCode = SSL_get_error(ssl, status);
+                    if(errorCode != SSL_ERROR_WANT_READ)
+                    {
+                        SetLastError(ERR_error_string(errorCode, nullptr));
+                        throw std::runtime_error(std::string("SSL connect error: ") + GetLastError());
+                    }
+                }
+            } while(status == (-1));
         }
 #endif
         return true;

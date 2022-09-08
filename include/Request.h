@@ -40,6 +40,7 @@
 namespace WebCpp
 {
 
+class Session;
 class Request: public IErrorable
 {
 public:
@@ -73,6 +74,8 @@ public:
     std::string GetRemote() const;
     void SetRemote(const std::string &remote);
     bool Send(const std::shared_ptr<ICommunicationClient> &communication);
+    void SetSession(Session *session);
+    Session* GetSession() const;
     std::string ToString() const;
 
 protected:
@@ -80,6 +83,7 @@ protected:
     bool ParseBody(const ByteArray &data, size_t headerSize);
     ByteArray BuildRequestLine() const;
     ByteArray BuildHeaders() const;
+
 private:
     int m_connID;
     Url m_url;
@@ -90,6 +94,7 @@ private:
     std::map<std::string, std::string> m_args;    
     RequestBody m_requestBody;
     std::string m_remote;
+    Session *m_session = nullptr;
 };
 
 }
