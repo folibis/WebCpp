@@ -51,6 +51,7 @@ public:
     static std::string &RTrim(std::string &str, const std::string &chars);
     static std::string &Trim(std::string &str, const std::string &chars = " \r\n\t");
     static bool String2int(const std::string &str, int &value, int base = 10);
+    static size_t FindOneOf(const std::string &str, const std::string &chars, char &ch, int pos = 0);
     static void ToLower(std::string &str);
     static void ToUpper(std::string &str);
     static std::string ByteArray2String(const ByteArray &array);

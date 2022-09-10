@@ -25,7 +25,7 @@ bool Url::Parse(const std::string &url, bool full)
     if(full)
     {
         pos = url.find(':');
-        if(pos == std::string::npos)
+        if(pos == std::string::npos) // scheme is not specified
         {
             return false;
         }
@@ -46,26 +46,14 @@ bool Url::Parse(const std::string &url, bool full)
                 m_port = DEFAULT_PORT;
         }
 
-        prev = pos + 1;
-        pos = url.find("//", prev);
+        prev = pos + 3;
+        char ch;
+        pos = StringUtil::FindOneOf(url,"/#?", ch, prev);
         if(pos != std::string::npos) // authority presents
         {
-            prev = pos + 2;
-            pos = url.find("/", prev);
-            std::string authority;
-            if(pos != std::string::npos)
-            {
-                authority = std::string(url.begin() + prev, url.begin() + pos);
-                ParseAuthority(authority);
-                prev = pos + 1;
-            }
-            else
-            {
-                authority = std::string(url.begin() + prev, url.end());
-                ParseAuthority(authority);
-                m_initiaized = true;
-                return true;
-            }
+            std::string authority = std::string(url.begin() + prev, url.begin() + pos);
+            ParseAuthority(authority);
+            prev = pos + 1;
         }
     }
 
