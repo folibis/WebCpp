@@ -244,6 +244,22 @@ bool StringUtil::String2int(const std::string &str, int &value, int base)
     }
 }
 
+size_t StringUtil::FindOneOf(const std::string &str, const std::string &chars, char &ch, int pos)
+{
+    int retval = (-1);
+    for(int i = 0;i < chars.size();i ++)
+    {
+        retval = str.find(chars[i], pos);
+        if(retval != str.npos)
+        {
+            ch = chars[i];
+            return retval;
+        }
+    }
+
+    return str.npos;
+}
+
 void StringUtil::ToLower(std::string &str)
 {
     std::transform(str.begin(), str.end(), str.begin(),[](unsigned char c)
