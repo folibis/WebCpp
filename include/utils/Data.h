@@ -38,6 +38,7 @@ public:
     static std::string Sha1(const std::string &string);
     static uint8_t *Sha1Digest(const std::string &string);
     static std::string Sha256(const std::string &string);
+    static std::string Md5(const std::string &string);
 
 #ifdef WITH_ZLIB
     static ByteArray Compress(const ByteArray &data);

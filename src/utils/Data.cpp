@@ -1,7 +1,9 @@
 #include <stdexcept>
 #include "Sha1.h"
 #include "Sha256.h"
+#include "MD5.h"
 #include "Data.h"
+
 
 static const std::string base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -122,6 +124,25 @@ std::string Data::Sha256(const std::string &string)
 {
     SHA256 hash;
     return hash.Hash(string.c_str());
+}
+
+std::string Data::Md5(const std::string &string)
+{
+    MD5 md5;
+    uint8_t digest[16];
+    md5.MD5Init();
+    md5.MD5Update(reinterpret_cast<const uint8_t *>(string.c_str()), string.size());
+    md5.MD5Final(digest);
+
+    std::string retval = "";
+    char s[3];
+    for (int i = 0; i < 16; i++)
+    {
+        sprintf(s, "%02x", digest[i]);
+        retval += s;
+    }
+
+    return retval;
 }
 
 

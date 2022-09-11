@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <string>
 
+
 class SHA256
 {
 public:
